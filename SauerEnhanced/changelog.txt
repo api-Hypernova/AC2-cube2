@@ -1,0 +1,233 @@
+v1.5.5 - SVN:
+	-Justice Edition port
+	-New loading screen
+	-Some HUD fixes and tweaks
+	-Added sound muters (see Readme.txt)
+	-Can now disable panning for mapsounds (see Readme.txt)
+	-Fixed weather being culled
+	-Added (lastsaid) and (getlastsaid) commands
+	-Added entity stacking (see Readme.txt)
+	-Added world axes (enabled in outline mode)
+------
+v1.4.8 - Patch:
+	-Show info about checking for updates when loading
+	-Fixed glow particles visible thru models
+	-More weather improvements
+	-Added weapon icons to HUD
+	-Some more ambient sounds
+	-More fx for more maps (.SE files)
+	-Some other HUD rework
+	-Minor fixes
+------
+v1.4.7 - Patch:
+	-Rewrote weather system code. Rain and snow won't be laggy anymore.
+	-Moved some functions to main menu when connected for easier use.
+	-More map effects (SE files).
+------
+v1.4.6 - Patch:
+	-Fixed some vars not saving
+	-Colour master modes in server list
+------
+v1.4.5 - Patch:
+	-Allow to disable glow particles
+	-Allow to enable old-style rifle trail.
+------
+v1.4.4 - Patch:
+	-Delete unnecessary files after analysys
+	-Downloaded files will be saved in Sauerbraten/seDownloads
+------
+v1.4.3 - BETA:
+	Added "Check-For-New-Version".
+	Added profile system.
+	Added working news system.
+	New, realistic bullet trails.
+	Screenshots are saved in "screenshots" folder now and movies in "videos".
+	Disabled annoying auto-sort for servers. Press "Sort servers" button to resort.
+	Added heartbeat sound and bloody-screen when health is less than 26.
+	Added bullet nearmiss sounds.
+	Improved rain and snow.
+	Removed screen fx.
+	Remade teleport effect.
+	Nicer spark effect.
+	Light rays aka "Godrays".
+	Full UI rework: HUD, GUI, loading screen and UI sounds.
+	Rewrote SE file functions.
+	Added frag notify sounds (Normal kill, nice-shot kill, team-kill).
+	Added glow particles.
+------
+v1.2.6 - Update:
+	Bases will show their names (capture).
+	Enhanced gore.
+	Fixed loading other entities than particles and sounds from .se file.
+	Menus on top (console text no more will cover it).
+	New rocket launcher and pistol soudns.
+	Tweaked sparks and made them more glowy.
+	Bullets are making bubbles when underwater.
+	Different sounds when underwater.
+	Added underwater ambient sound.
+	Don't play map ambient sounds when underwater.
+------
+v1.1.6 - Update:
+	More smoke effects tweaks.
+	More explosion sounds.
+	Different frag messages for each weapon.
+	Rockets and grenades are making bubbles under water.
+	Better glows of some particles when without glare.
+	Meat cutting sound when using chainsaw.
+	Subtle sound when getting chat message.
+	Added rocket flying sound.
+	Added gib sounds.
+	Quick, real-like explosions.
+	Tweaked debris.
+	Added /seautosay var to enable/disable auto-says.
+------
+v1.0.4 - Update:
+	New file format .se. Storing additional map entities without affecting original map files.
+	Added new ambient sounds - stored in .se files
+	Added new particles: snow and rain - stored in .se files
+	New menu animation.
+	New crosshair.
+	Smoothed smoke texture.
+	Improved bullet flares.
+	Play weapon change sound only when local.
+	New explosion sounds: for grenades and rockets.
+	Added bumpmaps for some md3s and envmaps.
+	Fixed bug with home directory.
+	Added 2 new sounds for each gun (except rocket launcher).
+	Added big light flare effects for flag gamemodes (CTF, Protect).
+	Smoke is getting bigger with time.
+	New pistol sounds.
+	Some sparks for muzzleflashes.
+	New CTF sounds.
+	Converted sounds to .ogg.
+	New font.
+	New loading bar.
+------
+v0.8.4 - Update:
+	Fixed a little rocket flames.
+------
+v0.8.3 - Update:
+	Smoke goes up.
+	Fixed spark and smoke particles floating in the same way.
+	Another methode to fix the /maxfps 60 bug.
+	New particle improvement for rockets: flickering light beam.
+	Fixed rifle trail yet again.
+	Shorten explosion animation.
+	Improved rocket flame particles.
+	More explosion improvements.
+	Shorten muzzle flash fade time.
+	Removed spark splash from shotgun muzzle.
+	Tweaked shotgun muzzle flash texture.
+	Optimized a little code.
+	Darken explosion smoke.
+	Added variables and menus so users can disable some features of SauerEnhanced.
+	Smoke after explosions is now soft-edged (requires /depthfx turned on).
+	Added screen effects (teleport, pickups and player respawn).
+	Added particle effects when using QuadDamage.
+	New, high-transparency GUI skin.
+	Added new bullet impact sounds when using QuadDamage.
+	New background and logo.
+------
+v0.6.3 - Update:
+	Fixed smoke flying in random directions.
+	Fixed the /maxfps 60 bug.
+	Added new smoke, blood and spark particle textures.
+	Fixed rifle bullet trail.
+------
+v0.5.9 - Update:
+	Improved blood effects.
+	Added teammate name showing.
+	Decreased size of bullet flare.
+	Added script that will show song name and file name which plays.
+------
+v0.5.5 - Update:
+	Fixed DOS console dosesn't showing text.
+------
+v0.5.4 - Update:
+	Separated reload sounds so you don't hear how's somone reloading.
+	Added new jumppad sound.
+------
+v0.5.2 - Update:
+	Improved rifle bullet trail particle effects.
+	Fixed player1 entity dosesn't playing all pain sounds.
+	Improved a little blood effects.
+------
+v0.4.9 - Update:
+	Tweaked rifle muzzle flash.
+	Shorten sparks fade time.
+	Added smoke for bullet impact.
+	Added sound for bullet impact.
+	Tweaked rocket particle effects.
+	Included source so MAC and Linux users can use the mod.
+	Added particle effects for itmes when respawning: ammo, shields and other power-ups.
+------
+v0.4.2 - Update:
+	Improved explosion particle effects.
+	Improved rocket particle effects.
+------
+v0.4.0 - Update:
+	Fixed a little smoke effects.
+	Separated Sauerbraten and mod files. Mod is now Standalone.
+------
+v0.3.8 - Update:
+	Added new background textures.
+	New GUI texture - beta.
+	New load bar - beta.
+	Deleted font texture from earlier version.
+	Much improved particle effects: (Requires /muzzle var turned on...)
+	 *Added new muzzleflash for rifle
+	 *Added spark splash from shotgun.
+	 *Added smoke effects for all guns except grenade and rocked launcher.
+------
+v0.3.1 - Update:
+	Added new font.
+	Added two new muzzle flashes for rest of guns.
+------
+v0.2.9 - Update:
+	Decreased volume of pistol.
+	Modifed chaingun sound.
+	Modifed shotgun sound.
+------
+v0.2.6 - Update:
+	Modifed teleport sound.
+------
+v0.2.5 - Update:
+	Fixed teleport sound delay.
+	Added another, new explosion sound.
+------
+v0.2.3 - Update:
+	Added new item respawn sound.
+	Added new teleport sound.
+	Added new announcer.
+------
+v0.2.0 - Update:
+	Updated for SVN.
+------
+v0.1.9 - Update:
+	Added new QuadDamage sound.
+------
+v0.1.8 - Update:
+	Added new jumppad sound.
+------
+v0.1.7 - Update:
+	Updated 'sounds.cfg' file to work with SVN update.
+------
+v0.1.6 - Update:
+	Modifed muzzle flash texture.
+------
+v0.1.5 - Update:
+	Fixed explosion sound delay.
+------
+v0.1.4 - Update:
+	Deleted chainsaw sounds. Another sound is now added to SVN.
+------
+v0.1.3 - Update:
+	Added new explosion sound.
+------
+v0.1.2 - Update:
+	Optimized sounds. Soundcard will no longer be overloaded by gun sounds.
+------
+v0.1.1 - Update:
+	Fixed chaingun sound overload bug.
+------
+v0.1.0 - First release

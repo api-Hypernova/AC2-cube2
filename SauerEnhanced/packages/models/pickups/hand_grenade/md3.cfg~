@@ -1,0 +1,5 @@
+md3load tris.md3
+md3skin mesh skin.jpg masks.jpg
+mdlambient 50
+mdlspec 100//150
+//mdlscale 60

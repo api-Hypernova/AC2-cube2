@@ -1,0 +1,19 @@
+=GFX=
+-Fix snow
+-Finish multi-crosshair system
+-Add "Instant Fade" for particles
+-In-game screenshots as main menu background
+-Water splash when bullet hits water surface
+
+=SFX=
+-Redo CTF flag sounds
+
+=Other=
+-SE files
+-CTF/Capture auto-respawn
+-More options to sort servers (name/ping, etc)
+-Rewrite menus
+-Autoscreenshot on end of match
+-Profile change option in menu
+-Favourite servers list
+-Spectate people while dead

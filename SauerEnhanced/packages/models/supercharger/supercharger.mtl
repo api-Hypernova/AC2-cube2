@@ -1,0 +1,20 @@
+# mtl file of Cube 2 level
+
+newmtl slot1
+map_Kd packages/textures/default.png
+
+newmtl slot952
+map_Kd packages/philipk/pk01_panel01a_d.jpg
+
+newmtl slot1002
+map_Kd packages/philipk/pk01_trim04b_d.jpg
+
+newmtl slot1004
+map_Kd packages/philipk/pk01_trim04b_d.jpg
+
+newmtl slot1005
+map_Kd packages/philipk/pk01_trim04b_d.jpg
+
+newmtl slot1006
+map_Kd packages/philipk/pk01_trim04b_d.jpg
+

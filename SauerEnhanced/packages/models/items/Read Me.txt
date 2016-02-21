@@ -1,0 +1,17 @@
+===============================
+KIPSTA GRAFIX 2007 - AMMO
+===============================
+
+- bullets
+- cartridges
+- grenades
+- rockets
+- rrounds
+- shells
+
+EDITED & MODIFIED by Kipsta 2007
+(Originals by Markus "makkE" Bekel)
+
+===============================
+e-mail: pkipper@gmail.com
+===============================

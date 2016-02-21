@@ -1,0 +1,23 @@
+sudo apt-get install libenet-dev libcurl4-openssl-dev 
+
+cd SauerEnhanced/src/enet
+autoreconf -vfi
+
+cd ..
+
+make clean
+make
+
+make install
+
+cd ~/sauerbraten
+
+chmod +x SauerEnhanced_linux.sh
+
+
+STuff ported so far:
+
+speed arg for spawnbouncer
+D effects (on player on weapon hit) (get the texture
+Spij effect (get the models)
+

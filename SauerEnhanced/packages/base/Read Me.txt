@@ -1,0 +1,34 @@
+__ ENGLISH __
+
+== INFORMATIONS ==
+
+Release date : 25/05/08
+
+"Base", by SwëetMiserÿ
+
+"Base" is my seventh map, heavily inspired by a custom map for Doom 3 called "aerowalk"
+This is a small map for intensive DM (6-8 players)
+
+== INSTALLATION ==
+
+Just put the "packages" folder in your "sauerbraten" folder.
+
+__ FRENCH __
+
+== INFORMATIONS ==
+
+Date de sortie : 25/05/08
+
+"Base", par SwëetMiserÿ
+
+"Base" est ma septième map, largement inspirée par une map custom pour Doom 3, nommée "aerowalk"
+C'est une petite map faites exprès pour le DM (6-8 joueurs maxi)
+
+== INSTALLATION ==
+
+Il faut juste mettre le dossier "packages" dans le dossier "sauerbraten".
+
+
+
+
+
