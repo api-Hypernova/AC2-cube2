@@ -1732,7 +1732,7 @@ void modifyvelocity(physent *pl, bool local, bool water, bool floating, int curt
         if(pl->physstate>=PHYS_SLOPE&&game::player1->crouching)d.mul(.5f);
         if(((fpsent *)pl)->health<=0 && lastmillis-((fpsent *)pl)->lastpain<2000)d.mul(0);
         if(pl==game::player1){
-            if(abs(game::player1->lastyaw-game::player1->yaw)>3 && abs(game::player1->lastyaw-game::player1->yaw)<12 && pl->move && pl->strafe)d.mul(abs(game::player1->lastyaw-game::player1->yaw)/2.1); //13
+            if(abs(game::player1->lastyaw-game::player1->yaw)>1 && abs(game::player1->lastyaw-game::player1->yaw)<12 && pl->move && pl->strafe)d.mul(abs(game::player1->lastyaw-game::player1->yaw)/2.3); //13
             game::player1->lastyaw=game::player1->yaw;
         }
 //        if(pl==game::player1 && abs(game::player1->lastyaw-game::player1->yaw)>0 && !pl->move && abs(game::player1->lastyaw-game::player1->yaw)<3 && pl->strafe && game::player1->vel.magnitude2()>=50) //slow down that air accel :)

@@ -302,10 +302,10 @@ namespace game
         if((b->bouncetype != BNC_GIBS && b->bouncetype!=BNC_GRENADE && b->bouncetype!=BNC_MISSILE && b->bouncetype!=BNC_SMGNADE && b->bouncetype!=BNC_XBOLT && b->bouncetype!=BNC_PROP && b->bouncetype!=BNC_BARREL) || b->bounces >= 4) return;
         if(b->bouncetype==BNC_XBOLT)b->stoppedpos=b->o;
         b->bounces++;
-        if(b->bouncetype==BNC_GIBS){ adddecal(DECAL_BLOOD, vec(b->o).sub(vec(surface).mul(b->radius)), surface, 6.96f/b->bounces*2, bvec(0xFF, 0xFF, 0x99), rnd(4));
+        if(b->bouncetype==BNC_GIBS){ adddecal(DECAL_BLOOD, vec(b->o).sub(vec(surface).mul(b->radius)), surface, 6.96f/b->bounces*2, bvec(0x99, 0xFF, 0xFF), rnd(4));
                                      playsound(S_BNC_GIB1+rnd(3), &b->o);}
         if(b->bouncetype==BNC_BARREL || b->bouncetype==BNC_SMGNADE)adddecal(DECAL_SCORCH, vec(b->o).sub(vec(surface).mul(b->radius)), surface, guns[b->bouncetype==BNC_BARREL?GUN_BARREL:GUN_SMG2].splash/2);
-        if(b->bouncetype==BNC_GRENADE || b->bouncetype==BNC_PROP || b->bouncetype==BNC_BARREL)playsound(S_NADEBOUNCE+rnd(3), &b->o);
+        if(b->bouncetype==BNC_GRENADE || b->bouncetype==BNC_BARREL)playsound(S_NADEBOUNCE+rnd(3), &b->o);
     }
 
     float projdist(dynent *o, vec &dir, const vec &v)
@@ -385,7 +385,7 @@ HVARP(nadetrailcol, 0x000000, 0x0789FC, 0xFFFFFF);
             {
                 vec pos(bnc.o);
                 pos.add(vec(bnc.offset).mul(bnc.offsetmillis/float(OFFSETMILLIS)));
-               regular_particle_splash(PART_BLOOD, bnc.vel.magnitude()/50, 300, pos, 0xFFFF99, 2.0f, 50*2); // 1000, 100);
+               regular_particle_splash(PART_BLOOD, bnc.vel.magnitude()/50, 300, pos, 0x99FFFF, 2.0f, 50*2); // 1000, 100);
 //                regular_particle_splash(PART_BLOOD, 5, 300, pos, 0x99FFFF, .6f, 1, 0, 0); // 1000, 100);
 
             }
@@ -419,7 +419,7 @@ HVARP(nadetrailcol, 0x000000, 0x0789FC, 0xFFFFFF);
                     if(player1->lastattackgun!=GUN_TELEKENESIS || lastmillis-player1->lastaction>300){
                     bnc.vel.x=player1->vel.x*2.f;
                     bnc.vel.y=player1->vel.y*2.f;
-                    bnc.vel.z=30; //make slightly randomized so two objects don't float into the air stuck together
+                    //bnc.vel.z=30; //make slightly randomized so two objects don't float into the air stuck together
                     }
                 }
                 loopv(bouncers)
@@ -428,7 +428,7 @@ HVARP(nadetrailcol, 0x000000, 0x0789FC, 0xFFFFFF);
                     if(b.bouncetype!=BNC_PROP || bnc.bouncetype!=BNC_PROP)continue;
                     if(bnc.o.dist(b.o)<18&&bnc.id!=b.id){
                     bnc.vel.x*=-.5f; bnc.vel.y*=-.5f;
-                    bnc.vel.z=5.f+rnd(20);
+                    //bnc.vel.z=5.f+rnd(20);
                     //b.vel.x=bnc.vel.x*1.5f;
                     //b.vel.y=bnc.vel.y*1.5f;
                     }
@@ -439,7 +439,7 @@ HVARP(nadetrailcol, 0x000000, 0x0789FC, 0xFFFFFF);
                     vec dir;
                     float dist = projdist(o, dir, pos);
                     if(bnc.owner==o || o->state!=CS_ALIVE || o->type==ENT_INANIMATE)continue; //don't let this apply to yourself if it's your orb; check explode to make no damage to yourself on direct impact
-                    if(dist<(bnc.bouncetype==BNC_PROP?16:10) && bnc.vel.magnitude()>250.f) {
+                    if(dist<(bnc.bouncetype==BNC_PROP?16:14) && bnc.vel.magnitude()>250.f) {
                         explode(bnc.local, bnc.owner, bnc.o, NULL, guns[bnc.bouncetype==BNC_ORB?GUN_CG2:GUN_BITE].damage, bnc.bouncetype==BNC_ORB?GUN_CG2:GUN_BITE); //ignore quad in this case for orbs ^_^
                         if(bnc.local)
                         addmsg(N_EXPLODE, "rci3iv", bnc.owner, lastmillis-maptime, bnc.bouncetype==BNC_ORB?GUN_CG2:GUN_BITE, bnc.id-maptime,
@@ -757,6 +757,7 @@ HVARP(nadetrailcol, 0x000000, 0x0789FC, 0xFFFFFF);
     VARP(spawnbouncerttl, 0, 15000, 60000);
     void spawnbouncer(const vec &p, const vec &vel, fpsent *d, int type, int speed, entitylight *light = NULL)
     {
+        if(type==BNC_DEBRIS)return;
         vec to(rnd(100)-50, rnd(100)-50, rnd(100)-50);
         if(to.iszero()) to.z += 1;
         to.normalize();
@@ -766,12 +767,12 @@ HVARP(nadetrailcol, 0x000000, 0x0789FC, 0xFFFFFF);
             to=worldpos;
             to.x+=rnd(15)-30;
             to.y+=rnd(15)-30;
-            to.y+=rnd(15)-30;
+            to.z+=rnd(15)-30;
         }
         int timer = type!=BNC_DEBRIS?rnd(1000)+spawnbouncerttl:3000;
         if(type==BNC_GRENADE || type==BNC_ORB || type==BNC_PROP || type==BNC_BARREL)timer=type==BNC_GRENADE?1500:(type==BNC_ORB?5000:20000);
         if(type==BNC_WEAPON)timer=20000;
-        newbouncer(p, to, true, 0, d, type, timer, rnd(100)+speed, light); //default speed was rnd(100)+20
+        newbouncer(p, to, true, 0, d, type, timer, rnd(100)+speed, NULL); //default speed was rnd(100)+20
     }
 
     VARP(gibnum, 1, 10, 1000);
@@ -786,9 +787,9 @@ HVARP(nadetrailcol, 0x000000, 0x0789FC, 0xFFFFFF);
         else if(damage<500 && blood && guns[d->diedgun].splash>30)
         {
             loopi(min(gibnum, 50)+1) spawnbouncer(from, vel, d, BNC_GIBS, damage/2);
-            particle_splash(PART_BLOOD, damage*3, 10000, d->o, 0xFFFF99, 2.f, 4000); //damage/5
-            particle_splash(PART_SMOKE, 5, 200, d->o, 0x0000FF, 12.0f, 50, 250, NULL, 1, false, 4);
-            particle_splash(PART_SMOKE, 5, 1250, d->o, 0x0000FF, 12.0f, 50, 250, NULL, 1, false, 3);
+            particle_splash(PART_BLOOD, damage*3, 10000, d->o, 0x99FFFF, 2.f, 4000); //damage/5
+            particle_splash(PART_SMOKE, 5, 200, d->feetpos(), 0xFF0000, 12.0f, 50, 250, NULL, 1, false, 4);
+            particle_splash(PART_SMOKE, 5, 1250, d->feetpos(), 0xFF0000, 12.0f, 50, 250, NULL, 1, false, 3);
             playsound (S_GIB, &d->o);
         }
         //if(d->gunselect!=GUN_TELEKENESIS)
@@ -918,8 +919,8 @@ HVARP(nadetrailcol, 0x000000, 0x0789FC, 0xFFFFFF);
             if(gun==GUN_CROSSBOW && at!=o)damage=100;
             if(gun==GUN_CROSSBOW && at==o)damage=0;
             if(at==player1 || at->ai)hit(damage, o, at, dir, gun, dist);
-            if(blood && qdam<800 && o->type==ENT_PLAYER && damage) { particle_splash(PART_BLOOD, 1, 200, o->o, 0xFFFF99, 8.f, 50, 0, NULL, 2, false, 3);
-                adddecal(DECAL_BLOOD, o->o, vec(v).sub(o->o).normalize(), rnd(15)+10.f, bvec(0xFF, 0xFF, 0x99));
+            if(blood && qdam<800 && o->type==ENT_PLAYER && damage) { particle_splash(PART_BLOOD, 1, 200, o->o, 0x99FFFF, 8.f, 50, 0, NULL, 2, false, 3);
+                adddecal(DECAL_BLOOD, o->o, vec(v).sub(o->o).normalize(), rnd(15)+10.f, bvec(0x99, 0xFF, 0xFF));
                 particle_splash(PART_SPARK, 100, 300, o->o, 0x0000FF, 0.1f, 250);
                 //particle_splash(PART_SMOKE, 5, 200, o->o, 0x0000FF, 2.0f, 50, 250, NULL, 1, false, 2);
             }
@@ -1411,10 +1412,10 @@ HVARP(nadetrailcol, 0x000000, 0x0789FC, 0xFFFFFF);
                         done[r] = true;
                         vec blooddest = rays[r];
                         blooddest.z += rnd(2)+2;
-                        if(blood && (cl->type==ENT_PLAYER || cl->type==ENT_AI) && r%2==0)adddecal(DECAL_BLOOD, blooddest, vec(from).sub(blooddest).normalize(), rnd(8)+13.f, bvec(0xFF, 0xFF, 0x99)); //don't do blood for all bbs that hit
+                        if(blood && (cl->type==ENT_PLAYER || cl->type==ENT_AI) && r%2==0)adddecal(DECAL_BLOOD, blooddest, vec(from).sub(blooddest).normalize(), rnd(8)+13.f, bvec(0x99, 0xFF, 0xFF)); //don't do blood for all bbs that hit
                         shorten(from, rays[r], dist);
                         if(blood && qdam<500 && qdam>0 && (cl->type==ENT_PLAYER || cl->type==ENT_AI)){
-                                                        particle_splash(PART_BLOOD, 1, 200, rays[r], 0xFFFF99, 8.f, 50, 0, NULL, 2, false, 3); particle_splash(PART_SPARK, 100, 300, rays[r], 0x0000FF, 0.1f, 230);
+                                                        particle_splash(PART_BLOOD, 1, 200, rays[r], 0x99FFFF, 8.f, 50, 0, NULL, 2, false, 3); particle_splash(PART_SPARK, 100, 300, rays[r], 0xFF0000, 0.1f, 230);
                                                         //particle_splash(PART_SMOKE, 5, 200, rays[r], 0x0000FF, 2.0f, 50, 250, NULL, 1, false, 2);
 
                         }
@@ -1449,10 +1450,10 @@ HVARP(nadetrailcol, 0x000000, 0x0789FC, 0xFFFFFF);
         {
             vec blooddest=to;
             blooddest.z+=rnd(2)+2;
-            if(blood && d->gunselect!=GUN_TELEKENESIS2  && (o->type==ENT_PLAYER || o->type==ENT_AI))adddecal(DECAL_BLOOD, blooddest, vec(from).sub(blooddest).normalize(), rnd(8)+13.f, bvec(0xFF, 0xFF, 0x99));
+            if(blood && d->gunselect!=GUN_TELEKENESIS2  && (o->type==ENT_PLAYER || o->type==ENT_AI))adddecal(DECAL_BLOOD, blooddest, vec(from).sub(blooddest).normalize(), rnd(8)+13.f, bvec(0x99, 0xFF, 0xFF));
             shorten(from, to, dist);
             if(blood && qdam<500 && d->gunselect!=GUN_TELEKENESIS2 && (o->type==ENT_PLAYER || o->type==ENT_AI)){
-                particle_splash(PART_BLOOD, 1, 200, to, 0xFFFF99, 8.f, 50, 0, NULL, 2, false, 3); particle_splash(PART_SPARK, 100, 300, to, 0xFF0000, 0.1f, 230);
+                particle_splash(PART_BLOOD, 1, 200, to, 0x99FFFF, 8.f, 50, 0, NULL, 2, false, 3); particle_splash(PART_SPARK, 100, 300, to, 0xFF0000, 0.1f, 230);
                 //particle_splash(PART_SMOKE, 5, 200, to, 0x0000FF, 2.0f, 50, 250, NULL, 1, false, 2);
             }
             hitpush(qdam, o, d, from, to, d->gunselect, 1);
@@ -2379,7 +2380,7 @@ HVARP(nadetrailcol, 0x000000, 0x0789FC, 0xFFFFFF);
             if(bnc.bouncetype==BNC_PROP)pos.z-=1;
             //if(bnc.vel.magnitude()<(bnc.bouncetype==BNC_BARRELDEBRIS)?50.0f:200.0f)pitch=bnc.bouncetype==BNC_BARRELDEBRIS?90:0;
             if(bnc.vel.magnitude()<50&&bnc.bouncetype==BNC_BARRELDEBRIS)pitch=90;
-            if(bnc.vel.magnitude()<200.0f && bnc.bouncetype!=BNC_BARRELDEBRIS)pitch=0;
+            if(bnc.vel.magnitude()<400.0f && bnc.bouncetype!=BNC_BARRELDEBRIS && bnc.bouncetype==BNC_PROP)pitch=0;
             if(bnc.bouncetype==BNC_XBOLT)
                 rendermodel(&bnc.light, "projectiles/xbolt", ANIM_MAPMODEL|ANIM_LOOP, pos, yaw, pitch, MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_LIGHT|MDL_LIGHT_FAST|MDL_DYNSHADOW);
             if(bnc.bouncetype==BNC_SHELL) {//not when too close otherwise it'll be in the gun

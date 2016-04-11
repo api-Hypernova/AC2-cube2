@@ -267,28 +267,23 @@ namespace game
         updatemonsters(curtime);
         if(!player1->move && player1->strafe && player1->vel.magnitude2()>=50 && abs(player1->lastyaw-player1->yaw)<3 && abs(player1->lastyaw-player1->yaw)>0)
         {
-            player1->vel.x += -sinf(RAD*player1->yaw)*(player1->vel.magnitude2()/40)*(abs(player1->lastyaw-player1->yaw)>1?(abs(player1->lastyaw-player1->yaw)*1.6):1);
-            player1->vel.y += cosf(RAD*player1->yaw)*(player1->vel.magnitude2()/40)*(abs(player1->lastyaw-player1->yaw)>1?(abs(player1->lastyaw-player1->yaw)*1.6):1);
-            player1->vel.x += player1->strafe*cosf(RAD*player1->yaw)*(player1->vel.magnitude2()/40)*(abs(player1->lastyaw-player1->yaw)>1?(abs(player1->lastyaw-player1->yaw)*1.6):1);
-            player1->vel.y += player1->strafe*sinf(RAD*player1->yaw)*(player1->vel.magnitude2()/40)*(abs(player1->lastyaw-player1->yaw)>1?(abs(player1->lastyaw-player1->yaw)*1.6):1);
-            //player1->vel.x/=10;
-            //player1->vel.y/=10;
+            player1->vel.x += -sinf(RAD*player1->yaw)*(player1->vel.magnitude2()/15);
+            player1->vel.y += cosf(RAD*player1->yaw)*(player1->vel.magnitude2()/15);
+            player1->vel.x += player1->strafe*cosf(RAD*player1->yaw)*(player1->vel.magnitude2()/15);
+            player1->vel.y += player1->strafe*sinf(RAD*player1->yaw)*(player1->vel.magnitude2()/15);
+            player1->vel.x/=1.06;
+            player1->vel.y/=1.06; //woohoo!
         }
-        //if((player1->holdingnade || player1->isholdingorb(player1->caughttime+(player1->isholdingnade?3000:5000)-curtime))<0)
-        if(lastmillis-player1->uncrouchtime<10 && player1->timeinair<300) {player1->vel.z=30; entinmap(player1); }
+        if(lastmillis-player1->uncrouchtime<10 && player1->timeinair<500) {player1->vel.z+=30; entinmap(player1); }
         if(player1->state==CS_DEAD)
         {
+            int playedspawnsnd=0;
             if(lastmillis-player1->lastpain>2000)
             {
                 respawnself();
                 player1->burstprogress=0;
                 player1->lastswitch=lastmillis;
-                msgsound(S_ROCKETPICKUP, player1);
-                //execute("clearconsole");
-//                conoutf(CON_TEAMCHAT, "$");
-//                conoutf(CON_TEAMCHAT, "&");
-//                conoutf(CON_TEAMCHAT, "%");
-//                conoutf(CON_TEAMCHAT, "@@");
+                if(!playedspawnsnd){msgsound(S_ROCKETPICKUP, player1); playedspawnsnd=1;}
                 entinmap(player1, true);
             }
             if(player1->ragdoll) moveragdoll(player1);
@@ -1089,7 +1084,7 @@ namespace game
         }
         else if(hudplayer()->gunselect==GUN_SMG || hudplayer()->gunselect==GUN_SMG2){
             draw_textf("%d", w*1.2f-wb-260, h*1.2f-128, magleft[GUN_SMG]);
-            draw_textf("|%d", w*1.2f-wb-130, h*1.2f-128, hudplayer()->ammo[GUN_SMG2]);
+            draw_textf("|%d", w*1.2f-wb-145, h*1.2f-128, hudplayer()->ammo[GUN_SMG2]);
         }
         //else draw_textf("%d", w*1.2f-wb-180, h*1.2f-128, hudplayer()->ammo[hudplayer()->gunselect]);
         else draw_textf("%d", w*1.2f-wb-180, h*1.2f-128, guns[hudplayer()->gunselect].magsize?magleft[hudplayer()->gunselect]:hudplayer()->ammo[hudplayer()->gunselect]);
@@ -1202,7 +1197,7 @@ namespace game
         case GUN_CG2:
             maxammo=3; break;
         case GUN_SMG2:
-                maxammo = 5;
+                maxammo = 10;
                         break;
             case GUN_MAGNUM:
                 maxammo = 24;

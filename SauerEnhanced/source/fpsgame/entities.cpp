@@ -193,7 +193,7 @@ namespace entities
                 conoutf(CON_TEAMCHAT, "+5 Crossbow Bolts");
                 break;
             case I_RPGAMMO:
-                conoutf(CON_TEAMCHAT, "+1 RPG Missile");
+                conoutf(CON_TEAMCHAT, "+4 RPG Missiles");
                 break;
             case I_SMALLHEALTH:
                 conoutf(CON_TEAMCHAT, "+15 Health");
@@ -229,7 +229,7 @@ namespace entities
                 conoutf(CON_TEAMCHAT, "+25 Health");
                 break;
             case I_SMGNADE:
-                conoutf(CON_TEAMCHAT, "+1 Assault Rifle Grenade");
+                conoutf(CON_TEAMCHAT, "+2 SMG Grenades");
                 break;
             }
         }

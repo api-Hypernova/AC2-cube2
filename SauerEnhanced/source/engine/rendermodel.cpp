@@ -1039,9 +1039,10 @@ void renderclient(dynent *d, const char *mdlname, modelattach *attachments, int 
     else if(d->state==CS_LAGGED || (((fpsent *)d)->crouching && !((fpsent *)d)->ai)) anim = ANIM_LAG|ANIM_LOOP;
     else
     {
-        if(lastmillis-lastpain < 300 && ((fpsent *)d)->health>0 && lastmillis-((fpsent *)d)->lastpain>2000)
+        if(lastmillis-lastpain < 500 /*&& ((fpsent *)d)->health>0*/ && lastmillis-((fpsent *)d)->lastpain>2000)
         {
-            anim = ANIM_PAIN;
+            //anim = ANIM_PAIN;
+            anim = ANIM_HOLD5;
             basetime = lastpain;
         }
         else if(lastpain < lastaction && (attack < 0 || (d->type != ENT_AI && lastmillis-lastaction < attackdelay)))

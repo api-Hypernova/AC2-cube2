@@ -490,23 +490,23 @@ static const struct guninfo { short sound, reloadsound, magsize, attackdelay, da
 {
     { S_LASER,   -1, 0,  500,  45, 0,   0,   0, 75,  1, 1024,  200, 0, 0,    0, 0, 0, "blaster", "laser"  },
     { S_SHOTGUN2,  -1, 6, 900,  9, 180, 0,   0, 20, 12,1024, 200, 0, 0,    0, 0, 2, "*",         "shotgdefault" }, //shotgdefault
-    { S_PULSERIFLE, -1, 30, 100,  20, 0,  0,   0, 7,  1, 1024, 150, 0, 0,    0, 0, 1,  "}",        "chaing"}, //chaing
-    { S_RPG,    -1, 0, 1500, 150, 0,   320,  0, 10, 1, 1024, 200, 40,0,    0, 1, 1,  "Z",  "rocket"}, //rocket
+    { S_PULSERIFLE, -1, 30, 100,  15, 0,  0,   0, 7,  1, 1024, 150, 0, 0,    0, 0, 1,  "}",        "pulse_rifle"}, //chaing
+    { S_RPG,    -1, 0, 1500, 150, 0,   400,  0, 10, 1, 1024, 200, 40,0,    0, 1, 1,  "Z",  "rocket"}, //rocket
     { S_MAGNUM,   -1, 6, 500,  75, 0,   0,   0, 30, 1, 2048, 200, 0, 0,    0, 0, 1, "#",           "revolver" },
     { S_HANDNADE,  -1, 0, 1000, 150, 0,  300,  0,  5, 1, 1024, 200, 45, 1500, 0, 0, 1,  "@", "gl" },
     //{ S_LASER,     -1, 0, 200,  60, 0,  250,  0,  5, 1, 1024, 200, 30,5000, 3, 0, 1, "<", "plasmagun"},
     { S_SNIPER,  -1, 0, 1300,  100, 0,   0,   0, 30, 1, 1024, 300, 25, 0,  0,  0,  1,  "<", "pyccna_svd"}, //rocketold
     { S_CRYLINK,   -1, 0, 100,  30, 0,  1200,  0, 10, 1, 1024, 200, 20,  0,  0, 0, 1, "<", "pyccna_svd"},
     //{ S_LIGHTNING,  -1, 0, 50, 10,  0,  0,  0,  5,  1,  300,  0,  0,  0,  0,  0,  1, "<",  "plasmagun"}, //pyccna_railgun
-    { S_ORB,      -1, 0, 1000, 8000, 0,  350,  0, 30, 1, 1024, 10, 40, 5000, 0, 0, 1, ";", "chaing"}, //chaing
-    { S_SHOTGUNBURST,  -1, 6, 500,  9, 80, 0,   0, 10, 6, 1024, 200, 0, 0,    3, 0, 1, "*", "shotgdefault"}, //shotgdefault
+    { S_ORB,      -1, 0, 1000, 8000, 0,  350,  0, 30, 1, 1024, 10, 40, 5000, 0, 0, 1, ";", "pulse_rifle"}, //chaing
+    { S_SHOTGUNBURST,  -1, 6, 500,  9, 90, 0,   0, 10, 6, 1024, 200, 0, 0,    3, 0, 1, "*", "shotgdefault"}, //shotgdefault
     //{ S_SHOTGUN,   1000,  9, 220, 0,   0, 20, 12,1024, 200, 0, 0,    0, 0, 2, "Shotgun",         "shotgdefault" },
-    { S_UZI,       -1, 30, 100,   12,  20,  0,   0, 3,  1, 1024, 150, 0, 0,    0, 0, 1, "&",  "pyccna_m4a1"},
+    { S_UZI,       -1, 30, 100,   12,  0,  0,   0, 3,  1, 1024, 150, 0, 0,    0, 0, 1, "&",  "pyccna_m4a1"},
     { S_SMGNADE,   -1, 0, 600,  100, 0,  300,  0, 10, 1, 1024, 200, 40,5000, 0, 0, 1, "@",  "m4a1_grenade"}, //"pistol"
     { S_CROSSBOWFIRE, -1, 0, 1000,300,0, 1000,  0, 30, 1, 1024, 50, 20,10000, 0, 1, 1, "{",       "crossbow"},
     { S_PUNT,     -1, 0, 200,   0, 0,   0,   0, 0,  1,  50, 0,  0,  0,  0,  0,  0, "$",     "electrodriver"},
     { S_TRYGRAB,   -1, 0, 50,   0, 0,   0,   0, 0,  1, 75, 0,  0,  0,  0,  0,  0, "$",     "electrodriver2"},
-    { S_PISTOL,    -1, 18, 100, 20, 20,  0,   0, 8,  1, 1024, 150, 0, 0,    0, 0, 1, "%",          "pyccna_fn57" },
+    { S_PISTOL,    -1, 18, 100, 20, 0,  0,   0, 8,  1, 1024, 150, 0, 0,    0, 0, 1, "%",          "pyccna_fn57" },
     { S_FLAUNCH,   -1, 0, 200,  20, 0,   50,PART_FIREBALL1,1, 1, 1024, 0, 0, 0, 0, 0, 0, "fireball",  NULL },
     { S_ICEBALL,   -1, 0, 200,  40, 0,   30,PART_FIREBALL2,1, 1, 1024, 0, 0, 0, 0, 0, 0,  "iceball",   NULL },
     { S_SLIMEBALL, -1, 0, 200,  30, 0, 160, PART_FIREBALL3,1, 1, 1024, 0, 0, 0, 0, 0, 0, "slimeball", NULL },
@@ -618,7 +618,7 @@ struct fpsstate
         case I_GRENADE:return ammo[GUN_HANDGRENADE]<5; break;
         case I_PISTOLAMMO:return ammo[GUN_SMG]<150; break;
         case I_SMGAMMO: return ammo[GUN_SMG]<140; break;
-        case I_SMGNADE: return ammo[GUN_SMG2]<5;break;
+        case I_SMGNADE: return ammo[GUN_SMG2]<10;break;
         case I_SHELLS: return ammo[GUN_SG]<30 && hasgun[GUN_SG];break;
         case I_ELECTROAMMO: return ammo[GUN_ELECTRO]<15&& hasgun[GUN_ELECTRO];break;
         case I_ELECTROORBS: return ammo[GUN_ELECTRO2]<80&& hasgun[GUN_ELECTRO];break;
@@ -693,7 +693,7 @@ struct fpsstate
             hasgun[GUN_ELECTRO]=1;
             break;
         case I_RPG:
-            ammo[GUN_RL]=min(ammo[GUN_RL]+3, 15);
+            ammo[GUN_RL]=min(ammo[GUN_RL]+5, 15);
             //ammo[GUN_RL2]=min(ammo[GUN_RL2]+3, 3);
             hasgun[GUN_RL]=1;
             break;
@@ -725,7 +725,7 @@ struct fpsstate
         ammo[GUN_SMG]=min(ammo[GUN_SMG]+45, 140);
         break;
     case I_SMGNADE:
-        ammo[GUN_SMG2]=min(ammo[GUN_SMG2]+1, 5);
+        ammo[GUN_SMG2]=min(ammo[GUN_SMG2]+2, 10);
         break;
     case I_SHELLS:
         ammo[GUN_SG]=min(ammo[GUN_SG]+12, 30);
@@ -747,7 +747,7 @@ struct fpsstate
         ammo[GUN_CROSSBOW]=min(ammo[GUN_CROSSBOW]+5, 10);
         break;
     case I_RPGAMMO:
-        ammo[GUN_RL]=min(ammo[GUN_RL]+1, 15);
+        ammo[GUN_RL]=min(ammo[GUN_RL]+4, 15);
         break;
     case I_SNIPERAMMO:
         ammo[GUN_MAGNUM]=min(ammo[GUN_MAGNUM]+6, 24);

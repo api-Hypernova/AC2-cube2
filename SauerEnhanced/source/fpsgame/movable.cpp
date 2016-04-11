@@ -8,7 +8,7 @@ namespace game
     enum
     {
         BOXWEIGHT = 25,
-        BARRELHEALTH = 1000000,
+        BARRELHEALTH = 9999999,
         BARRELWEIGHT = 25,
         PLATFORMWEIGHT = 1000,
         PLATFORMSPEED = 8,
@@ -51,8 +51,8 @@ namespace game
         {
             if(etype!=BOX && etype!=BARREL) return;
             vec push(dir);
-            int pushmul = gun==GUN_TELEKENESIS2?-800/weight:80*damage/weight;
-            if(gun==GUN_TELEKENESIS)pushmul=800;
+            int pushmul = 80*damage/weight;
+            //if(gun==GUN_TELEKENESIS)pushmul=800;
             push.mul(pushmul);
             vel.add(push);
         }
