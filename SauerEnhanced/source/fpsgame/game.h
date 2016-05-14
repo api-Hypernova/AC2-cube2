@@ -835,9 +835,12 @@ struct fpsstate
         {
             armourtype = A_GREEN;
             armour = 100;
-            loopi(5) baseammo(i+1);
+            loopi(NUMGUNS) baseammo(i+1);
             gunselect = GUN_CG;
-            ammo[GUN_CG] /= 2;
+            //ammo[GUN_CG] /= 2;
+            ammo[GUN_RL]=5;
+            ammo[GUN_HANDGRENADE]=5;
+            ammo[GUN_SMG2]=5;
         }
         else if(m_ctf)
         {

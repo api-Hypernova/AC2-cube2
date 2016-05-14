@@ -461,7 +461,7 @@ void ragdolldata::move(dynent *pl, float ts)
             v.pos = v.oldpos;
             v.oldpos.sub(dir.reflect(wall));
             collisions++;
-            //if(pl->vel.magnitude()>10)adddecal(DECAL_BLOOD, vec(v.pos).sub(vec(v.pos).mul(5)), v.pos, 5.f, bvec(0x99, 0xFF, 0xFF), rnd(4));
+            //adddecal(DECAL_BLOOD, vec(v.pos).sub(vec(v.pos).mul(5)), v.pos, 15.f/collisions, bvec(0x99, 0xFF, 0xFF), rnd(4));
 //                        {
 //                            //playsound(S_PUNCH1, &v.pos);
 //                            if(pl->vel.magnitude()>30)adddecal(DECAL_BLOOD, vec(v.pos).sub(vec(v.pos).mul(5)), v.pos, 5.f, bvec(0x99, 0xFF, 0xFF), rnd(4));
