@@ -481,7 +481,7 @@ static struct itemstat { int add, max, sound; const char *name; int icon, info, 
 #define MAXRAYS 12
 #define SGSPREAD 2
 #define RL_DAMRAD 40
-#define RL_SELFDAMDIV 1
+#define RL_SELFDAMDIV 2
 #define RL_DISTSCALE 1.5f
 
 //enum { GUN_FIST = 0, GUN_SG, GUN_CG, GUN_RL, GUN_MAGNUM, GUN_HANDGRENADE, GUN_ELECTRO, GUN_ELECTRO2, GUN_CG2, GUN_SHOTGUN2, GUN_SMG, GUN_SMG2, GUN_TELEKENESIS, GUN_TELEKENESIS2, GUN_PISTOL, GUN_FIREBALL, GUN_ICEBALL, GUN_SLIMEBALL, GUN_BITE, GUN_BARREL, NUMGUNS };
@@ -492,7 +492,7 @@ static const struct guninfo { short sound, reloadsound, magsize, attackdelay, da
     { S_SHOTGUN2,  -1, 6, 900,  9, 180, 0,   0, 20, 12,1024, 200, 0, 0,    0, 0, 2, "*",         "shotgdefault" }, //shotgdefault
     { S_PULSERIFLE, -1, 30, 100,  15, 0,  0,   0, 7,  1, 1024, 150, 0, 0,    0, 0, 1,  "}",        "pulse_rifle"}, //chaing
     { S_RPG,    -1, 0, 1500, 150, 0,   400,  0, 10, 1, 1024, 200, 40,0,    0, 1, 1,  "Z",  "rocket"}, //rocket
-    { S_MAGNUM,   -1, 6, 500,  75, 0,   0,   0, 30, 1, 2048, 200, 0, 0,    0, 0, 1, "#",           "revolver" },
+    { S_MAGNUM,   -1, 6, 600, 75, 0,   0,   0, 30, 1, 2048, 200, 0, 0,    0, 0, 1, "#",           "revolver" },
     { S_HANDNADE,  -1, 0, 1000, 150, 0,  300,  0,  5, 1, 1024, 200, 45, 1500, 0, 0, 1,  "@", "gl" },
     //{ S_LASER,     -1, 0, 200,  60, 0,  250,  0,  5, 1, 1024, 200, 30,5000, 3, 0, 1, "<", "plasmagun"},
     { S_SNIPER,  -1, 0, 1300,  100, 0,   0,   0, 30, 1, 1024, 300, 25, 0,  0,  0,  1,  "<", "pyccna_svd"}, //rocketold
@@ -502,7 +502,7 @@ static const struct guninfo { short sound, reloadsound, magsize, attackdelay, da
     { S_SHOTGUNBURST,  -1, 6, 500,  9, 90, 0,   0, 10, 6, 1024, 200, 0, 0,    3, 0, 1, "*", "shotgdefault"}, //shotgdefault
     //{ S_SHOTGUN,   1000,  9, 220, 0,   0, 20, 12,1024, 200, 0, 0,    0, 0, 2, "Shotgun",         "shotgdefault" },
     { S_UZI,       -1, 30, 100,   12,  0,  0,   0, 3,  1, 1024, 150, 0, 0,    0, 0, 1, "&",  "pyccna_m4a1"},
-    { S_SMGNADE,   -1, 0, 600,  100, 0,  300,  0, 10, 1, 1024, 200, 40,5000, 0, 0, 1, "@",  "m4a1_grenade"}, //"pistol"
+    { S_SMGNADE,   -1, 0, 600,  120, 0,  300,  0, 10, 1, 1024, 200, 40,5000, 0, 0, 1, "@",  "m4a1_grenade"}, //"pistol"
     { S_CROSSBOWFIRE, -1, 0, 1000,300,0, 1000,  0, 30, 1, 1024, 50, 20,10000, 0, 1, 1, "{",       "crossbow"},
     { S_PUNT,     -1, 0, 200,   0, 0,   0,   0, 0,  1,  50, 0,  0,  0,  0,  0,  0, "$",     "electrodriver"},
     { S_TRYGRAB,   -1, 0, 50,   0, 0,   0,   0, 0,  1, 75, 0,  0,  0,  0,  0,  0, "$",     "electrodriver2"},

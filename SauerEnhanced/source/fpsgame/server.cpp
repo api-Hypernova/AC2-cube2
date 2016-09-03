@@ -1748,7 +1748,7 @@ namespace server
                     //if(h.headshots) { damage*=3;}
                     loopi(h.rays)
                     {
-                        if(i<h.headshots)damage+=(guns[gun].damage*2);//add 2x more damage for that shot for a total of 3x headshot damage
+                        if(i<h.headshots)damage+=(guns[gun].damage*(maxrays>1?2:3));//add 2x more damage for that shot for a total of 3x headshot damage
                     }
                     //if(h.dir.dist(target->o)> 10)
                     dodamage(target, ci, damage, gun, h.dir);

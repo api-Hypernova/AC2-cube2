@@ -1415,7 +1415,7 @@ HVARP(nadetrailcol, 0x000000, 0x0789FC, 0xFFFFFF);
                         if(blood && (cl->type==ENT_PLAYER || cl->type==ENT_AI) && r%2==0)adddecal(DECAL_BLOOD, blooddest, vec(from).sub(blooddest).normalize(), rnd(8)+13.f, bvec(0x99, 0xFF, 0xFF)); //don't do blood for all bbs that hit
                         shorten(from, rays[r], dist);
                         if(blood && qdam<500 && qdam>0 && (cl->type==ENT_PLAYER || cl->type==ENT_AI)){
-                                                        particle_splash(PART_BLOOD, 1, 200, rays[r], 0x99FFFF, 8.f, 50, 0, NULL, 2, false, 3); particle_splash(PART_SPARK, 100, 300, rays[r], 0xFF0000, 0.1f, 230);
+                                                        particle_splash(PART_BLOOD, 1, 200, rays[r], 0x99FFFF, 8.f, 50, 0, NULL, 2, false, 3); particle_splash(PART_WATER, 50, 300, rays[r], 0xFF0000, 0.1f, 230);
                                                         //particle_splash(PART_SMOKE, 5, 200, rays[r], 0x0000FF, 2.0f, 50, 250, NULL, 1, false, 2);
 
                         }
@@ -1453,7 +1453,7 @@ HVARP(nadetrailcol, 0x000000, 0x0789FC, 0xFFFFFF);
             if(blood && d->gunselect!=GUN_TELEKENESIS2  && (o->type==ENT_PLAYER || o->type==ENT_AI))adddecal(DECAL_BLOOD, blooddest, vec(from).sub(blooddest).normalize(), rnd(8)+13.f, bvec(0x99, 0xFF, 0xFF));
             shorten(from, to, dist);
             if(blood && qdam<500 && d->gunselect!=GUN_TELEKENESIS2 && (o->type==ENT_PLAYER || o->type==ENT_AI)){
-                particle_splash(PART_BLOOD, 1, 200, to, 0x99FFFF, 8.f, 50, 0, NULL, 2, false, 3); particle_splash(PART_SPARK, 100, 300, to, 0xFF0000, 0.1f, 230);
+                particle_splash(PART_BLOOD, 1, 200, to, 0x99FFFF, 8.f, 50, 0, NULL, 2, false, 3); particle_splash(PART_WATER, 50, 300, to, 0xFF0000, 0.1f, 230);
                 //particle_splash(PART_SMOKE, 5, 200, to, 0x0000FF, 2.0f, 50, 250, NULL, 1, false, 2);
             }
             hitpush(qdam, o, d, from, to, d->gunselect, 1);
@@ -1849,8 +1849,11 @@ HVARP(nadetrailcol, 0x000000, 0x0789FC, 0xFFFFFF);
                 }
                 else d->roll += droll; }
 
-                if(d->gunselect!=GUN_MAGNUM && d->gunselect!=GUN_ELECTRO && d==hudplayer()) {d->pitch+=-1+rnd(4);
-                d->yaw+=-1+rnd(3);
+                if(d->gunselect!=GUN_MAGNUM && d->gunselect!=GUN_ELECTRO && d==hudplayer()) 
+                {
+                    d->pitch+=0+1;
+                    d->yaw+=-1+rnd(3);
+//                d->screenjumpheight=5; screenjump();screenjump();
                 }
 
 
