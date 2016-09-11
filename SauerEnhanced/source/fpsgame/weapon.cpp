@@ -1456,9 +1456,7 @@ HVARP(nadetrailcol, 0x000000, 0x0789FC, 0xFFFFFF);
             }
             hitpush(qdam, o, d, from, to, d->gunselect, 1);
             if(isheadshot(o, to)&& (d==player1 || d->ai)) { qdam *= 3; d->headshots=1; }
-            if(d==player1 && qdam>0 && o->type!=ENT_INANIMATE)conoutf(CON_TEAMCHAT, "-%d", (int)(guns[d->gunselect].damage)*(d->headshots?3:1 )*(d->quadmillis?1.5f:1));
         }
-
     }
 
 
