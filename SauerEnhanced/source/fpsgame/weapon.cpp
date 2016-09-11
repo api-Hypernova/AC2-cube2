@@ -924,7 +924,6 @@ HVARP(nadetrailcol, 0x000000, 0x0789FC, 0xFFFFFF);
                 particle_splash(PART_SPARK, 100, 300, o->o, 0x0000FF, 0.1f, 250);
                 //particle_splash(PART_SMOKE, 5, 200, o->o, 0x0000FF, 2.0f, 50, 250, NULL, 1, false, 2);
             }
-            if(at==player1 && o->type!=ENT_INANIMATE)conoutf(CON_TEAMCHAT, "-%d", damage*(player1->quadmillis?(int)1.5f:1));
             if(at!=o && o->timeinair>250 && at==player1)playsound(S_AIRSHOT);
         }
     }
@@ -1434,7 +1433,6 @@ HVARP(nadetrailcol, 0x000000, 0x0789FC, 0xFFFFFF);
                     {
                         damage+=guns[d->gunselect].damage*2;
                     }
-                    conoutf(CON_TEAMCHAT, "-%d", damage);
                 }
                 if(!raysleft) break;
             }
