@@ -144,7 +144,7 @@ namespace server
             orbs.reset();
             smgnades.reset();
             xbolts.reset();
-            electro.reset();
+            //electro.reset();
             //electrobolts.reset();
             grenades.reset();
             props.reset();
@@ -173,7 +173,7 @@ namespace server
             orbs.reset();
             smgnades.reset();
             xbolts.reset();
-            electro.reset();
+            //electro.reset();
             //electrobolts.reset();
             grenades.reset();
             props.reset();
@@ -1659,9 +1659,9 @@ namespace server
 //        case GUN_ELECTRO:
 //            if(!gs.electro.remove(id)) return;
 //            break;
-        case GUN_ELECTRO2:
-            if(!gs.electro.remove(id)) return;
-            break;
+//        case GUN_ELECTRO2:
+//            if(!gs.electro.remove(id)) return;
+//            break;
         case GUN_CROSSBOW:
             if(!gs.xbolts.remove(id)) return;
             break;
@@ -1726,7 +1726,7 @@ namespace server
         case GUN_SMG2: gs.smgnades.add(id); break;
         case GUN_CROSSBOW: gs.xbolts.add(id); break;
         //case GUN_ELECTRO: gs.electro.add(id); break;
-        case GUN_ELECTRO2: gs.electro.add(id); break;
+        //case GUN_ELECTRO2: gs.electro.add(id); break;
             case GUN_HANDGRENADE: gs.grenades.add(id); break;
         case GUN_TELEKENESIS: gs.grenades.add(id); gs.orbs.add(id); gs.props.add(id); gs.barrels.add(id); break;
             default:
@@ -2346,7 +2346,7 @@ namespace server
                     ci->state.orbs.reset();
                     ci->state.smgnades.reset();
                     ci->state.xbolts.reset();
-                    ci->state.electro.reset();
+                    //ci->state.electro.reset();
                     //ci->state.electrobolts.reset();
                     ci->state.grenades.reset();
                     ci->state.props.reset();
