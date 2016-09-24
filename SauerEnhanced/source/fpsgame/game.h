@@ -834,8 +834,8 @@ struct fpsstate
         }
         else if(m_efficiency)
         {
-            armourtype = A_YELLOW;
-            armour = 100;
+            //armourtype = A_YELLOW;
+            //armour = 100;
             //loopi(NUMGUNS) baseammo(i+1);
             gunselect = GUN_CG;
             loopi(NUMGUNS) {
