@@ -177,22 +177,23 @@ ICOMMAND(weapon, "sssssss", (char *w1, char *w2, char *w3, char *w4, char *w5, c
 //            return;
 //        }
 //    }
-void offsetray(const vec &from, const vec &to, int spread, float range, vec &dest)
+void offsetray(const vec &from, const vec &to, int spread, float range, vec &dest, bool recoil)
 {
     vec offset;
+    //do offset = vec(rndscale(1), rndscale(1), rndscale(1));
     do offset = vec(rndscale(1), rndscale(1), rndscale(1)).sub(0.5f);
     while(offset.squaredlen() > 0.5f*0.5f);
     offset.mul((to.dist(from)/1024)*spread);
-    //offset.z /= 2;
+    if(recoil)offset.z += min(spread/10, 10);
     dest = vec(offset).add(to);
     vec dir = vec(dest).sub(from).normalize();
     raycubepos(from, dir, dest, range, RAY_CLIPMAT|RAY_ALPHAPOLY);
 }
 
 VARP(rifle, 0, 1, 1);
-void createrays(int gun, const vec &from, const vec &to)             // create random spread of rays for the shotgun
+void createrays(int gun, const vec &from, const vec &to)             // create random spread of rays
 {
-    loopi(guns[gun].rays) offsetray(from, to, (rifle&&gun==GUN_SHOTGUN2)?0:guns[gun].spread, guns[gun].range, rays[i]);
+    loopi(guns[gun].rays) offsetray(from, to, (rifle&&gun==GUN_SHOTGUN2)?0:guns[gun].spread, guns[gun].range, rays[i], false);
 }
 
 enum { BNC_GRENADE, BNC_GIBS, BNC_DEBRIS, BNC_BARRELDEBRIS, BNC_MISSILE, BNC_XBOLT, BNC_SMGNADE, BNC_ELECTROBOLT, BNC_ORB, BNC_WEAPON, BNC_PROP, BNC_SHELL, BNC_BARREL };
@@ -1746,7 +1747,8 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
 
             }
         }
-        if(!d->isholdingbarrel&&!d->isholdingnade&&!d->isholdingorb&&!d->isholdingprop)loopv(entities::ents) //picking up items
+        if(!d->isholdingbarrel&&!d->isholdingnade&&!d->isholdingorb&&!d->isholdingprop)
+            loopv(entities::ents) //picking up items
         {
             extentity &e = *entities::ents[i];
             if(e.type==NOTUSED) continue;
@@ -1754,13 +1756,11 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
             if(!d->isholdingorb && !d->isholdingnade && !d->isholdingprop && !d->isholdingbarrel)
             {
                 float dist2 = e.o.dist(to);
-                if(dist2<(8) && d==player1) { entities::trypickup(i, d); d->altattacking=0; if(d->canpickup(i))particle_flare(d->muzzle, e.o, 50, PART_LIGHTNING, 0xFF64FF, 1.f);
+                if(dist2<(8) && d==player1) { entities::trypickup(i, d); d->altattacking=0; if(d->canpickup(i)){particle_flare(d->muzzle, e.o, 50, PART_LIGHTNING, 0xFF64FF, 1.f); break;}
                 }
             }
         }
-
-            //weaponloop(to);
-            break;
+        break;
     }
 
     case GUN_ELECTRO:
@@ -1858,9 +1858,10 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
 
         if(d->gunselect!=GUN_MAGNUM && d->gunselect!=GUN_ELECTRO && d==hudplayer())
         {
-            d->pitch+=0+1;
-            d->yaw+=-1+rnd(3);
-            //                d->screenjumpheight=5; screenjump();screenjump();
+            float rnd=(float)-1+rnd(3);
+            rnd/=2;
+                d->pitch+=rnd;
+                d->yaw+=rnd;
         }
 
 
@@ -2155,9 +2156,16 @@ void doreload(fpsent *d)
     if(d==player1)setvar("tryreload", 0);
 }
 
+#define RECOIL_COOLDOWN 300 //300ms until our recoil is reset and next shot will have 0 spread
+#define MAXSPREAD 100
+
 void shoot(fpsent *d, const vec &targ)
 {
     int prevaction = d->lastaction, attacktime = lastmillis-prevaction;
+    //if attacking, increment spread to MAXSPREAD, if not, decrease spread to 0
+    if(d->lastattackmillis<MAXSPREAD && d->attacking && (d->gunselect==GUN_SMG || d->gunselect==GUN_CG || d->gunselect==GUN_PISTOL))d->lastattackmillis+=d->gunselect==GUN_PISTOL?6:1;
+    if(!d->attacking && d->lastattackmillis>0)d->lastattackmillis-=1;
+
     if(attacktime<d->gunwait || lastmillis-d->lastreload<1500 || (d->state==CS_DEAD && !d->dropitem)) return;
     d->gunwait = 0;
     if(!d->attacking && !d->altattacking) return;
@@ -2257,8 +2265,20 @@ void shoot(fpsent *d, const vec &targ)
         to.add(from);
     }
 
+    //int addedspread=guns[d->gunselect].spread;
+    //int diff;
+    //if(d->gunselect==GUN_CG||d->gunselect==GUN_SMG||d->gunselect==GUN_PISTOL) {
+        //diff=lastmillis-d->lastattackmillis; //positive number, increases as we wait 1200-1000=200
+        //diff-=RECOIL_COOLDOWN; //200-300=-100
+        //if(diff>0)diff=0; //we end up with a negative number which gets larger as we wait. If diff is >0, then we've reached our full cooldown
+        //addedspread=-diff; //adding spread based on how close/far we are away from the cooldown
+
+    //}
+    conoutf(CON_GAMEINFO, "Firing with %d spread", d->lastattackmillis*3);
     if(guns[d->gunselect].rays>1) createrays(d->gunselect, from, to);
-    else if(guns[d->gunselect].spread) offsetray(from, to, guns[d->gunselect].spread, guns[d->gunselect].range, to);
+    else if(d->lastattackmillis) offsetray(from, to, d->lastattackmillis*4, guns[d->gunselect].range, to, true);
+
+    //d->lastattackmillis = lastmillis;
 
     hits.setsize(0);
 

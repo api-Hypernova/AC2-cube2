@@ -490,9 +490,9 @@ static const struct guninfo { short sound, reloadsound, magsize, attackdelay, da
 {
 { S_LASER,   -1, 0,  500,  45, 0,   0,   0, 75,  1, 1024,  200, 0, 0,    0, 0, 0, "blaster", "laser"  },
 { S_SHOTGUN2,  -1, 6, 900,  9, 180, 0,   0, 20, 12,1024, 200, 0, 0,    0, 0, 2, "*",         "shotgdefault" }, //shotgdefault
-{ S_PULSERIFLE, -1, 30, 100,  15, 0,  0,   0, 7,  1, 1024, 150, 0, 0,    0, 0, 1,  "}",        "pulse_rifle"}, //chaing
+{ S_PULSERIFLE, -1, 30, 100,  26, 0,  0,   0, 7,  1, 1024, 150, 0, 0,    0, 0, 1,  "}",        "pulse_rifle"}, //chaing
 { S_RPG,    -1, 0, 1500, 150, 0,   400,  0, 10, 1, 1024, 200, 40,0,    0, 1, 1,  "Z",  "rocket"}, //rocket
-{ S_MAGNUM,   -1, 6, 600, 75, 0,   0,   0, 30, 1, 2048, 200, 0, 0,    0, 0, 1, "#",           "revolver" },
+{ S_MAGNUM,   -1, 6, 300, 75, 0,   0,   0, 30, 1, 2048, 200, 0, 0,    0, 0, 1, "#",           "revolver" },
 { S_HANDNADE,  -1, 0, 1000, 150, 0,  300,  0,  5, 1, 1024, 200, 45, 1500, 0, 0, 1,  "@", "gl" },
 //{ S_LASER,     -1, 0, 200,  60, 0,  250,  0,  5, 1, 1024, 200, 30,5000, 3, 0, 1, "<", "pyccna_railgun"},
 { S_MINSTANEX,  -1, 0, 1300,  100, 0,   0,   0, 30, 1, 1024, 300, 25, 0,  0,  0,  1,  "<", "pyccna_railgun"}, //rocketold
@@ -501,7 +501,7 @@ static const struct guninfo { short sound, reloadsound, magsize, attackdelay, da
 { S_ORB,      -1, 0, 1000, 8000, 0,  350,  0, 30, 1, 1024, 10, 40, 5000, 0, 0, 1, ";", "pulse_rifle"}, //chaing
 { S_SHOTGUNBURST,  -1, 6, 500,  9, 90, 0,   0, 10, 6, 1024, 200, 0, 0,    3, 0, 1, "*", "shotgdefault"}, //shotgdefault
 //{ S_SHOTGUN,   1000,  9, 220, 0,   0, 20, 12,1024, 200, 0, 0,    0, 0, 2, "Shotgun",         "shotgdefault" },
-{ S_UZI,       -1, 30, 100,   12,  0,  0,   0, 3,  1, 1024, 150, 0, 0,    0, 0, 1, "&",  "pyccna_m4a1"},
+{ S_UZI,       -1, 30, 100,   23,  0,  0,   0, 3,  1, 1024, 150, 0, 0,    0, 0, 1, "&",  "pyccna_m4a1"},
 { S_SMGNADE,   -1, 0, 600,  120, 0,  300,  0, 10, 1, 1024, 200, 40,5000, 0, 0, 1, "@",  "m4a1_grenade"}, //"pistol"
 { S_CROSSBOWFIRE, -1, 0, 1000,300,0, 1000,  0, 30, 1, 1024, 50, 20,10000, 0, 1, 1, "{",       "crossbow"},
 { S_PUNT,     -1, 0, 200,   0, 0,   0,   0, 0,  1,  50, 0,  0,  0,  0,  0,  0, "$",     "electrodriver"},
@@ -525,7 +525,7 @@ struct fpsstate
     int caughttime;
     int spreelength;
     int dropitem;
-    int doshake, lastshake;
+    int doshake, lastshake, lastrecoil, lastattackmillis; //amount of spread our weapon had on last fire
     int headshots;
     int detonateelectro;
     int gunselect, gunwait;
@@ -770,6 +770,7 @@ struct fpsstate
         quadmillis = 0;
         gunselect = GUN_SMG;
         gunwait = 0;
+        lastattackmillis=0;
         dropitem=0;
         lastflash=0;
         loopi(NUMGUNS) ammo[i] = 0;
@@ -837,7 +838,7 @@ struct fpsstate
             //armourtype = A_YELLOW;
             //armour = 100;
             //loopi(NUMGUNS) baseammo(i+1);
-            gunselect = GUN_CG;
+            gunselect = GUN_SG;
             loopi(NUMGUNS) {
                 switch(i) {
                 case GUN_FIST:
@@ -849,9 +850,11 @@ struct fpsstate
                     ammo[i] = 140;
                     break;
                 case GUN_RL:
-                    ammo[i] = 15; break;
+                    ammo[i] = 15;
+                    break;
                 case GUN_CG2:
-                    ammo[i]=3; break;
+                    ammo[i]=3;
+                    break;
                 case GUN_SMG2:
                     ammo[i] = 10;
                     break;
