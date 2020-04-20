@@ -1,4 +1,4 @@
-CXXFLAGS= -O3 -fomit-frame-pointer -g -o
+CXXFLAGS= -O3 -Wno-narrowing -fomit-frame-pointer -g -o
 override CXXFLAGS+= -Wall -fsigned-char
 
 PLATFORM= $(shell uname -s)
