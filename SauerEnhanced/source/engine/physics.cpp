@@ -5,6 +5,8 @@
 
 #include "engine.h"
 #include "mpr.h"
+#include "../fpsgame/game.h"
+#include <math.h>
 
 const int MAXCLIPPLANES = 1024;
 
@@ -456,7 +458,7 @@ const float STAIRHEIGHT = 4.1f;
 const float FLOORZ = 0.867f;
 const float SLOPEZ = 0.5f;
 const float WALLZ = 0.2f;
-extern const float JUMPVEL = 80.0f; //100
+extern const float JUMPVEL = 125.f;
 extern const float GRAVITY = 200.0f;
 
 bool ellipserectcollide(physent *d, const vec &dir, const vec &o, const vec &center, float yaw, float xr, float yr, float hi, float lo)
@@ -1653,62 +1655,45 @@ VARP(maxroll, 0, 3, 20);
 FVAR(straferoll, 0, 0.033f, 90);
 VAR(floatspeed, 10, 100, 1000);
 VARP(ahk, 0, 0, 1);
-#include "../fpsgame/game.h"
-#include <math.h>
 
 
-void modifyvelocity(physent *pl, bool local, bool water, bool floating, int curtime)
+void modifyvelocity(physent* pl, bool local, bool water, bool floating, int curtime)
 {
-    //int lastsprintmillis = 0;
-    int canstrafeboost = 0;
-    if(pl->strafe && game::player1->strafeleft>0) { /*game::player1->strafeleft-=1;*/ /*canstrafeboost=1;*/ } // if you're strafing, decrement strafeleft, turn boost on
-    if(game::player1->strafeleft<=0)canstrafeboost=0; //if you've run out of strafe time, don't boost anymore
-    if(!pl->strafe)game::player1->strafeleft=150; //if player has stopped strafing, replenish strafe time
-    //if(game::player1->sprinting) lastsprintmillis=lastmillis;
-    if(pl->physstate==PHYS_FALL && !water && !ahk) { pl->jumping=false; /*game::player1->sprinting=0;*/} //allow sprinting in the air :)))
-    if(game::player1->sprinting)game::player1->sprintleft-=1;
-    if((pl->move || pl->strafe) && pl->physstate!=PHYS_FALL && !game::player1->crouching)game::player1->walkleft-=1;
-    if(game::player1->walkleft<=0) { game::player1->walkleft=game::player1->sprinting?35:65; game::walksound(pl); }
-    if(game::player1->sprintleft<0) { game::player1->sprinting=0; game::player1->sprintleft=400; } //if not sprinting, replenish
-    if(!game::player1->sprinting)game::player1->sprintleft=400; //full sprint whenever not using it
-    //conoutf(CON_GAMEINFO, "dbg: strafeleft = %d, sprintleft = %d", game::player1->strafeleft, game::player1->sprintleft);
-    if(floating)
+    bool allowmove = game::allowmove(pl);
+    if (floating)
     {
-        if(pl->jumping)
+        if (pl->jumping && allowmove)
         {
             pl->jumping = false;
             pl->vel.z = max(pl->vel.z, JUMPVEL);
         }
     }
-    else if(pl->physstate >= PHYS_SLOPE || water)
+    else if (pl->physstate >= PHYS_SLOPE || water)
     {
-        if(water && !pl->inwater) pl->vel.div(8);
-        if(pl->jumping)
+        if (water && !pl->inwater) pl->vel.div(8);
+        if (pl->jumping && allowmove)
         {
-            if(!ahk)pl->jumping = false;
-            game::player1->didcrouchjump=true;
+            pl->jumping = false;
 
-            if(!((fpsent *)pl)->ai)pl->vel.z = max(pl->vel.z, JUMPVEL); // physics impulse upwards
-            else if(((fpsent *)pl)->ai)pl->vel.z = max(pl->vel.z, JUMPVEL+30);
-            if(water) { pl->vel.x /= 8.0f; pl->vel.y /= 8.0f; } // dampen velocity change even harder, gives correct water feel
+            pl->vel.z = max(pl->vel.z, JUMPVEL); // physics impulse upwards
+            if (water) { pl->vel.x /= 8.0f; pl->vel.y /= 8.0f; } // dampen velocity change even harder, gives correct water feel
 
             game::physicstrigger(pl, local, 1, 0);
         }
     }
-    if(!floating && pl->physstate == PHYS_FALL) pl->timeinair += curtime;
-
+    if (!floating && pl->physstate == PHYS_FALL) pl->timeinair = min(pl->timeinair + curtime, 1000);
 
     vec m(0.0f, 0.0f, 0.0f);
-    if(game::allowmove(pl) && (pl->move || pl->strafe))
+    if ((pl->move || pl->strafe) && allowmove)
     {
-        vecfromyawpitch(pl->yaw, floating || water || pl->type==ENT_CAMERA ? pl->pitch : 0, pl->move, pl->strafe, m);
+        vecfromyawpitch(pl->yaw, floating || water || pl->type == ENT_CAMERA ? pl->pitch : 0, pl->move, pl->strafe, m);
 
-        if(!floating && pl->physstate >= PHYS_SLOPE)
+        if (!floating && pl->physstate >= PHYS_SLOPE)
         {
             /* move up or down slopes in air
              * but only move up slopes in water
              */
-            float dz = -(m.x*pl->floor.x + m.y*pl->floor.y)/pl->floor.z;
+            float dz = -(m.x * pl->floor.x + m.y * pl->floor.y) / pl->floor.z;
             m.z = water ? max(m.z, dz) : dz;
         }
 
@@ -1717,64 +1702,42 @@ void modifyvelocity(physent *pl, bool local, bool water, bool floating, int curt
 
     vec d(m);
     d.mul(pl->maxspeed);
-    if(pl->type==ENT_PLAYER)
+    if (pl->type == ENT_PLAYER)
     {
-        if(floating)
+        if (floating)
         {
-            if(pl==player) d.mul(floatspeed/100.0f);
+            if (pl == player) d.mul(floatspeed / 100.0f);
         }
-        if(game::player1->crouching && !((fpsent *)pl)->ai && pl==game::player1) { pl->eyeheight=9; }
-        else if(pl==game::player1)pl->eyeheight=16;
-        if((pl->physstate==PHYS_FLOOR && !((fpsent *)pl)->ai)) d.mul(game::player1->sprinting?1.3f:.9f);
-        else if(((fpsent *)pl)->ai)d.mul(1.5f);
-        //else if(!water && !((fpsent *)pl)->ai && game::allowmove(pl)) d.mul((pl->move && canstrafeboost && pl->physstate < PHYS_SLOPE ? 1.8f : 1.0f) * (pl->move && canstrafeboost && pl->physstate < PHYS_SLOPE && game::player1->sprinting ? 1.6f : 1.0f) * (game::player1->sprinting?1.4f:1.0f));
-        else if(!water && ((fpsent *)pl)->ai)d.mul(1.6f);
-        if(pl->physstate>=PHYS_SLOPE&&game::player1->crouching)d.mul(.5f);
-        if(((fpsent *)pl)->health<=0 && lastmillis-((fpsent *)pl)->lastpain<2000)d.mul(0);
-        if(pl==game::player1){
-            if(abs(long(game::player1->lastyaw-game::player1->yaw))>1 && abs(long(game::player1->lastyaw-game::player1->yaw))<12 && pl->move && pl->strafe)d.mul(abs(long(game::player1->lastyaw-game::player1->yaw))/2.3); //13
-            game::player1->lastyaw=game::player1->yaw;
-        }
-//        if(pl==game::player1 && abs(game::player1->lastyaw-game::player1->yaw)>0 && !pl->move && abs(game::player1->lastyaw-game::player1->yaw)<3 && pl->strafe && game::player1->vel.magnitude2()>=50) //slow down that air accel :)
-//        {
-//            d.mul(1.f);
-//        }
+        else if (!water && allowmove) d.mul((pl->move && !pl->strafe ? 1.3f : 1.0f) * (pl->physstate < PHYS_SLOPE ? 1.3f : 1.0f));
     }
-    float fric = 0; //water && !floating ? 20.0f : (pl->physstate >= PHYS_SLOPE || floating ? 6.0f : 1.0f); //last = 30.f ////////max boost = 2.2+1.2+1.3 = 4.7
-    if(water && !floating) fric = 20.f;
-    else if(pl->physstate >= PHYS_SLOPE || floating) fric = 6.f; //6.f;
-    else fric = 30.f; //30.f higher makes feel sluggish, lower makes it feel low jumping vel (hardly gets you off the ground when low)
-
-    if(pl->physstate!=PHYS_FALL || game::player1->vel.magnitude2()<60 || (pl==game::player1 && abs(long(game::player1->lastyaw-game::player1->yaw))>0 && !pl->move && abs(long(game::player1->lastyaw-game::player1->yaw))<3 && pl->strafe && game::player1->vel.magnitude2()>=50))pl->vel.lerp(d, pl->vel, pow(1 - 1/fric, curtime/20.0f)); //to make no fric, disable this when player is in air
-
-//    static const char *states[] = {"float", "fall", "slide", "slope", "floor", "step up", "step down", "bounce"};
+    float fric = water && !floating ? 20.0f : (pl->physstate >= PHYS_SLOPE || floating ? 6.0f : 30.0f);
+    pl->vel.lerp(d, pl->vel, pow(1 - 1 / fric, curtime / 20.0f));
+    // old fps friction
+    //    float friction = water && !floating ? 20.0f : (pl->physstate >= PHYS_SLOPE || floating ? 6.0f : 30.0f);
+    //    float fpsfric = min(curtime/(20.0f*friction), 1.0f);
+    //    pl->vel.lerp(pl->vel, d, fpsfric);
 }
 
-void modifygravity(physent *pl, bool water, int curtime)
+
+void modifygravity(physent* pl, bool water, int curtime)
 {
-    float secs = curtime/650.f; //1000
-    if(game::player1->vel.magnitude2()<60)secs=curtime/1000.f;
+    float secs = curtime / 1000.0f;
     vec g(0, 0, 0);
-    if(pl->physstate == PHYS_FALL) g.z -= GRAVITY*secs;
-    else if(pl->floor.z > 0 && pl->floor.z < FLOORZ)
+    if (pl->physstate == PHYS_FALL) g.z -= GRAVITY * secs;
+    else if (pl->floor.z > 0 && pl->floor.z < FLOORZ)
     {
         g.z = -1;
         g.project(pl->floor);
         g.normalize();
-        g.mul(GRAVITY*secs);
+        g.mul(GRAVITY * secs);
     }
-    if(!water || !game::allowmove(pl) || (!pl->move && !pl->strafe)) pl->falling.add(g);
+    if (!water || !game::allowmove(pl) || (!pl->move && !pl->strafe)) pl->falling.add(g);
 
-    if(water || pl->physstate >= PHYS_SLOPE)
+    if (water || pl->physstate >= PHYS_SLOPE)
     {
         float fric = water ? 2.0f : 6.0f,
-              c = water ? 1.0f : clamp((pl->floor.z - SLOPEZ)/(FLOORZ-SLOPEZ), 0.0f, 1.0f);
-        pl->falling.mul(pow(1 - c/fric, curtime/20.0f));
-// old fps friction
-//        float friction = water ? 2.0f : 6.0f,
-//              fpsfric = friction/curtime*20.0f,
-//              c = water ? 1.0f : clamp((pl->floor.z - SLOPEZ)/(FLOORZ-SLOPEZ), 0.0f, 1.0f);
-//        pl->falling.mul(1 - c/fpsfric);
+            c = water ? 1.0f : clamp((pl->floor.z - SLOPEZ) / (FLOORZ - SLOPEZ), 0.0f, 1.0f);
+        pl->falling.mul(pow(1 - c / fric, curtime / 20.0f));
     }
 }
 
