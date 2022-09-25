@@ -143,8 +143,8 @@ namespace entities
             //particle_icon(d->abovehead(), is.icon%4, is.icon/4, PART_HUD_ICON_GREY, 2000, 0xFFFFFF, 2.0f, -8);
         }
         playsound(itemstats[type-I_ELECTRO].sound, d!=player1 ? &d->o : NULL, NULL, 0, 0, -1, 0, 1500);
-        if(type>=I_ELECTRO && type<=I_GRENADE && d==player1) game::stats[15]++;
-        else if(type==I_HEALTH && d==player1) game::stats[16]++;
+        //if(type>=I_ELECTRO && type<=I_GRENADE && d==player1) game::stats[15]++;
+        //else if(type==I_HEALTH && d==player1) game::stats[16]++;
         d->pickup(type);
         if(d==player1)
         {

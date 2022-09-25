@@ -48,7 +48,7 @@ namespace game
     extern void loadconfigs();
 
     extern void updateworld();
-    extern void statsacc();
+    //extern void statsacc();
     extern void initclient();
     extern void physicstrigger(physent *d, bool local, int floorlevel, int waterlevel, int material = 0);
     extern void walksound(physent *d);

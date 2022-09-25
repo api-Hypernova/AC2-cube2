@@ -2723,7 +2723,7 @@ void screenshot(char *filename)
         concatstring(buf, imageexts[format]);
     }
 
-    defformatstring(filedir)("profiles/%s/screenshots/%s", game::curprofile, buf);
+    defformatstring(filedir)("%s", buf); // TODO: Clean this up
 
     ImageData image(screen->w, screen->h, 3);
     glPixelStorei(GL_PACK_ALIGNMENT, texalign(image.data, screen->w, 3));

@@ -620,8 +620,9 @@ void menuprocess()
         }
         clearlater = false;
     }
-    if(mainmenu && !isconnected(true) && guistack.empty() && game::profileloaded) showgui("main");
-    else if(mainmenu && !isconnected(true) && guistack.empty() && !game::profileloaded) showgui("profiles");
+    //if(mainmenu && !isconnected(true) && guistack.empty() && game::profileloaded) showgui("main");
+    if(mainmenu && !isconnected(true) && guistack.empty()) showgui("main");
+    //else if(mainmenu && !isconnected(true) && guistack.empty() && !game::profileloaded) showgui("profiles");
     processingmenu = false;
 }
 

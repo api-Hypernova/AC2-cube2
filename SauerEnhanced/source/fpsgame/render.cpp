@@ -252,20 +252,20 @@ namespace game
     void weaponloop(const vec &to)
     {
         loopv(ragdolls) {
-            fpsent *s= ragdolls[i];
+            fpsent *s = ragdolls[i];
             if(s->diedgun!=GUN_TELEKENESIS && s->diedgun!=GUN_TELEKENESIS2  && s->diedgun!=GUN_FIST && s->o.dist(to) <= 10 && !player1->isholdingprop && !player1->isholdingnade && !player1->isholdingorb && !player1->isholdingbarrel){
                 s->holdingweapon=0;
                 msgsound(S_ROCKETPICKUP, player1);
                 int type;
-                if(s->diedgun==GUN_CG || s->gunselect==GUN_CG2)type==I_MINIGUN;
-                else if(s->diedgun==GUN_CROSSBOW)type==I_CROSSBOW;
-                else if(s->diedgun==GUN_ELECTRO || s->diedgun==GUN_ELECTRO2)type==I_ELECTRO;
-                else if(s->diedgun==GUN_HANDGRENADE)type==I_GRENADE;
-                else if(s->diedgun==GUN_MAGNUM)type==I_MAGNUM;
-                else if(s->diedgun==GUN_PISTOL)type==I_PISTOLAMMO;
-                else if(s->diedgun==GUN_RL)type==I_RPG;
-                else if(s->diedgun==GUN_SG || s->diedgun==GUN_SHOTGUN2)type==I_SHOTGUN;
-                else if(s->diedgun==GUN_SMG|| s->diedgun==GUN_SMG2)type==I_SMGAMMO;
+                if(s->diedgun==GUN_CG || s->gunselect==GUN_CG2)type=I_MINIGUN;
+                else if(s->diedgun==GUN_CROSSBOW)type=I_CROSSBOW;
+                else if(s->diedgun==GUN_ELECTRO || s->diedgun==GUN_ELECTRO2)type=I_ELECTRO;
+                else if(s->diedgun==GUN_HANDGRENADE)type=I_GRENADE;
+                else if(s->diedgun==GUN_MAGNUM)type=I_MAGNUM;
+                else if(s->diedgun==GUN_PISTOL)type=I_PISTOLAMMO;
+                else if(s->diedgun==GUN_RL)type=I_RPG;
+                else if(s->diedgun==GUN_SG || s->diedgun==GUN_SHOTGUN2)type=I_SHOTGUN;
+                else if(s->diedgun==GUN_SMG|| s->diedgun==GUN_SMG2)type=I_SMGAMMO;
                 if(type && player1->canpickup(type))player1->pickup(type);
             }
         }

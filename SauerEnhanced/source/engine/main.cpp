@@ -38,11 +38,11 @@ void quit()                     // normal exit
     abortconnect();
     disconnect();
     localdisconnect();
-    if(game::profileloaded)
+    /*if (game::profileloaded)
     {
         writecfg();
         game::writestats();
-    }
+    }*/
     writecfg();
     cleanup();
     exit(EXIT_SUCCESS);
@@ -51,7 +51,7 @@ void quit()                     // normal exit
 int sev,
     patchchoosen = -1;
 
-void checkfornewseversion(bool b)
+/*void checkfornewseversion(bool b)
 {
     if(!seupdatecheck && !b) return;
     printf("Checking for SauerEnhanced updates");
@@ -124,9 +124,9 @@ void checkfornewseversion(bool b)
         if(patchchoosen > curseversion) showgui("NewPatch");
         else if(b) showgui("NoUpdates");
     }
-}
+}*/
 
-ICOMMAND(chckforups, "", (), { checkfornewseversion(true); } );
+//ICOMMAND(chckforups, "", (), { checkfornewseversion(true); } );
 
 
 void *a; // some fill-in pointer ..
@@ -139,7 +139,8 @@ int prog_func(void *a, double dltotal, double dlnow, double ultotal, double ulno
     renderprogress(bar, text);
     return 0;
 }
-void getfile(int type)  //Download types: 1: news | 2: release | 3: patch
+
+/*void getfile(int type)  //Download types: 1: news | 2: release | 3: patch
 {
     if((type == 2 && (sev < curseversion || sev == -1)) || (type == 3 && (patchchoosen < curseversion || patchchoosen == -1)))
     {
@@ -187,11 +188,11 @@ void getfile(int type)  //Download types: 1: news | 2: release | 3: patch
         remove(filename);   //Once executed this file won't be needed anymore...
     }
     if(type>1) showgui("DownloadCompleted");    //After downloading release or patch
-}
+}*/
 
-ICOMMAND(getsenews, "", (), getfile(1));
-ICOMMAND(sedownload, "", (), getfile(2));
-ICOMMAND(sepatch, "", (), getfile(3));
+//ICOMMAND(getsenews, "", (), getfile(1));
+//ICOMMAND(sedownload, "", (), getfile(2));
+//ICOMMAND(sepatch, "", (), getfile(3));
 
 void fatal(const char *s, ...)    // failure exit
 {
@@ -1167,7 +1168,7 @@ int main(int argc, char **argv)
     initserver(dedicated>0, dedicated>1);  // never returns if dedicated
     ASSERT(dedicated <= 1);
     game::initclient();
-    game::profileloaded = false;
+    //game::profileloaded = false;
 
     log("video: mode");
     const SDL_VideoInfo *video = SDL_GetVideoInfo();
@@ -1285,11 +1286,11 @@ int main(int argc, char **argv)
         tryedit();
 
         if(lastmillis) game::updateworld();
-        if(!mainmenu) game::statsacc();
+        //if(!mainmenu) game::statsacc();
 
         checksleep(lastmillis);
 
-        if(game::profileloaded) game::dotime();
+        //if(game::profileloaded) game::dotime();
 
         serverslice(false, 0);
 

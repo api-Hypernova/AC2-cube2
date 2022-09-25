@@ -870,11 +870,11 @@ struct ctfclientmode : clientmode
             defformatstring(ds)("%d", score);
             particle_textcopy(d->abovehead(), ds, PART_TEXT, 2000, 0x32FF64, 4.0f, -8);
         }
-        if(d==player1)
+        /*if (d == player1)
         {
             if(m_ctf && !m_protect) game::stats[9]++;
             else if(m_protect) game::stats[10]++;
-        }
+        }*/
         d->flags = dflags;
         conoutf(CON_GAMEINFO, "%s scored for %s team", d==player1 ? "you" : colorname(d), team==ctfteamflag(player1->team) ? "your" : "the enemy");
         playsound(S_FLAGSCORE);

@@ -823,7 +823,7 @@ void hit(int damage, dynent *d, fpsent *at, const vec &vel, int gun, float info1
         if(hitsound && lasthit != lastmillis) playsound(S_HIT);
         lasthit = lastmillis;
 
-        game::stats[1] += damage;
+        //game::stats[1] += damage;
     }
 
     if(d->type==ENT_INANIMATE)
@@ -1394,7 +1394,7 @@ void raydamage(vec &from, vec &to, fpsent *d)
     if(guns[d->gunselect].rays>1)
     {
 
-        bool done[guns[d->gunselect].rays];
+        bool done[12];
         loopj(guns[d->gunselect].rays) done[j] = false;
         for(;;)
         {
@@ -2244,8 +2244,6 @@ void shoot(fpsent *d, const vec &targ)
     vec from = d->o;
     vec to = targ;
 
-    if(d==player1) game::stats[0]++;
-
     vec unitv;
     float dist = to.dist(from, unitv);
     unitv.div(dist);
@@ -2274,7 +2272,6 @@ void shoot(fpsent *d, const vec &targ)
         //addedspread=-diff; //adding spread based on how close/far we are away from the cooldown
 
     //}
-    conoutf(CON_GAMEINFO, "Firing with %d spread", d->lastattackmillis*3);
     if(guns[d->gunselect].rays>1) createrays(d->gunselect, from, to);
     else if(d->lastattackmillis) offsetray(from, to, d->lastattackmillis*4, guns[d->gunselect].range, to, true);
 

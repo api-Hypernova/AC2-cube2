@@ -142,8 +142,8 @@ struct aviwriter
 
     aviwriter(const char *name, uint w, uint h, uint fps, bool sound) : f(NULL), yuv(NULL), videoframes(0), filesequence(0), videow(w&~1), videoh(h&~1), videofps(fps), physvideoframes(0), physsoundbytes(0), soundfrequency(0),soundchannels(0),soundformat(0)
     {
-        char buf[PATH_MAX];
-        snprintf(buf, sizeof(buf), "profiles/%s/videos/%s", game::curprofile, name);
+        char buf[999]; //TODO may have broken this
+        //snprintf(buf, sizeof(buf), "profiles/%s/videos/%s", game::curprofile, name);
         copystring(filename, buf);
         path(filename);
         if(!strrchr(filename, '.')) concatstring(filename, ".avi");

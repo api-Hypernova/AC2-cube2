@@ -265,7 +265,7 @@ namespace game
         gets2c();
         updatemovables(curtime);
         updatemonsters(curtime);
-        if(!player1->move && player1->strafe && player1->vel.magnitude2()>=50 && abs(player1->lastyaw-player1->yaw)<3 && abs(player1->lastyaw-player1->yaw)>0)
+        if(!player1->move && player1->strafe && player1->vel.magnitude2()>=50 && abs(long(player1->lastyaw-player1->yaw))<3 && abs(long(player1->lastyaw-player1->yaw))>0)
         {
             player1->vel.x += -sinf(RAD*player1->yaw)*(player1->vel.magnitude2()/15);
             player1->vel.y += cosf(RAD*player1->yaw)*(player1->vel.magnitude2()/15);
@@ -495,7 +495,7 @@ namespace game
     bool firstcheck = true;
     int oldacc = 0;
 
-    void statsacc() //accuracy stats updating
+    /*void statsacc() //accuracy stats updating
     {
         int accuracy = player1->totaldamage*100/max(player1->totalshots, 1);    //current accuracy
         if((totalmillis >= lastacc+30000 && firstcheck) || (totalmillis >= lastacc+5000 && !firstcheck))  //First check - 30s to prevent getting 100% accuracy into avg
@@ -515,7 +515,7 @@ namespace game
             }
             lastacc = totalmillis;
         }
-    }
+    }*/
 
     VARP(seautosay, 0, 0, 0);
 
@@ -556,7 +556,7 @@ namespace game
         copystring(dname, colorname(d));
         copystring(aname, colorname(actor));
 
-        if(d==player1) game::stats[4]++;
+        //if(d==player1) game::stats[4]++;
         if(actor==player1 && player1->headshots && d!=player1)playsound(S_HEADSHOT2);
         if(d->diedgun==GUN_CROSSBOW)playsound(S_SKEWER, &d->o);
         if(actor==player1 && d->vel.magnitude2()>150)playsound(S_AWESOME);
@@ -580,7 +580,7 @@ namespace game
             {
                 //if(hudplayer()->health<0)conoutf(CON_TEAMCHAT, "\f6You killed yourself!");
                 //else if(hudplayer()->health>0)conoutf(CON_TEAMCHAT, "\f6You didn't watch your step!");
-                game::stats[18]++;
+                //game::stats[18]++;
             }
             //conoutf(contype, "%s%s \f3[SELF]", isteam(d->team, player1->team)?"\f1":"\f3", dname);
             conoutf(contype, "\fx%s%s %s", d->health<=0?guns[actor->lastattackgun].name:"[SELF]", isteam(actor->team, player1->team)?"\f1":"\f3", colorname(actor));
@@ -634,10 +634,10 @@ namespace game
                     copystring(who, dname);
                     ismate2 = 0;
 
-                    if(d->ai) game::stats[6]++;
-                    if(!d->ai) game::stats[8]++;
-                    if(player1->gunselect == 0) game::stats[17]++;
-                    if(!strcmp(d->name, "unnamed")) game::stats[7]++;
+                    //if(d->ai) game::stats[6]++;
+                    //if(!d->ai) game::stats[8]++;
+                    //if(player1->gunselect == 0) game::stats[17]++;
+                    //if(!strcmp(d->name, "unnamed")) game::stats[7]++;
 
                     if(d->vel.magnitude() >= 190)
                     {
@@ -842,7 +842,7 @@ namespace game
         if(d->type==ENT_INANIMATE) return;
         if     (waterlevel>0) { if(material!=MAT_LAVA) playsound(S_SPLASH1, d==player1 ? NULL : &d->o); }
         else if(waterlevel<0) playsound(material==MAT_LAVA ? S_BURN : S_SPLASH2, d==player1 ? NULL : &d->o);
-        if     (floorlevel>0) { if(d==player1 || d->type!=ENT_PLAYER || ((fpsent *)d)->ai) msgsound(S_JUMP2+rnd(3), d); loopi(3)msgsound(S_WALK1+rnd(8), d); if(d==player1) game::stats[2]++; }
+        if     (floorlevel>0) { if(d==player1 || d->type!=ENT_PLAYER || ((fpsent *)d)->ai) msgsound(S_JUMP2+rnd(3), d); loopi(3)msgsound(S_WALK1+rnd(8), d); }
         else if(floorlevel<0) { if(d==player1 || d->type!=ENT_PLAYER || ((fpsent *)d)->ai) msgsound(S_LAND1+rnd(3), d); if(d==player1)player1->roll+=12;}
     }
 
@@ -1499,8 +1499,8 @@ namespace game
     const char *gameident() { return "fps"; }
     const char *savedconfig()
     {
-            defformatstring(cfg)("profiles/%s/config.cfg", curprofile);
-            return cfg;
+            //defformatstring(cfg)("profiles/%s/config.cfg", curprofile);
+        return "config.cfg";
     }
     const char *restoreconfig() { return "restore.cfg"; }
     const char *defaultconfig() { return "data/defaults.cfg"; }

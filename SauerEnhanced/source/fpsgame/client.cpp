@@ -709,7 +709,7 @@ namespace game
 
     void toserver(char *text)
     {
-        if(strstr(text, "lol")) game::stats[12]++;
+        //if(strstr(text, "lol")) game::stats[12]++;
         conoutf(CON_CHAT, "%s%s:\f0 %s", player1->state==CS_SPECTATOR?"(spec)":"", colorname(player1), text);
         addmsg(N_TEXT, "rcs", player1, text);
         copystring(_lastsaid, text);
@@ -718,7 +718,7 @@ namespace game
 
     void sayteam(char *text)
     {
-        if(strstr(text, "lol")) game::stats[12]++;
+        //if(strstr(text, "lol")) game::stats[12]++;
         conoutf(CON_TEAMCHAT, "%s:\f1 %s", colorname(player1), text);
         addmsg(N_SAYTEAM, "rcs", player1, text);
         copystring(_lastsaidteam, text);
@@ -1779,7 +1779,7 @@ namespace game
         {
             case N_SENDDEMO:
             {
-                defformatstring(fname)("profiles/%s/demos/%d.dmo", game::curprofile, lastmillis);
+                defformatstring(fname)("%d.dmo", lastmillis);
                 stream *demo = openrawfile(fname, "wb");
                 if(!demo) return;
                 conoutf("received demo \"%s\"", fname);
