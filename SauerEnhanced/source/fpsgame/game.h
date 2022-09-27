@@ -489,13 +489,13 @@ static struct itemstat { int add, max, sound; const char *name; int icon, info, 
 static const struct guninfo { short sound, reloadsound, magsize, attackdelay, damage, spread, projspeed, part, kickamount, rays, range, hitpush, splash, ttl, burstlen, guided, sub; const char *name, *file; } guns[NUMGUNS] =
 {
 { S_LASER,   -1, 0,  500,  45, 0,   0,   0, 75,  1, 1024,  200, 0, 0,    0, 0, 0, "blaster", "laser"  },
-{ S_SHOTGUN2,  -1, 6, 900,  9, 180, 0,   0, 20, 12,1024, 200, 0, 0,    0, 0, 2, "*",         "shotgdefault" }, //shotgdefault
+{ S_SHOTGUN2,  -1, 6, 900,  9, 150, 0,   0, 20, 12,1024, 200, 0, 0,    0, 0, 2, "*",         "shotgdefault" }, //shotgdefault
 { S_PULSERIFLE, -1, 30, 100,  26, 0,  0,   0, 7,  1, 1024, 150, 0, 0,    0, 0, 1,  "}",        "pulse_rifle"}, //chaing
 { S_RPG,    -1, 0, 1500, 150, 0,   400,  0, 10, 1, 1024, 200, 40,0,    0, 1, 1,  "Z",  "rocket"}, //rocket
 { S_MAGNUM,   -1, 6, 300, 75, 0,   0,   0, 30, 1, 2048, 200, 0, 0,    0, 0, 1, "#",           "revolver" },
-{ S_HANDNADE,  -1, 0, 1000, 150, 0,  300,  0,  5, 1, 1024, 200, 45, 1500, 0, 0, 1,  "@", "gl" },
+{ S_HANDNADE,  -1, 0, 1000, 150, 0,  300,  0,  5, 1, 1024, 200, 55, 1500, 0, 0, 1,  "@", "gl" },
 //{ S_LASER,     -1, 0, 200,  60, 0,  250,  0,  5, 1, 1024, 200, 30,5000, 3, 0, 1, "<", "pyccna_railgun"},
-{ S_MINSTANEX,  -1, 0, 1300,  100, 0,   0,   0, 30, 1, 1024, 300, 25, 0,  0,  0,  1,  "<", "pyccna_railgun"}, //rocketold
+{ S_MINSTANEX,  -1, 0, 1300,  90, 0,   0,   0, 30, 1, 1024, 300, 25, 0,  0,  0,  1,  "<", "pyccna_railgun"}, //rocketold
 //{ S_CRYLINK,   -1, 0, 100,  30, 0,  1200,  0, 10, 1, 1024, 200, 20,  0,  0, 0, 1, "<", "pyccna_svd"},
 { S_LIGHTNING,  -1, 0, 50, 10,  0,  0,  0,  5,  1,  300,  0,  0,  0,  0,  0,  1, "<",  "pyccna_railgun"}, //pyccna_railgun
 { S_ORB,      -1, 0, 1000, 8000, 0,  350,  0, 30, 1, 1024, 10, 40, 5000, 0, 0, 1, ";", "pulse_rifle"}, //chaing

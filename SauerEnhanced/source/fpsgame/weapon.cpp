@@ -361,12 +361,11 @@ void updatebouncers(int time)
         //            }
         if(bnc.bouncetype==BNC_GRENADE)
         {
-            //vec occlusioncheck;
             vec pos(bnc.o);
             bnc.beepleft-=1;
             bnc.flareleft-=1;
             if(!bnc.beepleft){playsound(S_NADEBEEP, &pos);  bnc.beepleft=20; }
-            if(pos.dist(bnc.flarepos)>1) {particle_flare(bnc.flarepos, pos, 500, PART_RAILTRAIL, nadetrailcol, .2f); bnc.flarepos=bnc.o; bnc.flareleft=5;} //new method: draw line when last vec reaches certain distance from current
+            if(pos.dist(bnc.flarepos)>1) {particle_flare(bnc.flarepos, pos, 500, PART_RAILTRAIL, nadetrailcol, .2f); bnc.flarepos=bnc.o; bnc.flareleft=5;}
             pos.add(vec(bnc.offset).mul(bnc.offsetmillis/float(OFFSETMILLIS)));
             if(lookupmaterial(pos)==MAT_WATER)
                 regular_particle_splash(PART_BUBBLE, 1, 500, pos, 0xFFFFFF, 1.0f, 25, 500);
@@ -406,7 +405,7 @@ void updatebouncers(int time)
             regular_particle_splash(PART_SPARK, 5, 250, pos, 0x0789FC, 0.4f, 5, 0);
             //particle_flare(old, pos, 500, PART_STREAK, 0x0789FC, 1.f);
         }
-        if(bnc.bouncetype==BNC_ORB||bnc.bouncetype==BNC_PROP)
+        if(bnc.bouncetype==BNC_ORB||bnc.bouncetype==BNC_PROP) // this logic is responsible for making the proj blow up when it's close to you
         {
             vec pos(bnc.o);
             pos.add(vec(bnc.offset).mul(bnc.offsetmillis/float(OFFSETMILLIS)));
@@ -533,7 +532,7 @@ void updatebouncers(int time)
         else if(bnc.bouncetype==BNC_GRENADE) stopped = bounce(&bnc, 0.510f, 0.5f, 0.8f) || (bnc.lifetime -= time)<0;
         else if(bnc.bouncetype==BNC_SHELL)stopped = bounce(&bnc, .6f, .8f, .8f) || (bnc.lifetime -= time)<0;
         else if(bnc.bouncetype==BNC_SMGNADE) stopped = bounce(&bnc, 0.6f, 0.5f, 0.6f) || (bnc.bounces) > 0;
-        else if(bnc.bouncetype==BNC_PROP) stopped = bounce(&bnc, 0.4f, 0.5f, 1.f)||(bnc.lifetime -= time)<0;// || (bnc.bounces) > 0;
+        else if(bnc.bouncetype==BNC_PROP) stopped = bounce(&bnc, 0.4f, 0.5f, 1.f)||(bnc.lifetime -= time)<0;
         else if(bnc.bouncetype==BNC_BARREL) stopped = bounce(&bnc, 0.6f, 0.5f, 0.99f) || (bnc.bounces) > 0;
         else if(bnc.bouncetype==BNC_XBOLT) stopped = bounce(&bnc, 1.f, 0.5f, 0.8f) || bnc.o.dist(bnc.owner->o)<lastdist || (bnc.lifetime -= time)<0;
         else if(bnc.bouncetype==BNC_ELECTROBOLT) stopped = bounce(&bnc, 0.6f, 0.5f, 0.8f) || (bnc.lifetime -= time)<0 || bnc.owner->detonateelectro;
@@ -561,7 +560,7 @@ void updatebouncers(int time)
         if(stopped)
         {
 
-            if(bnc.bouncetype==BNC_GRENADE || bnc.bouncetype==BNC_SMGNADE || bnc.bouncetype==BNC_XBOLT)
+            if(bnc.bouncetype == BNC_GRENADE || bnc.bouncetype == BNC_SMGNADE || bnc.bouncetype == BNC_XBOLT)
             {
                 int qdam;
                 if(bnc.bouncetype==BNC_XBOLT || bnc.bouncetype==BNC_GRENADE) qdam = guns[bnc.bouncetype==BNC_XBOLT ? GUN_CROSSBOW : GUN_HANDGRENADE].damage*(bnc.owner->quadmillis ? 2 : 1);
@@ -657,7 +656,7 @@ void updatebouncers(int time)
                     maxammo = 150;
                     break;
                 }
-                if(player1->feetpos().dist(bnc.o)<15) {
+                if(player1->feetpos().dist(bnc.o)<20) {
                     player1->hasgun[bnc.gun]=1;
                     player1->ammo[bnc.gun]=maxammo;
                     if(bnc.gun==GUN_SG)player1->ammo[GUN_SHOTGUN2]=maxammo;
@@ -940,7 +939,7 @@ void explode(bool local, fpsent *owner, const vec &v, dynent *safe, int damage, 
     }
     if((gun==GUN_HANDGRENADE ||gun==GUN_RL||gun==GUN_SMG2||gun==GUN_BARREL))
     {
-        if(v.dist(player1->o)<200)player1->doshake=1;
+        if(v.dist(player1->o)<100)player1->doshake=1;
         particle_splash(PART_SMOKE, 5, 1250, v, 0x222222, 12.0f, 50, 250, NULL, 1, false, 3);
         particle_splash(PART_SMOKE, 5, 200, v, 0x222222, 12.0f, 50, 250, NULL, 1, false, 4);
 
@@ -2408,7 +2407,7 @@ void renderbouncers()
         if(bnc.bouncetype==BNC_PROP)pos.z-=1;
         //if(bnc.vel.magnitude()<(bnc.bouncetype==BNC_BARRELDEBRIS)?50.0f:200.0f)pitch=bnc.bouncetype==BNC_BARRELDEBRIS?90:0;
         if(bnc.vel.magnitude()<50&&bnc.bouncetype==BNC_BARRELDEBRIS)pitch=90;
-        if(bnc.vel.magnitude()<400.0f && bnc.bouncetype!=BNC_BARRELDEBRIS && bnc.bouncetype==BNC_PROP)pitch=0;
+        if(bnc.bouncetype==BNC_PROP) pitch=0;
         if(bnc.bouncetype==BNC_XBOLT)
             rendermodel(&bnc.light, "projectiles/xbolt", ANIM_MAPMODEL|ANIM_LOOP, pos, yaw, pitch, MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_LIGHT|MDL_LIGHT_FAST|MDL_DYNSHADOW);
         if(bnc.bouncetype==BNC_SHELL) {//not when too close otherwise it'll be in the gun
