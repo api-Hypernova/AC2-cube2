@@ -41,7 +41,7 @@ namespace entities
             "checkpoint",
             NULL, NULL,
             NULL, NULL,
-            NULL
+            NULL, NULL
         };
         return entmdlnames[type];
     }
