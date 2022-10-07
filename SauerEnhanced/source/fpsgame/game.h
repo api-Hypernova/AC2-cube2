@@ -725,7 +725,7 @@ struct fpsstate
             ammo[GUN_SMG]=min(ammo[GUN_SMG]+45, 140);
             break;
         case I_SMGNADE:
-            ammo[GUN_SMG2]=min(ammo[GUN_SMG2]+2, 10);
+            ammo[GUN_SMG2]=min(ammo[GUN_SMG2]+1, 10);
             break;
         case I_SHELLS:
             ammo[GUN_SG]=min(ammo[GUN_SG]+12, 30);
