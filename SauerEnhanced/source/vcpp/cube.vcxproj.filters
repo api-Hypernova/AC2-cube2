@@ -1,0 +1,384 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Engine">
+      <UniqueIdentifier>{d3a79616-89f3-4131-b7e2-1ab8031e6dee}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;rc;def;r;odl;idl;hpj;bat</Extensions>
+    </Filter>
+    <Filter Include="Engine\world">
+      <UniqueIdentifier>{470e7cbc-2eb6-4c65-83a2-272843623c8b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\cs">
+      <UniqueIdentifier>{d13b2f35-1403-4247-b774-76e3acb96ec3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\render">
+      <UniqueIdentifier>{49ce3f5d-adc0-4924-b3e2-3598f1a79349}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\system">
+      <UniqueIdentifier>{54e78c51-20ae-4a3d-83ca-a13376febc45}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Common">
+      <UniqueIdentifier>{fc475a2f-5247-421e-92e6-225e5e585363}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl</Extensions>
+    </Filter>
+    <Filter Include="Common\text">
+      <UniqueIdentifier>{0e79138f-28c1-4ca2-9e22-825209932441}</UniqueIdentifier>
+      <Extensions>ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe</Extensions>
+    </Filter>
+    <Filter Include="Common\text\docs">
+      <UniqueIdentifier>{09de9891-470d-4587-b9d0-13fa4bf6ae7d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Common\text\cfg">
+      <UniqueIdentifier>{0775e058-0243-404e-9f0b-3d46d96b9d31}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="FPS">
+      <UniqueIdentifier>{9bd655de-be63-461e-af5f-fabf4c4d33bd}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\engine\engine.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\engine\lightmap.h">
+      <Filter>Engine\world</Filter>
+    </ClInclude>
+    <ClInclude Include="..\engine\octa.h">
+      <Filter>Engine\world</Filter>
+    </ClInclude>
+    <ClInclude Include="..\engine\world.h">
+      <Filter>Engine\world</Filter>
+    </ClInclude>
+    <ClInclude Include="..\engine\animmodel.h">
+      <Filter>Engine\render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\engine\bih.h">
+      <Filter>Engine\render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\engine\depthfx.h">
+      <Filter>Engine\render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\engine\explosion.h">
+      <Filter>Engine\render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\engine\lensflare.h">
+      <Filter>Engine\render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\engine\lightning.h">
+      <Filter>Engine\render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\engine\md2.h">
+      <Filter>Engine\render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\engine\md3.h">
+      <Filter>Engine\render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\engine\md5.h">
+      <Filter>Engine\render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\engine\model.h">
+      <Filter>Engine\render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\engine\obj.h">
+      <Filter>Engine\render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\engine\ragdoll.h">
+      <Filter>Engine\render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\engine\rendertarget.h">
+      <Filter>Engine\render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\engine\scale.h">
+      <Filter>Engine\render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\engine\skelmodel.h">
+      <Filter>Engine\render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\engine\textedit.h">
+      <Filter>Engine\render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\engine\texture.h">
+      <Filter>Engine\render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\engine\vertmodel.h">
+      <Filter>Engine\render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\command.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\cube.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\ents.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\geom.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\iengine.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\igame.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\tools.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fpsgame\ai.h">
+      <Filter>FPS</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fpsgame\aiman.h">
+      <Filter>FPS</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fpsgame\capture.h">
+      <Filter>FPS</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fpsgame\ctf.h">
+      <Filter>FPS</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fpsgame\extinfo.h">
+      <Filter>FPS</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fpsgame\game.h">
+      <Filter>FPS</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\engine\pch.cpp">
+      <Filter>Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="SDL_win32_main.c">
+      <Filter>Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\blend.cpp">
+      <Filter>Engine\world</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\cubeloader.cpp">
+      <Filter>Engine\world</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\lightmap.cpp">
+      <Filter>Engine\world</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\normal.cpp">
+      <Filter>Engine\world</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\octa.cpp">
+      <Filter>Engine\world</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\octaedit.cpp">
+      <Filter>Engine\world</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\octarender.cpp">
+      <Filter>Engine\world</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\physics.cpp">
+      <Filter>Engine\world</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\pvs.cpp">
+      <Filter>Engine\world</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\world.cpp">
+      <Filter>Engine\world</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\worldio.cpp">
+      <Filter>Engine\world</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\client.cpp">
+      <Filter>Engine\cs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\server.cpp">
+      <Filter>Engine\cs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\serverbrowser.cpp">
+      <Filter>Engine\cs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\3dgui.cpp">
+      <Filter>Engine\render</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\bih.cpp">
+      <Filter>Engine\render</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\blob.cpp">
+      <Filter>Engine\render</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\decal.cpp">
+      <Filter>Engine\render</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\dynlight.cpp">
+      <Filter>Engine\render</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\glare.cpp">
+      <Filter>Engine\render</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\grass.cpp">
+      <Filter>Engine\render</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\material.cpp">
+      <Filter>Engine\render</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\rendergl.cpp">
+      <Filter>Engine\render</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\rendermodel.cpp">
+      <Filter>Engine\render</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\renderparticles.cpp">
+      <Filter>Engine\render</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\rendersky.cpp">
+      <Filter>Engine\render</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\rendertext.cpp">
+      <Filter>Engine\render</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\renderva.cpp">
+      <Filter>Engine\render</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\shader.cpp">
+      <Filter>Engine\render</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\shadowmap.cpp">
+      <Filter>Engine\render</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\texture.cpp">
+      <Filter>Engine\render</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\water.cpp">
+      <Filter>Engine\render</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\command.cpp">
+      <Filter>Engine\system</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\console.cpp">
+      <Filter>Engine\system</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\main.cpp">
+      <Filter>Engine\system</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\menus.cpp">
+      <Filter>Engine\system</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\movie.cpp">
+      <Filter>Engine\system</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\sound.cpp">
+      <Filter>Engine\system</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\crypto.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\geom.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\pch.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\stream.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\tools.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\zip.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fpsgame\ai.cpp">
+      <Filter>FPS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fpsgame\client.cpp">
+      <Filter>FPS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fpsgame\entities.cpp">
+      <Filter>FPS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fpsgame\fps.cpp">
+      <Filter>FPS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fpsgame\monster.cpp">
+      <Filter>FPS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fpsgame\movable.cpp">
+      <Filter>FPS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fpsgame\pch.cpp">
+      <Filter>FPS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fpsgame\render.cpp">
+      <Filter>FPS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fpsgame\scoreboard.cpp">
+      <Filter>FPS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fpsgame\server.cpp">
+      <Filter>FPS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fpsgame\waypoint.cpp">
+      <Filter>FPS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fpsgame\weapon.cpp">
+      <Filter>FPS</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="sauerbraten.rc">
+      <Filter>Engine</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\OCTA_TODO.txt">
+      <Filter>Common\text</Filter>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\docs\config.html">
+      <Filter>Common\text\docs</Filter>
+    </None>
+    <None Include="..\..\docs\editing.html">
+      <Filter>Common\text\docs</Filter>
+    </None>
+    <None Include="..\..\docs\editref.html">
+      <Filter>Common\text\docs</Filter>
+    </None>
+    <None Include="..\..\docs\game.html">
+      <Filter>Common\text\docs</Filter>
+    </None>
+    <None Include="..\..\docs\history.html">
+      <Filter>Common\text\docs</Filter>
+    </None>
+    <None Include="..\..\README.html">
+      <Filter>Common\text\docs</Filter>
+    </None>
+    <None Include="..\..\data\brush.cfg">
+      <Filter>Common\text\cfg</Filter>
+    </None>
+    <None Include="..\..\data\default_map_models.cfg">
+      <Filter>Common\text\cfg</Filter>
+    </None>
+    <None Include="..\..\data\default_map_settings.cfg">
+      <Filter>Common\text\cfg</Filter>
+    </None>
+    <None Include="..\..\data\defaults.cfg">
+      <Filter>Common\text\cfg</Filter>
+    </None>
+    <None Include="..\..\data\game_fps.cfg">
+      <Filter>Common\text\cfg</Filter>
+    </None>
+    <None Include="..\..\data\keymap.cfg">
+      <Filter>Common\text\cfg</Filter>
+    </None>
+    <None Include="..\..\data\menus.cfg">
+      <Filter>Common\text\cfg</Filter>
+    </None>
+    <None Include="..\..\data\sounds.cfg">
+      <Filter>Common\text\cfg</Filter>
+    </None>
+    <None Include="..\..\data\stdlib.cfg">
+      <Filter>Common\text\cfg</Filter>
+    </None>
+    <None Include="..\..\data\stdshader.cfg">
+      <Filter>Common\text\cfg</Filter>
+    </None>
+  </ItemGroup>
+</Project>

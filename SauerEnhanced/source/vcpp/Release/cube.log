@@ -1,0 +1,33 @@
+﻿  pch.cpp
+  3dgui.cpp
+  menus.cpp
+  physics.cpp
+  rendergl.cpp
+  rendermodel.cpp
+  world.cpp
+  ai.cpp
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\fpsgame\ai.cpp(413,33): warning C4102: 'I_SMALLHEALTH': unreferenced label
+  entities.cpp
+  fps.cpp
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\fpsgame\fps.cpp(1075,21): warning C4189: 'hb': local variable is initialized but not referenced
+  monster.cpp
+  movable.cpp
+  render.cpp
+  scoreboard.cpp
+  waypoint.cpp
+  weapon.cpp
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\fpsgame\weapon.cpp(832,18): warning C4189: 'm': local variable is initialized but not referenced
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\fpsgame\weapon.cpp(1133,9): warning C4060: switch statement contains no 'case' or 'default' labels
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\fpsgame\weapon.cpp(2392,17): warning C4189: 'd': local variable is initialized but not referenced
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\fpsgame\weapon.cpp(2582,5): warning C4060: switch statement contains no 'case' or 'default' labels
+  client.cpp
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\fpsgame\client.cpp(1458,21): warning C4189: 'icon': local variable is initialized but not referenced
+  server.cpp
+C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(1391,5): warning MSB8012: TargetPath(C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\vcpp\Release\sauerbraten.exe) does not match the Linker's OutputFile property value (C:\Users\Maciej\AC2-cube2\bin\SE.exe). This may cause your project to build incorrectly. To correct this, please make sure that $(OutDir), $(TargetName) and $(TargetExt) property values match the value specified in %(Link.OutputFile).
+C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(1393,5): warning MSB8012: TargetName(sauerbraten) does not match the Linker's OutputFile property value (SE). This may cause your project to build incorrectly. To correct this, please make sure that $(OutDir), $(TargetName) and $(TargetExt) property values match the value specified in %(Link.OutputFile).
+  Generating code
+  Not all modules are compiled with -Gy (function comdat), build without incremental LTCG.
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\fpsgame\ctf.h(63): warning C4172: returning address of local variable or temporary
+  Finished generating code
+  cube.vcxproj -> C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\vcpp\Release\sauerbraten.exe
+          1 file(s) copied.

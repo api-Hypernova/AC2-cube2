@@ -1,0 +1,102 @@
+﻿  pch.cpp
+  pch.cpp
+  pch.cpp
+  3dgui.cpp
+  bih.cpp
+  blend.cpp
+  blob.cpp
+  client.cpp
+  command.cpp
+  console.cpp
+  cubeloader.cpp
+  decal.cpp
+  dynlight.cpp
+  glare.cpp
+  grass.cpp
+  lightmap.cpp
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\engine\lightmap.cpp(2147,29): warning C4838: conversion from 'int' to 'uchar' requires a narrowing conversion
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\engine\lightmap.cpp(2147,46): warning C4838: conversion from 'int' to 'uchar' requires a narrowing conversion
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\engine\lightmap.cpp(2147,63): warning C4838: conversion from 'int' to 'uchar' requires a narrowing conversion
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\engine\lightmap.cpp(2256,25): warning C4838: conversion from 'int' to 'uchar' requires a narrowing conversion
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\engine\lightmap.cpp(2256,42): warning C4838: conversion from 'int' to 'uchar' requires a narrowing conversion
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\engine\lightmap.cpp(2256,59): warning C4838: conversion from 'int' to 'uchar' requires a narrowing conversion
+  main.cpp
+  material.cpp
+  menus.cpp
+  movie.cpp
+  normal.cpp
+  octa.cpp
+  octaedit.cpp
+  Generating Code...
+  Compiling...
+  octarender.cpp
+  physics.cpp
+  pvs.cpp
+  rendergl.cpp
+  rendermodel.cpp
+  renderparticles.cpp
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\engine\renderparticles.cpp(767,29): warning C4838: conversion from 'int' to 'uchar' requires a narrowing conversion
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\engine\renderparticles.cpp(719): message : while compiling class template member function 'void varenderer<1>::genverts(particle *,partvert *,bool)'
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\engine\renderparticles.cpp(795): message : see reference to function template instantiation 'void varenderer<1>::genverts(particle *,partvert *,bool)' being compiled
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\engine\renderparticles.cpp(864): message : see reference to class template instantiation 'varenderer<1>' being compiled
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\engine\renderparticles.cpp(768,18): warning C4838: conversion from 'int' to 'uchar' requires a narrowing conversion
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\engine\renderparticles.cpp(770,30): warning C4838: conversion from 'int' to 'uchar' requires a narrowing conversion
+  rendersky.cpp
+  rendertext.cpp
+  renderva.cpp
+  server.cpp
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\engine\server.cpp(730,55): warning C4838: conversion from 'int' to 'enet_uint16' requires a narrowing conversion
+  serverbrowser.cpp
+  shader.cpp
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\engine\shader.cpp(2051,5): warning C4838: conversion from 'int' to 'GLenum' requires a narrowing conversion
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\engine\shader.cpp(2052,5): warning C4838: conversion from 'int' to 'GLenum' requires a narrowing conversion
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\engine\shader.cpp(2053,5): warning C4838: conversion from 'int' to 'GLenum' requires a narrowing conversion
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\engine\shader.cpp(2054,5): warning C4838: conversion from 'int' to 'GLenum' requires a narrowing conversion
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\engine\shader.cpp(2055,5): warning C4838: conversion from 'int' to 'GLenum' requires a narrowing conversion
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\engine\shader.cpp(2056,5): warning C4838: conversion from 'int' to 'GLenum' requires a narrowing conversion
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\engine\shader.cpp(2057,5): warning C4838: conversion from 'int' to 'GLenum' requires a narrowing conversion
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\engine\shader.cpp(2058,5): warning C4838: conversion from 'int' to 'GLenum' requires a narrowing conversion
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\engine\shader.cpp(2219,22): warning C4838: conversion from 'int' to 'GLenum' requires a narrowing conversion
+  shadowmap.cpp
+  sound.cpp
+  texture.cpp
+  water.cpp
+  world.cpp
+  worldio.cpp
+  Generating Code...
+  ai.cpp
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\fpsgame\ai.cpp(413,33): warning C4102: 'I_SMALLHEALTH': unreferenced label
+  entities.cpp
+  fps.cpp
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\fpsgame\fps.cpp(1075,21): warning C4189: 'hb': local variable is initialized but not referenced
+  monster.cpp
+  movable.cpp
+  render.cpp
+  scoreboard.cpp
+  waypoint.cpp
+  weapon.cpp
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\fpsgame\weapon.cpp(832,18): warning C4189: 'm': local variable is initialized but not referenced
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\fpsgame\weapon.cpp(1133,9): warning C4060: switch statement contains no 'case' or 'default' labels
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\fpsgame\weapon.cpp(2392,17): warning C4189: 'd': local variable is initialized but not referenced
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\fpsgame\weapon.cpp(2582,5): warning C4060: switch statement contains no 'case' or 'default' labels
+  Generating Code...
+  client.cpp
+C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\fpsgame\client.cpp(1458,21): warning C4189: 'icon': local variable is initialized but not referenced
+  server.cpp
+  crypto.cpp
+  geom.cpp
+  stream.cpp
+  tools.cpp
+  zip.cpp
+  Generating Code...
+  SDL_win32_main.c
+C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(1391,5): warning MSB8012: TargetPath(C:\Users\Maciej\AC2-cube2\SauerEnhanced\source\vcpp\Debug\sauerbraten.exe) does not match the Linker's OutputFile property value (C:\Users\Maciej\AC2-cube2\SauerEnhanced\bin\sauerbraten_debug.exe). This may cause your project to build incorrectly. To correct this, please make sure that $(OutDir), $(TargetName) and $(TargetExt) property values match the value specified in %(Link.OutputFile).
+C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(1393,5): warning MSB8012: TargetName(sauerbraten) does not match the Linker's OutputFile property value (sauerbraten_debug). This may cause your project to build incorrectly. To correct this, please make sure that $(OutDir), $(TargetName) and $(TargetExt) property values match the value specified in %(Link.OutputFile).
+enet.lib(win32.o) : error LNK2026: module unsafe for SAFESEH image.
+enet.lib(packet.o) : error LNK2026: module unsafe for SAFESEH image.
+enet.lib(host.o) : error LNK2026: module unsafe for SAFESEH image.
+enet.lib(protocol.o) : error LNK2026: module unsafe for SAFESEH image.
+enet.lib(peer.o) : error LNK2026: module unsafe for SAFESEH image.
+enet.lib(callbacks.o) : error LNK2026: module unsafe for SAFESEH image.
+enet.lib(list.o) : error LNK2026: module unsafe for SAFESEH image.
+..\..\bin\sauerbraten_debug.exe : fatal error LNK1281: Unable to generate SAFESEH image.
