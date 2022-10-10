@@ -492,7 +492,7 @@ static const struct guninfo { short sound, reloadsound, magsize, attackdelay, da
     { S_SHOTGUN2,  -1, 6, 900,  9, 150, 0,   0, 20, 12,1024, 200, 0, 0,    0, 0, 2, "*",         "solaris_shotgun" }, //shotgdefault
     { S_PULSERIFLE, -1, 30, 100,  26, 0,  0,   0, 7,  1, 1024, 150, 0, 0,    0, 0, 1,  "}",        "pulse_rifle"},
     { S_RPG,    -1, 0, 1500, 150, 0,   400,  0, 10, 1, 1024, 200, 40,0,    0, 1, 1,  "Z",  "rocket_solaris"},  //rocket
-    { S_MAGNUM,   -1, 6, 300, 75, 0,   0,   0, 30, 1, 2048, 200, 0, 0,    0, 0, 1, "#",           "1911" },
+    { S_MAGNUM,   -1, 6, 300, 75, 0,   0,   0, 30, 1, 2048, 200, 0, 0,    0, 0, 1, "#",           "revolver" },
     { S_HANDNADE,  -1, 0, 1000, 150, 0,  300,  0,  5, 1, 1024, 200, 55, 1500, 0, 0, 1,  "@", "assassin_gl" },
     { S_CRYLINK,  -1, 0, 1300,  90, 0,   0,   0, 30, 1, 1024, 300, 25, 0,  0,  0,  1,  "<", "minstanex_solaris"}, //pyccna_railgun
     { S_LIGHTNING,  -1, 0, 50, 10,  0,  0,  0,  5,  1,  300,  0,  0,  0,  0,  0,  1, "<",  "minstanex_solaris"}, //pyccna_railgun

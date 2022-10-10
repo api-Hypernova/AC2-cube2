@@ -229,7 +229,7 @@ namespace entities
                 conoutf(CON_TEAMCHAT, "+25 Health");
                 break;
             case I_SMGNADE:
-                conoutf(CON_TEAMCHAT, "+2 SMG Grenades");
+                conoutf(CON_TEAMCHAT, "+1 SMG Grenade");
                 break;
             }
         }
