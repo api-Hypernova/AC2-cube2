@@ -458,7 +458,7 @@ const float STAIRHEIGHT = 4.1f;
 const float FLOORZ = 0.867f;
 const float SLOPEZ = 0.5f;
 const float WALLZ = 0.2f;
-extern const float JUMPVEL = 125.f;
+extern const float JUMPVEL = 80.f;
 extern const float GRAVITY = 200.0f;
 
 bool ellipserectcollide(physent *d, const vec &dir, const vec &o, const vec &center, float yaw, float xr, float yr, float hi, float lo)
@@ -1708,7 +1708,7 @@ void modifyvelocity(physent* pl, bool local, bool water, bool floating, int curt
         {
             if (pl == player) d.mul(floatspeed / 100.0f);
         }
-        else if (!water && allowmove) d.mul((pl->move && !pl->strafe ? 1.3f : 1.0f) * (pl->physstate < PHYS_SLOPE ? 1.3f : 1.0f));
+        else if (!water && allowmove) d.mul(.7); //* (pl->physstate < PHYS_SLOPE ? 1.3f : 1.0f));
     }
     float fric = water && !floating ? 20.0f : (pl->physstate >= PHYS_SLOPE || floating ? 6.0f : 30.0f);
     pl->vel.lerp(d, pl->vel, pow(1 - 1 / fric, curtime / 20.0f));

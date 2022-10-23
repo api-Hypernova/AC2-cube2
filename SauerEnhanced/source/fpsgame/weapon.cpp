@@ -940,22 +940,16 @@ void explode(bool local, fpsent *owner, const vec &v, dynent *safe, int damage, 
     if((gun==GUN_HANDGRENADE ||gun==GUN_RL||gun==GUN_SMG2||gun==GUN_BARREL))
     {
         if(v.dist(player1->o)<100)player1->doshake=1;
-        particle_splash(PART_SMOKE, 5, 1250, v, 0x222222, 12.0f, 50, 250, NULL, 1, false, 3);
-        particle_splash(PART_SMOKE, 5, 200, v, 0x222222, 12.0f, 50, 250, NULL, 1, false, 4);
-
-        //if(gun==GUN_RL)
-        {
-            particle_splash(PART_FLAME1, 15, 70, v, 0xFFFFFF, 3.2f, 150, NULL, NULL, NULL, true);
-            particle_splash(PART_FLAME2, 15, 70, v, 0xFFFFFF, 3.2f, 150, NULL, NULL, NULL, true);
-            particle_splash(PART_FLAME2, 15, 70, v, 0xFFFFFF, 3.2f, 150, NULL, NULL, NULL, true);
-            //particle_splash(PART_EXPLODE, 1, 100, v, 0xFFFFFF, 10.0f, 300, 500, true, NULL, NULL, 4);
-            particle_flare(v, v, 150, PART_MUZZLE_FLASH2, 0xFFFFFF, guns[gun].splash);
-            particle_splash(PART_SPARK, 160, 30, v, 0xFFC864, 1.4f, 300, NULL, NULL, NULL, true);
-            particle_fireball(v, guns[gun].splash, PART_EXPLOSION, 300, 0x333333, guns[gun].splash/2);
-            //loopi(10)particle_explodesplash(v, 200, PART_BULLET, 0xFFFFFF, 0.6f, 10, 10);
+        
+        particle_splash(PART_SMOKE, 50, 6000, v, 0x222222, 50.0f, 50, 1000, NULL, 1, false, 3);
+        particle_splash(PART_FLAME1, 15, 500, v, 0xFFFFFF, 80.0f, 150, NULL, NULL, NULL, true);
+        particle_splash(PART_FLAME2, 15, 70, v, 0xFFFFFF, 3.2f, 150, NULL, NULL, NULL, true);
+        particle_splash(PART_FLAME2, 15, 70, v, 0xFFFFFF, 3.2f, 150, NULL, NULL, NULL, true);
+        particle_flare(v, v, 150, PART_MUZZLE_FLASH2, 0xFFFFFF, guns[gun].splash);
+        particle_splash(PART_SPARK, 160, 30, v, 0xFFC864, 1.4f, 300, NULL, NULL, NULL, true);
+        particle_fireball(v, guns[gun].splash, PART_EXPLOSION, 300, 0x333333, guns[gun].splash/2);
 
             //particle_fireball(v, guns[gun].splash, PART_EXPLOSION, 100, 0xFFFFFF, 4.0f);
-        }
 
         //            else if(gun==GUN_HANDGRENADE)
         //            {
