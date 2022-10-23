@@ -488,19 +488,19 @@ static struct itemstat { int add, max, sound; const char *name; int icon, info, 
 //guns change: game, weapon, render, animsthing, server, fps, playeranim files, autocrosshair, weapon binds, bouncers, gun icons
 static const struct guninfo { short sound, reloadsound, magsize, attackdelay, damage, spread, projspeed, part, kickamount, rays, range, hitpush, splash, ttl, burstlen, guided, sub; const char *name, *file; } guns[NUMGUNS] =
 {
-    { S_LASER,   -1, 0,  500,  45, 0,   0,   0, 75,  1, 1024,  200, 0, 0,    0, 0, 0, "blaster", "laser"  },
-    { S_SHOTGUN2,  -1, 6, 900,  9, 150, 0,   0, 20, 12,1024, 200, 0, 0,    0, 0, 2, "*",         "solaris_shotgun" }, //shotgdefault
-    { S_PULSERIFLE, -1, 30, 100,  26, 0,  0,   0, 7,  1, 1024, 150, 0, 0,    0, 0, 1,  "}",        "pulse_rifle"},
+    { S_LASER,   -1, 0,  500,  5, 0,   0,   0, 75,  1, 1024,  200, 0, 0,    0, 0, 0, "blaster", "laser"  },
+    { S_SHOTGUN2,  -1, 6, 900,  15, 150, 0,   0, 20, 12,1024, 200, 0, 0,    0, 0, 2, "*",         "solaris_shotgun" }, //shotgdefault
+    { S_PULSERIFLE, -1, 30, 100,  100, 0,  0,   0, 7,  1, 1024, 150, 0, 0,    0, 0, 1,  "}",        "pyccna_m4a1"},
     { S_RPG,    -1, 0, 1500, 150, 0,   400,  0, 10, 1, 200, 200, 40,0,    0, 1, 1,  "Z",  "rocket_solaris"},  //rocket
-    { S_MAGNUM,   -1, 6, 300, 75, 0,   0,   0, 30, 1, 2048, 200, 0, 0,    0, 0, 1, "#",           "1911" },
-    { S_HANDNADE,  -1, 0, 1000, 150, 0,  300,  0,  5, 1, 1024, 200, 80, 1500, 0, 0, 1,  "@", "gl" },
-    { S_CRYLINK,  -1, 0, 1000,  90, 0,   0,   0, 30, 1, 1024, 300, 25, 0,  0,  0,  1,  "<", "minstanex_solaris"}, //pyccna_railgun
-    { S_LIGHTNING,  -1, 0, 50, 10,  0,  0,  0,  5,  1,  300,  0,  0,  0,  0,  0,  1, "<",  "minstanex_solaris"}, //pyccna_railgun
-    { S_ORB,      -1, 0, 1000, 8000, 0,  350,  0, 30, 1, 1024, 10, 40, 5000, 0, 0, 1, ";", "pulse_rifle"},
-    { S_SHOTGUNBURST,  -1, 6, 500,  9, 90, 0,   0, 10, 6, 1024, 200, 0, 0,    3, 0, 1, "*", "solaris_shotgun"}, //shotgdefault
-    { S_UZI,       -1, 30, 100,   100,  0,  0,   0, 3,  1, 1024, 150, 0, 0,    0, 0, 1, "&",  "ak74"},
+    { S_MAGNUM,   -1, 6, 300, 150, 0,   0,   0, 30, 1, 2048, 200, 0, 0,    0, 0, 1, "#",           "1911" },
+    { S_HANDNADE,  -1, 0, 1000, 175, 0,  300,  0,  5, 1, 1024, 200, 80, 1500, 0, 0, 1,  "@", "gl" },
+    { S_CRYLINK,  -1, 0, 1000,  500, 0,   0,   0, 30, 1, 1024, 300, 25, 0,  0,  0,  1,  "<", "pyccna_svd"}, //pyccna_railgun
+    { S_LIGHTNING,  -1, 0, 50, 10,  0,  0,  0,  5,  1,  300,  0,  0,  0,  0,  0,  1, "<",  "pyccna_svd"}, //pyccna_railgun
+    { S_ORB,      -1, 0, 1000, 8000, 0,  350,  0, 30, 1, 1024, 10, 40, 5000, 0, 0, 1, ";", "pyccna_m4a1"},
+    { S_SHOTGUNBURST,  -1, 6, 500,  15, 90, 0,   0, 10, 6, 1024, 200, 0, 0,    3, 0, 1, "*", "solaris_shotgun"}, //shotgdefault
+    { S_UZI,       -1, 30, 100,   75,  0,  0,   0, 3,  1, 1024, 150, 0, 0,    0, 0, 1, "&",  "ak74"},
     { S_SMGNADE,   -1, 0, 800,  120, 0,  300,  0, 10, 1, 1024, 200, 40,5000, 0, 0, 1, "@",  "ak74"}, //"pistol"
-    { S_CROSSBOWFIRE, -1, 0, 1000,300,0, 1000,  0, 30, 1, 1024, 50, 20,10000, 0, 1, 1, "{",       "crossbow"},
+    { S_CROSSBOWFIRE, -1, 0, 1000, 500,0, 1000,  0, 30, 1, 1024, 50, 20,10000, 0, 1, 1, "{",       "crossbow"},
     { S_PUNT,     -1, 0, 200,   0, 0,   0,   0, 0,  1,  50, 0,  0,  0,  0,  0,  0, "$",     "electrodriver"},
     { S_TRYGRAB,   -1, 0, 50,   0, 0,   0,   0, 0,  1, 75, 0,  0,  0,  0,  0,  0, "$",     "electrodriver2"},
     { S_PISTOL,    -1, 18, 100, 50, 0,  0,   0, 8,  1, 1024, 150, 0, 0,    0, 0, 1, "%",          "pyccna_fn57" },
