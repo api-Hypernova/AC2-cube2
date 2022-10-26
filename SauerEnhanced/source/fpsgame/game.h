@@ -488,22 +488,22 @@ static struct itemstat { int add, max, sound; const char *name; int icon, info, 
 //guns change: game, weapon, render, animsthing, server, fps, playeranim files, autocrosshair, weapon binds, bouncers, gun icons
 static const struct guninfo { short sound, reloadsound, magsize, attackdelay, damage, spread, projspeed, part, kickamount, rays, range, hitpush, splash, ttl, burstlen, guided, sub; const char *name, *file; } guns[NUMGUNS] =
 {
-    { S_LASER,   -1, 0,  5000,  5, 0,   0,   0, 150,  1, 1024,  200, 0, 0,    0, 0, 0, "blaster", "laser"  },
-    { S_SHOTGUN2,  -1, 6, 1500,  15, 150, 0,   0, 20, 12,1024, 200, 0, 0,    0, 0, 2, "*",         "solaris_shotgun" }, //shotgdefault
-    { S_PULSERIFLE, -1, 45, 40,  75, 0,  0,   0, 7,  1, 1024, 150, 0, 0,    0, 0, 1,  "}",        "pyccna_m4a1"},
-    { S_RPG,    -1, 0, 2500, 150, 0,   400,  0, 10, 1, 200, 200, 40,0,    0, 1, 1,  "Z",  "rocket_solaris"},  //rocket
-    { S_MAGNUM,   -1, 6, 500, 150, 0,   0,   0, 30, 1, 2048, 200, 0, 0,    0, 0, 1, "#",           "1911" },
+    { S_LASER,   -1, 0,  5000,  5, 0,   0,   0, 100,  1, 1024,  200, 0, 0,    0, 0, 0, "blaster", "laser"  },
+    { S_SHOTGUN2,  -1, 6, 900,  15, 150, 0,   0, 20, 12,1024, 200, 0, 0,    0, 0, 2, "*",         "solaris_shotgun" }, //shotgdefault
+    { S_PULSERIFLE, -1, 45, 40,  55, 0,  0,   0, 7,  1, 1024, 150, 0, 0,    0, 0, 1,  "}",        "pyccna_m4a1"},
+    { S_RPG,    -1, 0, 1500, 150, 0,   400,  0, 10, 1, 200, 200, 40,0,    0, 1, 1,  "Z",  "rocket_solaris"},  //rocket
+    { S_MAGNUM,   -1, 6, 300, 99, 0,   0,   0, 30, 1, 2048, 200, 0, 0,    0, 0, 1, "#",           "1911" },
     { S_HANDNADE,  -1, 0, 1000, 175, 0,  300,  0,  5, 1, 1024, 200, 80, 1500, 0, 0, 1,  "@", "gl" },
-    { S_CRYLINK,  -1, 0, 2000,  500, 0,   0,   0, 30, 1, 1024, 300, 25, 0,  0,  0,  1,  "<", "pyccna_svd"}, //pyccna_railgun
+    { S_CRYLINK,  -1, 0, 1000,  500, 0,   0,   0, 30, 1, 1024, 300, 25, 0,  0,  0,  1,  "<", "pyccna_svd"}, //pyccna_railgun
     { S_LIGHTNING,  -1, 0, 50, 10,  0,  0,  0,  5,  1,  300,  0,  0,  0,  0,  0,  1, "<",  "pyccna_svd"}, //pyccna_railgun
     { S_ORB,      -1, 0, 1000, 8000, 0,  350,  0, 30, 1, 1024, 10, 40, 5000, 0, 0, 1, ";", "pyccna_m4a1"},
-    { S_SHOTGUNBURST,  -1, 6, 1000,  15, 90, 0,   0, 10, 6, 1024, 200, 0, 0,    3, 0, 1, "*", "solaris_shotgun"}, //shotgdefault
+    { S_SHOTGUNBURST,  -1, 6, 500,  15, 90, 0,   0, 10, 6, 1024, 200, 0, 0,    3, 0, 1, "*", "solaris_shotgun"}, //shotgdefault 
     { S_UZI,       -1, 30, 100,   75,  0,  0,   0, 3,  1, 1024, 150, 0, 0,    0, 0, 1, "&",  "ak74"},
-    { S_SMGNADE,   -1, 0, 1500,  120, 0,  300,  0, 10, 1, 1024, 200, 40,5000, 0, 0, 1, "@",  "ak74"}, //"pistol"
-    { S_CROSSBOWFIRE, -1, 0, 1700, 500,0, 1000,  0, 30, 1, 1024, 50, 20,10000, 0, 1, 1, "{",       "crossbow"},
+    { S_SMGNADE,   -1, 0, 1300,  120, 0,  300,  0, 10, 1, 1024, 200, 40,5000, 0, 0, 1, "@",  "ak74"}, //"pistol"
+    { S_CROSSBOWFIRE, -1, 0, 1000, 500,0, 1000,  0, 30, 1, 1024, 50, 20,10000, 0, 1, 1, "{",       "crossbow"},
     { S_PUNT,     -1, 0, 200,   0, 0,   0,   0, 0,  1,  50, 0,  0,  0,  0,  0,  0, "$",     "electrodriver"},
     { S_TRYGRAB,   -1, 0, 50,   0, 0,   0,   0, 0,  1, 75, 0,  0,  0,  0,  0,  0, "$",     "electrodriver2"},
-    { S_PISTOL,    -1, 18, 150, 50, 0,  0,   0, 8,  1, 1024, 150, 0, 0,    0, 0, 1, "%",          "pyccna_fn57" },
+    { S_PISTOL,    -1, 18, 100, 50, 0,  0,   0, 8,  1, 1024, 150, 0, 0,    0, 0, 1, "%",          "pyccna_fn57" },
     { S_FLAUNCH,   -1, 0, 200,  20, 0,   50,PART_FIREBALL1,1, 1, 1024, 0, 0, 0, 0, 0, 0, "fireball",  NULL },
     { S_ICEBALL,   -1, 0, 200,  40, 0,   30,PART_FIREBALL2,1, 1, 1024, 0, 0, 0, 0, 0, 0,  "iceball",   NULL },
     { S_SLIMEBALL, -1, 0, 200,  30, 0, 160, PART_FIREBALL3,1, 1, 1024, 0, 0, 0, 0, 0, 0, "slimeball", NULL },
@@ -807,8 +807,8 @@ struct fpsstate
         {
             armour = 0;
             health = 1;
-            gunselect = GUN_MAGNUM;
-            ammo[GUN_MAGNUM] = 100;
+            gunselect = GUN_ELECTRO;
+            ammo[GUN_ELECTRO] = 1000;
         }
         else if(m_regencapture)
         {

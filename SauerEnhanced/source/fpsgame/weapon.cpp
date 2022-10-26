@@ -368,7 +368,7 @@ void updatebouncers(int time)
             if(pos.dist(bnc.flarepos)>1) {particle_flare(bnc.flarepos, pos, 500, PART_RAILTRAIL, nadetrailcol, .2f); bnc.flarepos=bnc.o; bnc.flareleft=5;}
             pos.add(vec(bnc.offset).mul(bnc.offsetmillis/float(OFFSETMILLIS)));
             if(lookupmaterial(pos)==MAT_WATER)
-                regular_particle_splash(PART_BUBBLE, 1, 500, pos, 0xFFFFFF, 1.0f, 25, 500);
+                regular_particle_splash(PART_BUBBLE, 1, 1000, pos, 0xFFFFFF, 10.0f, 25, 500);
             else {
                 //regular_particle_splash(PART_SMOKE, 6, 500, pos, 0xFF0000, 1.2f, 1, 0);
             }
@@ -385,7 +385,8 @@ void updatebouncers(int time)
         {
             vec pos(bnc.o);
             pos.add(vec(bnc.offset).mul(bnc.offsetmillis/float(OFFSETMILLIS)));
-            regular_particle_splash(PART_BLOOD, bnc.vel.magnitude()/50, 300, pos, 0x99FFFF, 2.0f, 50*2); // 1000, 100);
+            regular_particle_splash(PART_BLOOD, bnc.vel.magnitude()/50, 500, pos, 0x99FFFF, 10.0f, 50*2); // 1000, 100);
+                                                                 //50, 300, pos, 0x99FFFF, 2.0f, 50 * 2
             //                regular_particle_splash(PART_BLOOD, 5, 300, pos, 0x99FFFF, .6f, 1, 0, 0); // 1000, 100);
 
         }
