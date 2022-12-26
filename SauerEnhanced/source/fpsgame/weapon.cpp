@@ -1440,9 +1440,8 @@ void raydamage(vec &from, vec &to, fpsent *d)
     }
     if(d->gunselect==GUN_ELECTRO)
     {
-        loopi(2)particle_flare(d->muzzle.x>=0?d->muzzle:hudgunorigin(d->gunselect, from, to, d), to, 1000, PART_STREAK, 0x0789FC, 0.45f);
-        particle_trail(0, 0, d->muzzle.x>=0?d->muzzle:hudgunorigin(d->gunselect, from, to, d), to, 0, 0, 0, true);
-        particle_trail(PART_RAILSPIRAL, 500, d->muzzle.x>=0?d->muzzle:hudgunorigin(d->gunselect, from, to, d), to, 0, 0, 0, true);
+        /*loopi(2)*/particle_flare(d->muzzle.x >= 0 ? d->muzzle : hudgunorigin(d->gunselect, from, to, d), to, 400, PART_STREAK, 0x0789FC, 0.35f);
+        particle_trail(PART_RAILSPIRAL, 500, d->muzzle.x>=0?d->muzzle:hudgunorigin(d->gunselect, from, to, d), to, 0, 0.5f, 0, true);
     }
     if((o = intersectclosest(from, to, d, dist)) && guns[d->gunselect].rays==1)
     {
@@ -1833,7 +1832,7 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
 
         adddecal(DECAL_BULLET, to, vec(from).sub(to).normalize(), 2.0f);
         if(muzzlelight) adddynlight(hudgunorigin(gun, d->o, to, d), gun==GUN_CG ? 30 : 15, vec(0.5f, 0.375f, 0.25f), gun==GUN_CG ? 50 : 100, gun==GUN_CG ? 50 : 100, DL_FLASH, 0, vec(0, 0, 0), d);
-        if((gun==GUN_MAGNUM || gun==GUN_ELECTRO)&& d==hudplayer()){d->screenjumpheight=30; screenjump(); screenjump(); d->attacking=0; d->altattacking=0;}
+        if((gun==GUN_MAGNUM || gun==GUN_ELECTRO)&& d==hudplayer()){d->screenjumpheight=20; screenjump(); screenjump(); d->attacking=0; d->altattacking=0;}
         //else if(d==player1) {d->screendown=1; d->screenup=1; screenjump(); screenjump(); }
         if(gun==GUN_PISTOL)d->attacking=d->altattacking=0;
         if(gun!=GUN_MAGNUM)
