@@ -988,7 +988,7 @@ void explode(bool local, fpsent *owner, const vec &v, dynent *safe, int damage, 
     if (gun == GUN_ELECTRO2) {
         playsound(S_COMBO, &v);
         //void particle_fireball(const vec &dest, float maxsize, int type, int fade, int color, float size)
-        particle_fireball(v, guns[gun].splash, PART_EXPLOSION, 1000, 0x0789FC, guns[gun].splash);
+        particle_fireball(v, guns[gun].splash/2, PART_EXPLOSION, 1000, 0x0789FC, guns[gun].splash/2);
 
     }
 
@@ -1792,7 +1792,6 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
                 {
                     if (proj.gun == GUN_ELECTRO2 && d == player1)
                     {
-                        conoutf("Hit a shock combo!");
                         hitCombo = true;
                         int qdam = guns[proj.gun].damage * (proj.owner->quadmillis ? 2 : 1);
                         projsplash(proj, proj.o, NULL, qdam, false);
