@@ -1695,7 +1695,7 @@ void explodeevent::process(clientinfo *ci)
 
 bool isheadshot(dynent *d, vec to)
 {
-    if ((to.z - (d->o.z - d->eyeheight)) / (d->eyeheight + d->aboveeye) > 0.9f) return true;
+    if ((to.z - (d->o.z - d->eyeheight)) / (d->eyeheight + d->aboveeye) > 0.8f) return true;
     return false;
 }
 
