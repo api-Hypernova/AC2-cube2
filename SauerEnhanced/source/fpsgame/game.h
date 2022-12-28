@@ -337,7 +337,8 @@ enum
     S_SKEWER,
     S_D1,
     S_D2,
-    S_D3
+    S_D3,
+    S_COMBO
 
 };
 
@@ -491,12 +492,11 @@ static const struct guninfo { short sound, reloadsound, magsize, attackdelay, da
     { S_LASER,   -1, 0,  500,  45, 0,   0,   0, 75,  1, 1024,  200, 0, 0,    0, 0, 0, "blaster", "laser"  },
     { S_SHOTGUN2,  -1, 6, 900,  9, 150, 0,   0, 20, 12,1024, 200, 0, 0,    0, 0, 2, "*",         "solaris_shotgun" }, //shotgdefault
     { S_PULSERIFLE, -1, 30, 100,  26, 0,  0,   0, 7,  1, 1024, 150, 0, 0,    0, 0, 1,  "}",        "pulse_rifle"},
-    { S_RPG,    -1, 0, 1500, 150, 0,   400,  0, 10, 1, 500, 200, 40,0,    0, 1, 1,  "Z",  "rocket_solaris"},  //rocket
-    { S_MAGNUM,   -1, 6, 1000, 90, 0,   0,   0, 30, 1, 2048, 200, 0, 0,    0, 0, 1, "#",           "pyccna_svd" },
+    { S_RPG,    -1, 0, 1500, 150, 0,   400,  0, 10, 1, 500, 200, 40,0,    0, 1, 1,  "Z",  "rocketold"},  //rocket_solaris
+    { S_MAGNUM,   -1, 6, 600, 90, 0,   0,   0, 30, 1, 2048, 200, 0, 0,    0, 0, 1, "#",           "pyccna_svd" },
     { S_HANDNADE,  -1, 0, 1000, 150, 0,  300,  0,  5, 1, 1024, 200, 55, 1500, 0, 0, 1,  "@", "gl" },
-    { S_CRYLINK,  -1, 0, 500,  60, 0,   0,   0, 10, 1, 1024, 300, 25, 0,  0,  0,  1,  "<", "pyccna_railgun"},
-    //{ S_LIGHTNING,  -1, 0, 50, 10,  0,  0,  0,  5,  1,  300,  0,  0,  0,  0,  0,  1, "<",  "pyccna_railgun"},
-    { S_LIGHTNING,  -1, 0, 500, 60,  0,  250,  PART_FIREBALL2,  5,  1,  1024,  300,  30,  0,  0,  0,  1, "<",  "pyccna_railgun"},
+    { S_MINSTANEX,  -1, 0, 500,  60, 0,   0,   0, 10, 1, 1024, 300, 25, 0,  0,  0,  1,  "<", "pyccna_railgun"},
+    { S_LIGHTNING,  -1, 0, 500, 200,  0,  250,  PART_FIREBALL2,  5,  1,  1024,  300,  60,  0,  0,  0,  1, "<",  "pyccna_railgun"},
     { S_ORB,      -1, 0, 1000, 8000, 0,  350,  0, 30, 1, 1024, 10, 40, 5000, 0, 0, 1, ";", "pulse_rifle"},
     { S_SHOTGUNBURST,  -1, 6, 500,  9, 90, 0,   0, 10, 6, 1024, 200, 0, 0,    3, 0, 1, "*", "solaris_shotgun"}, //shotgdefault
     { S_UZI,       -1, 30, 100,   23,  0,  0,   0, 3,  1, 1024, 150, 0, 0,    0, 0, 1, "&",  "ak74"},

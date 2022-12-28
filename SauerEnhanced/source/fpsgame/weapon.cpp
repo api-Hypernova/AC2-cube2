@@ -971,16 +971,10 @@ void explode(bool local, fpsent *owner, const vec &v, dynent *safe, int damage, 
             //playsound(gun==GUN_RL?S_RLHIT1+rnd(3):S_RLEX1+rnd(3), &v);
             playsound(S_RLHIT, &v);
         }
-        //            if(owner->quadmillis)
-        //            {
-        //                particle_splash(PART_SPARK, 160, 300, v, 0xFF0000, 1.4f, 300, 1000);
-        //                particle_splash(PART_FLAME1, 15, 300, v, 0xFF0000, 3.2f, 300, 1000);
-        //                particle_splash(PART_FLAME2, 15, 300, v, 0xFF0000, 3.2f, 300, 1000);
-        //                particle_splash(PART_FLAME2, 15, 300, v, 0xFF0000, 3.2f, 300, 1000);
-        //            }
+
     }
 
-    if(gun==GUN_ELECTRO || gun==GUN_ELECTRO2)
+    if(gun==GUN_ELECTRO)
     {
         playsound(S_NEXIMPACT, &v);
         particle_flare(v, v, 150, PART_MUZZLE_FLASH2, 0x0789FC, guns[gun].splash/2);
@@ -988,22 +982,16 @@ void explode(bool local, fpsent *owner, const vec &v, dynent *safe, int damage, 
         particle_splash(PART_SPARK, 2, 200, v, 0x0789FC, 8.f, 2, 50);
         //particle_splash(PART_SPARK, 500, 500, v, 0x0789FC, 0.5f, guns[gun].splash*4);
         particle_fireball(v, 8.f, PART_EXPLOSION, 200, 0x0789FC, guns[gun].splash/2);
-        //            loopi(7)
-        //            {
-        //                if(explosionparticles)particle_splash(PART_STEAM, 6, 400, v, 0xFFC864, 4.f, guns[gun].splash, rnd(6)-7);
-        //            }
-
-
-        //void particle_fireball(const vec &dest, float maxsize, int type, int fade, int color, float size)
-        //particle_fireball(v, guns[gun].splash/2, PART_EXPLOSION, 300, 0xFFC864, guns[gun].splash/2);
-
 
     }
-    //vec occlusioncheck;
-    //        if(gun==GUN_HANDGRENADE && raycubelos(v, camera1->o, occlusioncheck))
-    //        {
-    //            particle_flare(v, v, 100, PART_GLOW, 0x444477, 10.0f, NULL, 5);
-    //        }
+
+    if (gun == GUN_ELECTRO2) {
+        playsound(S_COMBO, &v);
+        //void particle_fireball(const vec &dest, float maxsize, int type, int fade, int color, float size)
+        particle_fireball(v, guns[gun].splash, PART_EXPLOSION, 1000, 0x0789FC, guns[gun].splash);
+
+    }
+
     if(gun==GUN_ELECTRO||gun==GUN_ELECTRO2)adddynlight(v, 1.15f*guns[gun].splash, vec(0, 0, 1), 100, 100, 0, guns[gun].splash/2, vec(0, 0, 1));
     else if(gun!=GUN_CROSSBOW&&gun!=GUN_BITE)adddynlight(v, 2.15f*guns[gun].splash, vec(2, 1.5f, 1), 100, 100, 0, guns[gun].splash, vec(1, 0.75f, 0.5f));
     //else if(gun==GUN_HANDGRENADE) adddynlight(v, 1.15f*RL_DAMRAD, vec(2, 1.5f, 1), 100, 100, 0, 8, vec(0.25f, 1, 1));
@@ -1029,9 +1017,9 @@ void explode(bool local, fpsent *owner, const vec &v, dynent *safe, int damage, 
     }
 }
 
-void projsplash(projectile &p, vec &v, dynent *safe, int damage)
+void projsplash(projectile &p, vec &v, dynent *safe, int damage, bool impact = true)
 {
-    if(guns[p.gun].part && p.gun!=GUN_ELECTRO2)
+    if(guns[p.gun].part && (p.gun != GUN_ELECTRO2 || impact))
     {
         particle_splash(PART_SPARK, 100, 200, v, 0xFFFFFF, 0.1f);
         playsound(S_FEXPLODE, &v);
@@ -1782,13 +1770,42 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
         d->altattacking=0;
         d->attacking=0;
         if(d==hudplayer()) { d->screenjumpheight=10; screenjump(); screenjump();}
+
+
+        // Check if we hit a shock combo. If so, explode the projectile in the air
+        // The question is how do we create an explosion that is more powerful than the normal secondary explosion, on the server side?
+        vec v;
+        float dist = to.dist(from, v);
+        int steps = clamp(int(dist * 2), 1, 200);
+        v.div(steps);
+        vec p = from;
+        vec raycheck;
+        bool hitCombo = false;
+        loopi(steps)
+        {
+            if (hitCombo) break;
+            p.add(v);
+            loopv(projs)
+            {
+                projectile& proj = projs[i];
+                if (proj.o.dist(p) <= 5 && !hitCombo)
+                {
+                    if (proj.gun == GUN_ELECTRO2 && d == player1)
+                    {
+                        conoutf("Hit a shock combo!");
+                        hitCombo = true;
+                        int qdam = guns[proj.gun].damage * (proj.owner->quadmillis ? 2 : 1);
+                        projsplash(proj, proj.o, NULL, qdam, false);
+                        if (proj.local)addmsg(N_EXPLODE, "rci3iv", proj.owner, lastmillis - maptime, proj.gun, proj.id - maptime,
+                            hits.length(), hits.length() * sizeof(hitmsg) / sizeof(int), hits.getbuf());
+                        projs.remove(i--);
+                        break;
+                    }
+                }
+            }
+        }
         break;
     }
-
-
-
-
-
 
 
 
