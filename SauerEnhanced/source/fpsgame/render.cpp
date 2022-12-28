@@ -385,7 +385,7 @@ namespace game
         if(d->gunselect==GUN_SHOTGUN2)rtime=260;
         if(d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2)rtime=0;
         if(d->gunselect==GUN_ELECTRO2)rtime=0;
-        if(d->gunselect==GUN_ELECTRO)rtime = 100;
+        if(d->gunselect==GUN_ELECTRO)rtime = 75;
         if(d->gunselect==GUN_TELEKENESIS2)rtime=2;
         if(d->gunselect==GUN_RL && !strcmp(guns[d->gunselect].file, "rocket"))rtime=700;
         if(d->lastaction && d->lastattackgun==d->gunselect && lastmillis-d->lastaction<rtime)

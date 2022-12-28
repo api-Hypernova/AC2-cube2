@@ -646,7 +646,7 @@ void updatebouncers(int time)
                     maxammo = 80;
                     break;
                 case GUN_ELECTRO:
-                    maxammo = 15;
+                    maxammo = 30;
                     break;
                 case GUN_CROSSBOW:
                     maxammo = 10;
@@ -1695,7 +1695,7 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
                             maxammo = 80;
                             break;
                         case GUN_ELECTRO:
-                            maxammo = 15;
+                            maxammo = 30;
                             break;
                         case GUN_CROSSBOW:
                             maxammo = 10;
@@ -1781,7 +1781,7 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
         if(muzzlelight) adddynlight(to, 30, vec(0.5f, 0.5f, 1.f), 100, 100, DL_FLASH, 0, vec(0, 0, 1), d);
         d->altattacking=0;
         d->attacking=0;
-        if(d==hudplayer()) { d->screenjumpheight=20; screenjump(); screenjump();}
+        if(d==hudplayer()) { d->screenjumpheight=10; screenjump(); screenjump();}
         break;
     }
 

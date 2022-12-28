@@ -1216,7 +1216,7 @@ namespace game
             maxammo = 80;
             break;
         case GUN_ELECTRO:
-            maxammo = 15;
+            maxammo = 30;
             break;
         case GUN_CROSSBOW:
             maxammo = 10;
