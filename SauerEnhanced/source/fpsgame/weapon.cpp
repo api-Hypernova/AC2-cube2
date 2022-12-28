@@ -1031,7 +1031,7 @@ void explode(bool local, fpsent *owner, const vec &v, dynent *safe, int damage, 
 
 void projsplash(projectile &p, vec &v, dynent *safe, int damage)
 {
-    if(guns[p.gun].part)
+    if(guns[p.gun].part && p.gun!=GUN_ELECTRO2)
     {
         particle_splash(PART_SPARK, 100, 200, v, 0xFFFFFF, 0.1f);
         playsound(S_FEXPLODE, &v);
@@ -1050,7 +1050,7 @@ void explodeeffects(int gun, fpsent *d, bool local, int id)
     switch(gun)
         switch(gun)
         {
-        case GUN_RL:
+        case GUN_RL: case GUN_ELECTRO2:
             //case GUN_RL2:
             //case GUN_CROSSBOW:
             loopv(projs)
@@ -1082,7 +1082,7 @@ void explodeeffects(int gun, fpsent *d, bool local, int id)
                     break;
                 }
             }
-        case GUN_ELECTRO2:
+        /*case GUN_ELECTRO2:
             loopv(bouncers)
             {
                 bouncer &b = *bouncers[i];
@@ -1095,7 +1095,7 @@ void explodeeffects(int gun, fpsent *d, bool local, int id)
                     delete bouncers.remove(i);
                     break;
                 }
-            }
+            }*/
         case GUN_CG2:
             loopv(bouncers)
             {
@@ -1216,7 +1216,7 @@ void updateprojectiles(int time)
                 }
                 else if(lookupmaterial(pos)!=MAT_WATER && p.gun==GUN_RL)
                     regular_particle_splash(PART_SMOKE, 2, 300, pos, 0x555555, 2.4f, 12, 502);
-                if(p.gun==GUN_ELECTRO2 && pos.dist(p.owner->o)>50) {
+                /*if (p.gun == GUN_ELECTRO2 && pos.dist(p.owner->o)>50) {
                     vec occcheck;
                     if(raycubelos(pos, camera1->o, occcheck) && p.gun==GUN_ELECTRO2)
                     {
@@ -1224,7 +1224,7 @@ void updateprojectiles(int time)
                         particle_flare(pos, pos, 10, PART_GLOW, 0x0789FC, 2.5f);
                         //particle_flare(pos, pos, 300, PART_GLOW, 0x0789FC, 1.8f);
                     }
-                }
+                }*/
 
                 if(seimprovedprojectiles && p.gun==GUN_RL)
                 {
@@ -1573,7 +1573,7 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
         break;
     }
 
-    case GUN_ELECTRO2:
+    /*case GUN_ELECTRO2:
     {
         particle_splash(PART_SPARK, 200, 250, to, 0x0789FC, 0.10f);
         particle_splash(PART_SMOKE, 3, 500, d->muzzle, 0x0789FC, 1.f, 50, 501, NULL, 2, NULL, 2);
@@ -1584,9 +1584,9 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
         //adddecal(DECAL_GLOW, to, vec(from).sub(to).normalize(), 3.0f, bvec(0x07, 0x89, 0xFC)); //  0x0789FC);
         if(muzzlelight) adddynlight(hudgunorigin(gun, d->o, to, d), gun==GUN_CG ? 30 : 15, vec(0.3f, .3f, 1.5f), gun==GUN_CG ? 50 : 100, gun==GUN_CG ? 50 : 100, DL_FLASH, 0, vec(0, 0, 1), d);
         break;
-    }
+    }*/
 
-    case GUN_TELEKENESIS: ////////SPLITTING INTO TWO TELEKENESIS WEAPONS
+    case GUN_TELEKENESIS:
     { //server should add grenade and orb bouncers
         //float dist;
         // dynent *o = intersectclosest(from, to, d, dist);
@@ -1884,6 +1884,7 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
         //            //if(d==player1){d->screendown=1; d->screenup=1; screenjump(); screenjump();}
         //            break;
     case GUN_RL:
+    case GUN_ELECTRO2:
         if(muzzleflash && d->muzzle.x >= 0)
             particle_flare(d->muzzle, d->muzzle, 250, PART_MUZZLE_FLASH2, 0xFFFFFF, 3.0f, d);
         //        if(gun==GUN_ELECTRO){
@@ -2540,7 +2541,7 @@ void renderprojectiles()
         yaw += 90;
         v.mul(3);
         v.add(pos);
-        if(p.gun!=GUN_ELECTRO||p.owner->o.dist(v)<=100)rendermodel(&p.light, p.gun==GUN_RL?"projectiles/rocket":"projectiles/plasmabolt", ANIM_MAPMODEL|ANIM_LOOP, v, yaw, pitch, MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_LIGHT);
+        if(p.gun!=GUN_ELECTRO||p.owner->o.dist(v)<=100)rendermodel(&p.light, p.gun==GUN_RL?"projectiles/rocket":"projectiles/shockcore", ANIM_MAPMODEL|ANIM_LOOP, v, yaw, pitch, MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_LIGHT);
     }
 }
 
