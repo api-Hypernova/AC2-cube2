@@ -1795,8 +1795,11 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
                         hitCombo = true;
                         int qdam = guns[proj.gun].damage * (proj.owner->quadmillis ? 2 : 1);
                         projsplash(proj, proj.o, NULL, qdam, false);
-                        if (proj.local)addmsg(N_EXPLODE, "rci3iv", proj.owner, lastmillis - maptime, proj.gun, proj.id - maptime,
-                            hits.length(), hits.length() * sizeof(hitmsg) / sizeof(int), hits.getbuf());
+                        if (d == player1 || d->ai) {
+                            conoutf("Sending explode message to server");
+                            addmsg(N_EXPLODE, "rci3iv", proj.owner, lastmillis - maptime, proj.gun, proj.id - maptime,
+                                hits.length(), hits.length() * sizeof(hitmsg) / sizeof(int), hits.getbuf());
+                        }
                         projs.remove(i--);
                         break;
                     }
