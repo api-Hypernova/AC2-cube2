@@ -1732,8 +1732,11 @@ void modifyvelocity(physent *pl, bool local, bool water, bool floating, int curt
         if(pl->physstate>=PHYS_SLOPE&&game::player1->crouching)d.mul(.5f);
         if(((fpsent *)pl)->health<=0 && lastmillis-((fpsent *)pl)->lastpain<2000)d.mul(0);
         if(pl==game::player1){
-            if(abs(long(game::player1->lastyaw-game::player1->yaw))>1 && abs(long(game::player1->lastyaw-game::player1->yaw))<12 && pl->move && pl->strafe)d.mul(abs(long(game::player1->lastyaw-game::player1->yaw))/2.3); //13
-            game::player1->lastyaw=game::player1->yaw;
+            if(abs(long(game::player1->lastyaw-game::player1->yaw))>1 && 
+                abs(long(game::player1->lastyaw-game::player1->yaw))<12 && 
+                pl->move && pl->strafe)
+                    d.mul(abs(long(game::player1->lastyaw-game::player1->yaw))/2.3); //13
+                    game::player1->lastyaw=game::player1->yaw;
         }
 //        if(pl==game::player1 && abs(game::player1->lastyaw-game::player1->yaw)>0 && !pl->move && abs(game::player1->lastyaw-game::player1->yaw)<3 && pl->strafe && game::player1->vel.magnitude2()>=50) //slow down that air accel :)
 //        {
@@ -1745,7 +1748,14 @@ void modifyvelocity(physent *pl, bool local, bool water, bool floating, int curt
     else if(pl->physstate >= PHYS_SLOPE || floating) fric = 6.f; //6.f;
     else fric = 30.f; //30.f higher makes feel sluggish, lower makes it feel low jumping vel (hardly gets you off the ground when low)
 
-    if(pl->physstate!=PHYS_FALL || game::player1->vel.magnitude2()<60 || (pl==game::player1 && abs(long(game::player1->lastyaw-game::player1->yaw))>0 && !pl->move && abs(long(game::player1->lastyaw-game::player1->yaw))<3 && pl->strafe && game::player1->vel.magnitude2()>=50))pl->vel.lerp(d, pl->vel, pow(1 - 1/fric, curtime/20.0f)); //to make no fric, disable this when player is in air
+    if(pl->physstate!=PHYS_FALL || 
+        game::player1->vel.magnitude2()<60 || 
+        (pl==game::player1 && 
+            abs(long(game::player1->lastyaw-game::player1->yaw))>0 && 
+            !pl->move && 
+            abs(long(game::player1->lastyaw-game::player1->yaw))<3 && 
+            pl->strafe && game::player1->vel.magnitude2()>=50))
+        pl->vel.lerp(d, pl->vel, pow(1 - 1/fric, curtime/20.0f)); //to make no fric, disable this when player is in air
 
 //    static const char *states[] = {"float", "fall", "slide", "slope", "floor", "step up", "step down", "bounce"};
 }

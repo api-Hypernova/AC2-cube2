@@ -255,7 +255,6 @@ namespace game
             fpsent *s = ragdolls[i];
             if(s->diedgun!=GUN_TELEKENESIS && s->diedgun!=GUN_TELEKENESIS2  && s->diedgun!=GUN_FIST && s->o.dist(to) <= 10 && !player1->isholdingprop && !player1->isholdingnade && !player1->isholdingorb && !player1->isholdingbarrel){
                 s->holdingweapon=0;
-                msgsound(S_ROCKETPICKUP, player1);
                 int type;
                 if(s->diedgun==GUN_CG || s->gunselect==GUN_CG2)type=I_MINIGUN;
                 else if(s->diedgun==GUN_CROSSBOW)type=I_CROSSBOW;

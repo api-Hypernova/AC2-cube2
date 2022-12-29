@@ -265,16 +265,26 @@ namespace game
         gets2c();
         updatemovables(curtime);
         updatemonsters(curtime);
-        if(!player1->move && player1->strafe && player1->vel.magnitude2()>=50 && abs(long(player1->lastyaw-player1->yaw))<3 && abs(long(player1->lastyaw-player1->yaw))>0)
+        if(!player1->move && player1->strafe && 
+            player1->vel.magnitude2()>=50 && 
+            abs(long(player1->lastyaw-player1->yaw))<3 && 
+            abs(long(player1->lastyaw-player1->yaw))>0)
         {
             player1->vel.x += -sinf(RAD*player1->yaw)*(player1->vel.magnitude2()/15);
             player1->vel.y += cosf(RAD*player1->yaw)*(player1->vel.magnitude2()/15);
             player1->vel.x += player1->strafe*cosf(RAD*player1->yaw)*(player1->vel.magnitude2()/15);
-            player1->vel.y += player1->strafe*sinf(RAD*player1->yaw)*(player1->vel.magnitude2()/15);
+            player1->vel.y += player1->strafe*sinf(RAD*player1->yaw)*(player1->vel.magnitude2()/15);    
             player1->vel.x/=1.06;
             player1->vel.y/=1.06; //woohoo!
         }
-        if(lastmillis-player1->uncrouchtime<10 && player1->timeinair<500) {player1->vel.z+=30; entinmap(player1); }
+
+        // TODO: What if we just force the player location up to where it should be?
+        // Other option - uncrouching can force the player to immediately jump if on the ground, then after this timer, the player's size can increase
+        if(lastmillis-player1->uncrouchtime<5 && player1->timeinair<25) {
+            player1->vel.z=3; 
+            entinmap(player1); 
+        } 
+
         if(player1->state==CS_DEAD)
         {
             int playedspawnsnd=0;
@@ -283,7 +293,6 @@ namespace game
                 respawnself();
                 player1->burstprogress=0;
                 player1->lastswitch=lastmillis;
-                if(!playedspawnsnd){msgsound(S_ROCKETPICKUP, player1); playedspawnsnd=1;}
                 entinmap(player1, true);
             }
             if(player1->ragdoll) moveragdoll(player1);
