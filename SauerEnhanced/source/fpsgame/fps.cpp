@@ -665,6 +665,7 @@ namespace game
         copystring(who6, who2);
         deathstate(d);
         ai::killed(d, actor);
+        if(d == player1) execute("spectator 1");
     }
 
     SVARP(seendmsg, "Good game!");

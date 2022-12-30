@@ -456,7 +456,7 @@ const float STAIRHEIGHT = 4.1f;
 const float FLOORZ = 0.867f;
 const float SLOPEZ = 0.5f;
 const float WALLZ = 0.2f;
-extern const float JUMPVEL = 80.0f; //100
+extern const float JUMPVEL = 90.f;
 extern const float GRAVITY = 200.0f;
 
 bool ellipserectcollide(physent *d, const vec &dir, const vec &o, const vec &center, float yaw, float xr, float yr, float hi, float lo)

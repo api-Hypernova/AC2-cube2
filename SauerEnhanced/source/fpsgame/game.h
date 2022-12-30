@@ -115,7 +115,7 @@ static struct gamemodeinfo
 { "tactics team", M_NOITEMS | M_TACTICS | M_TEAM | M_OVERTIME, "Tactics Team: You spawn with two random weapons and armour. There are no items. Frag \fs\f3the enemy team\fr to score points for \fs\f1your team\fr." },
 { "capture", M_NOAMMO | M_TACTICS | M_CAPTURE | M_TEAM | M_OVERTIME, "Capture: Capture neutral bases or steal \fs\f3enemy bases\fr by standing next to them.  \fs\f1Your team\fr scores points for every 10 seconds it holds a base. You spawn with two random weapons and armour. Collect extra ammo that spawns at \fs\f1your bases\fr. There are no ammo items." },
 { "regen capture", M_NOITEMS | M_CAPTURE | M_REGEN | M_TEAM | M_OVERTIME, "Regen Capture: Capture neutral bases or steal \fs\f3enemy bases\fr by standing next to them. \fs\f1Your team\fr scores points for every 10 seconds it holds a base. Regenerate health and ammo by standing next to \fs\f1your bases\fr. There are no items." },
-{ "ctf", M_CTF | M_TEAM, "Capture The Flag: Capture \fs\f3the enemy flag\fr and bring it back to \fs\f1your flag\fr to score points for \fs\f1your team\fr. Collect items for ammo." },
+{ "ctf", M_NOITEMS | M_CTF | M_TEAM | M_EFFICIENCY, "Capture The Flag: Capture \fs\f3the enemy flag\fr and bring it back to \fs\f1your flag\fr to score points for \fs\f1your team\fr. Collect items for ammo." },
 { "insta ctf", M_NOITEMS | M_INSTA | M_CTF | M_TEAM, "Instagib Capture The Flag: Capture \fs\f3the enemy flag\fr and bring it back to \fs\f1your flag\fr to score points for \fs\f1your team\fr. You spawn with full rifle ammo and die instantly from one shot. There are no items." },
 { "protect", M_CTF | M_PROTECT | M_TEAM, "Protect The Flag: Touch \fs\f3the enemy flag\fr to score points for \fs\f1your team\fr. Pick up \fs\f1your flag\fr to protect it. \fs\f1Your team\fr loses points if a dropped flag resets. Collect items for ammo." },
 { "insta protect", M_NOITEMS | M_INSTA | M_CTF | M_PROTECT | M_TEAM, "Instagib Protect The Flag: Touch \fs\f3the enemy flag\fr to score points for \fs\f1your team\fr. Pick up \fs\f1your flag\fr to protect it. \fs\f1Your team\fr loses points if a dropped flag resets. You spawn with full rifle ammo and die instantly from one shot. There are no items." },
@@ -338,7 +338,8 @@ enum
     S_D1,
     S_D2,
     S_D3,
-    S_COMBO
+    S_COMBO,
+    S_SLASH
 
 };
 
@@ -489,7 +490,7 @@ static struct itemstat { int add, max, sound; const char *name; int icon, info, 
 //guns change: game, weapon, render, animsthing, server, fps, playeranim files, autocrosshair, weapon binds, bouncers, gun icons
 static const struct guninfo { short sound, reloadsound, magsize, attackdelay, damage, spread, projspeed, part, kickamount, rays, range, hitpush, splash, ttl, burstlen, guided, sub; const char *name, *file; } guns[NUMGUNS] =
 {
-    { S_LASER,   -1, 0,  500,  45, 0,   0,   0, 75,  1, 1024,  200, 0, 0,    0, 0, 0, "blaster", "laser"  },
+    { S_SLASH,   -1, 0,  500,  150, 0,   0,   0, 0,  1, 75,  200, 0, 0,    0, 0, 0, "katana", "katana"  },
     { S_SHOTGUN2,  -1, 6, 900,  9, 150, 0,   0, 20, 12,1024, 200, 0, 0,    0, 0, 2, "*",         "solaris_shotgun" }, //shotgdefault
     { S_PULSERIFLE, -1, 30, 100,  26, 0,  0,   0, 7,  1, 1024, 150, 0, 0,    0, 0, 1,  "}",        "pulse_rifle"},
     { S_RPG,    -1, 0, 1500, 150, 0,   400,  0, 10, 1, 1024, 200, 40,0,    0, 1, 1,  "Z",  "rocketold"},  //rocket_solaris
@@ -833,8 +834,8 @@ struct fpsstate
         }
         else if(m_efficiency)
         {
-            //armourtype = A_YELLOW;
-            //armour = 100;
+            armourtype = A_YELLOW;
+            armour = 200;
             //loopi(NUMGUNS) baseammo(i+1);
             gunselect = GUN_SG;
             loopi(NUMGUNS) {
@@ -850,9 +851,9 @@ struct fpsstate
                 case GUN_RL:
                     ammo[i] = 15;
                     break;
-                case GUN_CG2:
-                    ammo[i]=3;
-                    break;
+                //case GUN_CG2:
+                //    ammo[i]=3;
+                //    break;
                 case GUN_SMG2:
                     ammo[i] = 10;
                     break;

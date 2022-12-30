@@ -1122,7 +1122,7 @@ void explodeeffects(int gun, fpsent *d, bool local, int id)
 
 bool isheadshot(dynent *d, vec to)
 {
-    if ((to.z - (d->o.z - d->eyeheight)) / (d->eyeheight + d->aboveeye) > 0.8f) return true;
+    if ((to.z - (d->o.z - d->eyeheight)) / (d->eyeheight + d->aboveeye) > 0.9f) return true;
     return false;
 }
 
@@ -1546,7 +1546,7 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
         }
         break;
     }
-    case GUN_FIST:
+    /*case GUN_FIST:
     {
         particle_splash(PART_SPARK, 200, 250, to, 0x50FF50, 0.10f);
         particle_splash(PART_SMOKE, 3, 500, d->muzzle, 0x50FF50, 1.f, 50, 501, NULL, 2, NULL, 2);
@@ -1559,7 +1559,7 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
         //adddecal(DECAL_GLOW, to, vec(from).sub(to).normalize(), 3.0f, bvec(0x07, 0x89, 0xFC)); //  0x0789FC);
         if(muzzlelight) adddynlight(hudgunorigin(gun, d->o, to, d), gun==GUN_CG ? 30 : 15, vec(0.3f, 1.5f, .3f), gun==GUN_CG ? 50 : 100, gun==GUN_CG ? 50 : 100, DL_FLASH, 0, vec(0, 1, 0), d);
         break;
-    }
+    }*/
 
     /*case GUN_ELECTRO2:
     {
@@ -2560,7 +2560,7 @@ void renderprojectiles()
         yaw += 90;
         v.mul(3);
         v.add(pos);
-        if(p.gun!=GUN_ELECTRO||p.owner->o.dist(v)<=100)rendermodel(&p.light, p.gun==GUN_RL?"projectiles/rocket":"projectiles/shockcore", ANIM_MAPMODEL|ANIM_LOOP, v, yaw, pitch, MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_LIGHT);
+        if(p.owner->o.dist(v)<=100)rendermodel(&p.light, "projectiles/rocket", ANIM_MAPMODEL|ANIM_LOOP, v, yaw, pitch, MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_LIGHT);
     }
 }
 
