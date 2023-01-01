@@ -1799,8 +1799,8 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
                             conoutf("Sending explode message to server");
                             addmsg(N_EXPLODE, "rci3iv", proj.owner, lastmillis - maptime, proj.gun, proj.id - maptime,
                                 hits.length(), hits.length() * sizeof(hitmsg) / sizeof(int), hits.getbuf());
+                            projs.remove(i--);
                         }
-                        projs.remove(i--);
                         break;
                     }
                 }

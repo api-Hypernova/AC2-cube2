@@ -490,7 +490,7 @@ static struct itemstat { int add, max, sound; const char *name; int icon, info, 
 //guns change: game, weapon, render, animsthing, server, fps, playeranim files, autocrosshair, weapon binds, bouncers, gun icons
 static const struct guninfo { short sound, reloadsound, magsize, attackdelay, damage, spread, projspeed, part, kickamount, rays, range, hitpush, splash, ttl, burstlen, guided, sub; const char *name, *file; } guns[NUMGUNS] =
 {
-    { S_SLASH,   -1, 0,  500,  150, 0,   0,   0, 0,  1, 75,  200, 0, 0,    0, 0, 0, "katana", "katana"  },
+    { S_SLASH,   -1, 0,  500,  150, 0,   0,   0, 0,  1, 60,  200, 0, 0,    0, 0, 0, "katana", "katana"  },
     { S_SHOTGUN2,  -1, 6, 900,  9, 150, 0,   0, 20, 12,1024, 200, 0, 0,    0, 0, 2, "*",         "solaris_shotgun" }, //shotgdefault
     { S_PULSERIFLE, -1, 30, 100,  26, 0,  0,   0, 7,  1, 1024, 150, 0, 0,    0, 0, 1,  "}",        "pulse_rifle"},
     { S_RPG,    -1, 0, 1500, 150, 0,   400,  0, 10, 1, 1024, 200, 40,0,    0, 1, 1,  "Z",  "rocketold"},  //rocket_solaris
@@ -535,7 +535,6 @@ struct fpsstate
     int dropgun;
     int uncrouchtime;
     int sprintleft;
-    int strafeleft;
     int flareleft;
     int holdingweapon;
     int beepleft;
@@ -787,8 +786,7 @@ struct fpsstate
         holdingweapon=1;
         flareleft = 5;
         lastswitch=0;
-        sprintleft = 400;
-        strafeleft = 150;
+        sprintleft = 1000;
         walkleft = 50;
         beepleft = 50;
         isholdingnade = 0;

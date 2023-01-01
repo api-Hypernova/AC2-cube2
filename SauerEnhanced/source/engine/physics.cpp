@@ -1660,18 +1660,13 @@ VARP(ahk, 0, 0, 1);
 void modifyvelocity(physent *pl, bool local, bool water, bool floating, int curtime)
 {
     //int lastsprintmillis = 0;
-    int canstrafeboost = 0;
-    if(pl->strafe && game::player1->strafeleft>0) { /*game::player1->strafeleft-=1;*/ /*canstrafeboost=1;*/ } // if you're strafing, decrement strafeleft, turn boost on
-    if(game::player1->strafeleft<=0)canstrafeboost=0; //if you've run out of strafe time, don't boost anymore
-    if(!pl->strafe)game::player1->strafeleft=150; //if player has stopped strafing, replenish strafe time
     //if(game::player1->sprinting) lastsprintmillis=lastmillis;
     if(pl->physstate==PHYS_FALL && !water && !ahk) { pl->jumping=false; /*game::player1->sprinting=0;*/} //allow sprinting in the air :)))
     if(game::player1->sprinting)game::player1->sprintleft-=1;
     if((pl->move || pl->strafe) && pl->physstate!=PHYS_FALL && !game::player1->crouching)game::player1->walkleft-=1;
     if(game::player1->walkleft<=0) { game::player1->walkleft=game::player1->sprinting?35:65; game::walksound(pl); }
-    if(game::player1->sprintleft<0) { game::player1->sprinting=0; game::player1->sprintleft=400; } //if not sprinting, replenish
-    if(!game::player1->sprinting)game::player1->sprintleft=400; //full sprint whenever not using it
-    //conoutf(CON_GAMEINFO, "dbg: strafeleft = %d, sprintleft = %d", game::player1->strafeleft, game::player1->sprintleft);
+    if(game::player1->sprintleft<0) game::player1->sprinting=0;
+    if(!game::player1->sprinting)game::player1->sprintleft=1000; //full sprint whenever not using it
     if(floating)
     {
         if(pl->jumping)
@@ -1727,7 +1722,6 @@ void modifyvelocity(physent *pl, bool local, bool water, bool floating, int curt
         else if(pl==game::player1)pl->eyeheight=16;
         if((pl->physstate==PHYS_FLOOR && !((fpsent *)pl)->ai)) d.mul(game::player1->sprinting?1.3f:.9f);
         else if(((fpsent *)pl)->ai)d.mul(1.5f);
-        //else if(!water && !((fpsent *)pl)->ai && game::allowmove(pl)) d.mul((pl->move && canstrafeboost && pl->physstate < PHYS_SLOPE ? 1.8f : 1.0f) * (pl->move && canstrafeboost && pl->physstate < PHYS_SLOPE && game::player1->sprinting ? 1.6f : 1.0f) * (game::player1->sprinting?1.4f:1.0f));
         else if(!water && ((fpsent *)pl)->ai)d.mul(1.6f);
         if(pl->physstate>=PHYS_SLOPE&&game::player1->crouching)d.mul(.5f);
         if(((fpsent *)pl)->health<=0 && lastmillis-((fpsent *)pl)->lastpain<2000)d.mul(0);
@@ -1749,13 +1743,15 @@ void modifyvelocity(physent *pl, bool local, bool water, bool floating, int curt
     else fric = 30.f; //30.f higher makes feel sluggish, lower makes it feel low jumping vel (hardly gets you off the ground when low)
 
     if(pl->physstate!=PHYS_FALL || 
-        game::player1->vel.magnitude2()<60 || 
-        (pl==game::player1 && 
+        game::player1->vel.magnitude2()<60 || (
+            pl==game::player1 && 
             abs(long(game::player1->lastyaw-game::player1->yaw))>0 && 
             !pl->move && 
             abs(long(game::player1->lastyaw-game::player1->yaw))<3 && 
-            pl->strafe && game::player1->vel.magnitude2()>=50))
-        pl->vel.lerp(d, pl->vel, pow(1 - 1/fric, curtime/20.0f)); //to make no fric, disable this when player is in air
+            pl->strafe && 
+            game::player1->vel.magnitude2()>=50
+        )
+    )pl->vel.lerp(d, pl->vel, pow(1 - 1/fric, curtime/20.0f)); //to make no fric, disable this when player is in air
 
 //    static const char *states[] = {"float", "fall", "slide", "slope", "floor", "step up", "step down", "bounce"};
 }

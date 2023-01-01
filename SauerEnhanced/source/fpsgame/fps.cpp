@@ -95,6 +95,7 @@ namespace game
         {
             if(player1->respawned!=player1->lifesequence)
             {
+                if (m_check(gamemode, M_CTF)) execute("spectator 1");
                 addmsg(N_TRYSPAWN, "rc", player1);
                 player1->respawned = player1->lifesequence;
             }
@@ -265,7 +266,7 @@ namespace game
         gets2c();
         updatemovables(curtime);
         updatemonsters(curtime);
-        if(!player1->move && player1->strafe && 
+        /*if (!player1->move && player1->strafe &&
             player1->vel.magnitude2()>=50 && 
             abs(long(player1->lastyaw-player1->yaw))<3 && 
             abs(long(player1->lastyaw-player1->yaw))>0)
@@ -276,12 +277,12 @@ namespace game
             player1->vel.y += player1->strafe*sinf(RAD*player1->yaw)*(player1->vel.magnitude2()/15);    
             player1->vel.x/=1.06;
             player1->vel.y/=1.06; //woohoo!
-        }
+        }*/
 
         // TODO: What if we just force the player location up to where it should be?
         // Other option - uncrouching can force the player to immediately jump if on the ground, then after this timer, the player's size can increase
         if(lastmillis-player1->uncrouchtime<5 && player1->timeinair<25) {
-            player1->vel.z=3; 
+            player1->vel.z=2; 
             entinmap(player1); 
         } 
 
@@ -665,7 +666,6 @@ namespace game
         copystring(who6, who2);
         deathstate(d);
         ai::killed(d, actor);
-        if(d == player1) execute("spectator 1");
     }
 
     SVARP(seendmsg, "Good game!");

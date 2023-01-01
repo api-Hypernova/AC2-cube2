@@ -1229,7 +1229,7 @@ void think(fpsent *d, bool run)
             c.override = false;
             cleannext = false;
         }
-        if(d->state == CS_DEAD && d->respawned!=d->lifesequence && (!cmode || cmode->respawnwait(d) <= 0) && lastmillis - d->lastpain > 2000)
+        if(d->state == CS_DEAD && d->respawned!=d->lifesequence && (!cmode || cmode->respawnwait(d) <= 0) && lastmillis - d->lastpain > 1500)
         {
             addmsg(N_TRYSPAWN, "rc", d);
             d->respawned = d->lifesequence;
