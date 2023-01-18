@@ -1035,7 +1035,6 @@ void projsplash(projectile &p, vec &v, dynent *safe, int damage, bool impact = t
 void explodeeffects(int gun, fpsent *d, bool local, int id)
 {
     if(local) return;
-    switch(gun)
         switch(gun)
         {
         case GUN_RL: case GUN_ELECTRO2:
@@ -1796,7 +1795,6 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
                         int qdam = guns[proj.gun].damage * (proj.owner->quadmillis ? 2 : 1);
                         projsplash(proj, proj.o, NULL, qdam, false);
                         if (d == player1 || d->ai) {
-                            conoutf("Sending explode message to server");
                             addmsg(N_EXPLODE, "rci3iv", proj.owner, lastmillis - maptime, proj.gun, proj.id - maptime,
                                 hits.length(), hits.length() * sizeof(hitmsg) / sizeof(int), hits.getbuf());
                             projs.remove(i--);
