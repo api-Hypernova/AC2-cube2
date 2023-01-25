@@ -1545,7 +1545,7 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
         }
         break;
     }
-    /*case GUN_FIST:
+    case GUN_PISTOL:
     {
         particle_splash(PART_SPARK, 200, 250, to, 0x50FF50, 0.10f);
         particle_splash(PART_SMOKE, 3, 500, d->muzzle, 0x50FF50, 1.f, 50, 501, NULL, 2, NULL, 2);
@@ -1558,7 +1558,7 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
         //adddecal(DECAL_GLOW, to, vec(from).sub(to).normalize(), 3.0f, bvec(0x07, 0x89, 0xFC)); //  0x0789FC);
         if(muzzlelight) adddynlight(hudgunorigin(gun, d->o, to, d), gun==GUN_CG ? 30 : 15, vec(0.3f, 1.5f, .3f), gun==GUN_CG ? 50 : 100, gun==GUN_CG ? 50 : 100, DL_FLASH, 0, vec(0, 1, 0), d);
         break;
-    }*/
+    }
 
     /*case GUN_ELECTRO2:
     {
@@ -1613,6 +1613,7 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
         d->isholdingorb=0;
         d->isholdingnade=0;
         d->isholdingprop=0;
+
         d->isholdingbarrel=0;
         if(d==player1 || d->ai)addmsg(N_CATCH, "rciiiii", d, d->isholdingnade, d->isholdingorb, d->isholdingprop, d->isholdingbarrel, d->propmodeldir);
         //d->gunwait+=500;
@@ -1811,7 +1812,7 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
 
     case GUN_CG:
     case GUN_MAGNUM:
-    case GUN_PISTOL:
+    //case GUN_PISTOL:
     case GUN_SMG:
         //case GUN_ELECTRO:
     {
