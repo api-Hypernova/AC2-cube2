@@ -1661,12 +1661,26 @@ void modifyvelocity(physent *pl, bool local, bool water, bool floating, int curt
 {
     //int lastsprintmillis = 0;
     //if(game::player1->sprinting) lastsprintmillis=lastmillis;
-    if(pl->physstate==PHYS_FALL && !water && !ahk) { pl->jumping=false; /*game::player1->sprinting=0;*/} //allow sprinting in the air :)))
-    if(game::player1->sprinting)game::player1->sprintleft-=1;
-    if((pl->move || pl->strafe) && pl->physstate!=PHYS_FALL && !game::player1->crouching)game::player1->walkleft-=1;
-    if(game::player1->walkleft<=0) { game::player1->walkleft=game::player1->sprinting?35:65; game::walksound(pl); }
+    if(pl->physstate==PHYS_FALL && !water && !ahk) { 
+        pl->jumping=false;
+    }
+
+    if(game::player1->sprinting)
+        game::player1->sprintleft-=1;
+
+    if((pl->move || pl->strafe) && 
+        pl->physstate!=PHYS_FALL && 
+        !game::player1->crouching) game::player1->walkleft -= 1;
+
+    if(game::player1->walkleft<=0) { 
+        game::player1->walkleft=game::player1->sprinting?35:65; 
+        game::walksound(pl); 
+    }
+
     if(game::player1->sprintleft<0) game::player1->sprinting=0;
+
     if(!game::player1->sprinting)game::player1->sprintleft=1000; //full sprint whenever not using it
+
     if(floating)
     {
         if(pl->jumping)
@@ -1742,23 +1756,24 @@ void modifyvelocity(physent *pl, bool local, bool water, bool floating, int curt
     else if(pl->physstate >= PHYS_SLOPE || floating) fric = 6.f; //6.f;
     else fric = 30.f; //30.f higher makes feel sluggish, lower makes it feel low jumping vel (hardly gets you off the ground when low)
 
-    if(pl->physstate!=PHYS_FALL || 
-        game::player1->vel.magnitude2()<60 || (
+    /*if (pl->physstate != PHYS_FALL ||
+        game::player1->vel.magnitude2()<60 || ( // this whole part here tries to allow for air control
             pl==game::player1 && 
             abs(long(game::player1->lastyaw-game::player1->yaw))>0 && 
             !pl->move && 
             abs(long(game::player1->lastyaw-game::player1->yaw))<3 && 
-            pl->strafe && 
+            pl->strafe &&
             game::player1->vel.magnitude2()>=50
         )
-    )pl->vel.lerp(d, pl->vel, pow(1 - 1/fric, curtime/20.0f)); //to make no fric, disable this when player is in air
+    )*/
+        pl->vel.lerp(d, pl->vel, pow(1 - 1/fric, curtime/20.0f)); //to make no fric, disable this when player is in air
 
 //    static const char *states[] = {"float", "fall", "slide", "slope", "floor", "step up", "step down", "bounce"};
 }
 
 void modifygravity(physent *pl, bool water, int curtime)
 {
-    float secs = curtime/650.f; //1000
+    float secs = curtime/1000.f; //1000
     if(game::player1->vel.magnitude2()<60)secs=curtime/1000.f;
     vec g(0, 0, 0);
     if(pl->physstate == PHYS_FALL) g.z -= GRAVITY*secs;
