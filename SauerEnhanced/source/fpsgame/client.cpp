@@ -1326,7 +1326,7 @@ namespace game
                 int ecn = getint(p), gun = getint(p), id = getint(p);
                 fpsent *e = getclient(ecn);
                 if(!e) break;
-                explodeeffects(gun, e, false, id);
+                if(gun == GUN_ELECTRO || gun == GUN_ELECTRO2) explodeeffects(gun, e, false, id);
                 break;
             }
             case N_DAMAGE:
