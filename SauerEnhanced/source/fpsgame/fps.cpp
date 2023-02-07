@@ -282,7 +282,7 @@ namespace game
         // TODO: What if we just force the player location up to where it should be?
         // Other option - uncrouching can force the player to immediately jump if on the ground, then after this timer, the player's size can increase
         if(lastmillis-player1->uncrouchtime<5 && player1->timeinair<25) {
-            player1->vel.z=2; 
+            player1->vel.z=0; 
             entinmap(player1); 
         } 
 
@@ -384,7 +384,12 @@ namespace game
     {
         if(intermission) return;
         if((player1->crouching = on)) respawn();
-        if(player1->eyeheight==9)player1->uncrouchtime=lastmillis; //avoid falling through floor when standing up
+        //TODO: This entire uncrouching logic needs to be moved to main game loop to check for whether player has feet on floor or not
+        //Uncrouching should be allowed if: feet are on ground OR player is a certain height above ground (need to figure out how to check this)
+        if (player1->eyeheight == 9) {
+            player1->uncrouchtime = lastmillis; //avoid falling through floor when standing up
+            player1->jumping = true;
+        }
         addmsg(N_CROUCH, "rci", player1, player1->crouching);
         //if(!player1->ai)player1->vel.z = max(player1->vel.z, 50);
     }
