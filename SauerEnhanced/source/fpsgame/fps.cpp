@@ -281,8 +281,9 @@ namespace game
 
         // TODO: What if we just force the player location up to where it should be?
         // Other option - uncrouching can force the player to immediately jump if on the ground, then after this timer, the player's size can increase
-        if(lastmillis-player1->uncrouchtime<5 && player1->timeinair<25) {
-            player1->vel.z=0; 
+        if(lastmillis-player1->uncrouchtime<10) {// && player1->timeinair<25) {
+            player1->jumping = true;
+            player1->vel.z=0;
             entinmap(player1); 
         } 
 
