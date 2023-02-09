@@ -1526,6 +1526,7 @@ namespace game
     void loadconfigs()
     {
         execfile("auth.cfg", false);
+        execfile("config.cfg");
     }
 }
 
