@@ -528,8 +528,8 @@ void updatebouncers(int time)
 
 
         vec old(bnc.o);
-        if(bnc.bouncetype==BNC_ORB) stopped = bounce(&bnc, 1.001f, 1.001f, 0.0f) || (bnc.lifetime -= time)<0;
-        else if(bnc.bouncetype==BNC_GRENADE) stopped = bounce(&bnc, 0.510f, 0.5f, 0.8f) || (bnc.lifetime -= time)<0;
+        if(bnc.bouncetype==BNC_ORB) stopped = bounce(&bnc, 1.001f, 1.0001f, 0.0f) || (bnc.lifetime -= time)<0;
+        else if(bnc.bouncetype==BNC_GRENADE) stopped = bounce(&bnc, 0.4f, 0.5f, 0.8f) || (bnc.lifetime -= time)<0;
         else if(bnc.bouncetype==BNC_SHELL)stopped = bounce(&bnc, .6f, .8f, .8f) || (bnc.lifetime -= time)<0;
         else if(bnc.bouncetype==BNC_SMGNADE) stopped = bounce(&bnc, 0.6f, 0.5f, 0.6f) || (bnc.bounces) > 0;
         else if(bnc.bouncetype==BNC_PROP) stopped = bounce(&bnc, 0.4f, 0.5f, 1.f)||(bnc.lifetime -= time)<0;
@@ -560,7 +560,7 @@ void updatebouncers(int time)
         if(stopped)
         {
 
-            if(bnc.bouncetype == BNC_GRENADE || bnc.bouncetype == BNC_SMGNADE || bnc.bouncetype == BNC_XBOLT)
+            if(bnc.bouncetype == BNC_SMGNADE || bnc.bouncetype == BNC_XBOLT)
             {
                 int qdam;
                 if(bnc.bouncetype==BNC_XBOLT || bnc.bouncetype==BNC_GRENADE) qdam = guns[bnc.bouncetype==BNC_XBOLT ? GUN_CROSSBOW : GUN_HANDGRENADE].damage*(bnc.owner->quadmillis ? 2 : 1);
@@ -589,7 +589,7 @@ void updatebouncers(int time)
                     addmsg(N_EXPLODE, "rci3iv", bnc.owner, lastmillis-maptime, bnc.bouncetype==BNC_BARREL?GUN_BARREL:GUN_ELECTRO2, bnc.id-maptime,
                            hits.length(), hits.length()*sizeof(hitmsg)/sizeof(int), hits.getbuf());
             }
-            else if(bnc.bouncetype==BNC_ORB)
+            else if(bnc.bouncetype == BNC_GRENADE || bnc.bouncetype==BNC_ORB)
             {
                 if(bnc.local)
                     addmsg(N_EXPLODE, "rci3iv", bnc.owner, lastmillis-maptime, bnc.bouncetype==BNC_PROP?GUN_BITE:GUN_FIREBALL, bnc.id-maptime, //fireball = orb for server and bite=prop for server
@@ -656,7 +656,7 @@ void updatebouncers(int time)
                     maxammo = 150;
                     break;
                 }
-                if(player1->feetpos().dist(bnc.o)<20) {
+                if(player1->feetpos().dist(bnc.o)<50) {
                     player1->hasgun[bnc.gun]=1;
                     player1->ammo[bnc.gun]=maxammo;
                     if(bnc.gun==GUN_SG)player1->ammo[GUN_SHOTGUN2]=maxammo;
@@ -665,8 +665,22 @@ void updatebouncers(int time)
                     conoutf(CON_TEAMCHAT, "You picked up a %s", guns[bnc.gun].name);
                 }
             }
-            if(bnc.bouncetype!=BNC_ORB && bnc.bouncetype!=BNC_PROP) delete bouncers.remove(i--);
-            if((bnc.bouncetype==BNC_ORB || bnc.bouncetype==BNC_PROP) && (bnc.lifetime -= time)<0) delete bouncers.remove(i--);
+            if(bnc.bouncetype!=BNC_ORB && bnc.bouncetype!=BNC_PROP && bnc.bouncetype!=BNC_GRENADE) delete bouncers.remove(i--);
+            if ((bnc.bouncetype == BNC_ORB || bnc.bouncetype == BNC_PROP || bnc.bouncetype == BNC_GRENADE) && (bnc.lifetime -= time) < 0) {
+                // trigger explosion here
+                if (bnc.bouncetype == BNC_GRENADE) {
+                    int qdam = guns[GUN_HANDGRENADE].damage * (bnc.owner->quadmillis ? 2 : 1);
+                    hits.setsize(0);
+                    explode(bnc.local, bnc.owner, bnc.o, NULL, qdam, bnc.bouncetype == BNC_XBOLT ? GUN_CROSSBOW : GUN_HANDGRENADE);
+                    adddecal(DECAL_SCORCH, bnc.o, vec(0, 0, 1), guns[GUN_HANDGRENADE].splash / 2);
+                    if (bnc.local) {
+                        addmsg(N_EXPLODE, "rci3iv", bnc.owner, lastmillis - maptime, GUN_HANDGRENADE, bnc.id - maptime,
+                            hits.length(), hits.length() * sizeof(hitmsg) / sizeof(int), hits.getbuf());
+                    }
+                 
+                }
+                delete bouncers.remove(i--);
+            }
         }
         else
         {
@@ -2173,7 +2187,7 @@ void doreload(fpsent *d)
     if(d==player1)setvar("tryreload", 0);
 }
 
-#define RECOIL_COOLDOWN 300 //300ms until our recoil is reset and next shot will have 0 spread
+#define RECOIL_COOLDOWN 200 //300ms until our recoil is reset and next shot will have 0 spread
 #define MAXSPREAD 100
 
 void shoot(fpsent *d, const vec &targ)

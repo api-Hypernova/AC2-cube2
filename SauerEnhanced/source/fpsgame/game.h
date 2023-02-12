@@ -477,7 +477,7 @@ static struct itemstat { int add, max, sound; const char *name; int icon, info, 
 {15,    100,    S_LGPICKUP, "", HICON_BLUE_ARMOUR, A_YELLOW},
 {2,    60,    S_ITEMARMOUR, "GA", HICON_GREEN_ARMOUR, A_YELLOW},
 {2,   200,    S_ITEMARMOUR, "YA", HICON_YELLOW_ARMOUR, A_YELLOW},
-{40000, INT_MAX-1, S_ITEMPUP,    "Q",  HICON_QUAD, -1},
+{20000, INT_MAX-1, S_ITEMPUP,    "Q",  HICON_QUAD, -1},
 };
 
 #define MAXRAYS 12

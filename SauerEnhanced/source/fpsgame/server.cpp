@@ -600,7 +600,7 @@ int spawntime(int type)
     case I_GREENARMOUR:
     case I_YELLOWARMOUR: msec = 100; break;
     case I_BOOST: msec = 30*1000; break;
-    case I_QUAD: msec = 40*1000; break;
+    case I_QUAD: msec = 120*1000; break;
     }
     return msec;
 }
