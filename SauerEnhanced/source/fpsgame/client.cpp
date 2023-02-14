@@ -32,7 +32,7 @@ namespace game
     int sessionid = 0, mastermode = MM_OPEN;
     string servinfo = "", connectpass = "";
 
-    VARP(deadpush, 0, 2, 20);
+    VARP(deadpush, 2, 2, 2);
 
     void switchname(const char *name)
     {
