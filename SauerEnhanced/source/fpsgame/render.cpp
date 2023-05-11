@@ -186,7 +186,7 @@ namespace game
             case 1: mdlname = mdl.blueteam; break;
             case 2: mdlname = mdl.redteam; break;
         }
-        if(d->health>-40 ||d->health<-3000 || guns[d->diedgun].splash<=30)renderclient(d, mdlname, a[0].tag ? a : NULL, hold, attack, delay, lastaction, intermission && d->state!=CS_DEAD ? 0 : d->lastpain, fade, ragdoll && mdl.ragdoll);
+        if(d->health>-40 ||d->health<-3000 /*|| guns[d->diedgun].splash <= 30*/)renderclient(d, mdlname, a[0].tag ? a : NULL, hold, attack, delay, lastaction, intermission && d->state != CS_DEAD ? 0 : d->lastpain, fade, ragdoll && mdl.ragdoll);
         d->o.z-=5.f;
         if(d->diedgun==GUN_CROSSBOW && (lastmillis-d->lastpain)<2000)rendermodel(NULL, "projectiles/xbolt", ANIM_MAPMODEL|ANIM_LOOP, d->o, 0, 90, MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_LIGHT|MDL_LIGHT_FAST|MDL_DYNSHADOW);
         d->o.z+=5.f;
