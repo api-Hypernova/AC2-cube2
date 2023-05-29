@@ -798,7 +798,7 @@ void gibeffect(int damage, const vec &vel, fpsent *d)
     {
         //loopi(min(gibnum, 50)+1) diebouncer(from, vel, d, BNC_DEBRIS); //20 gibnum
     }
-    else if(damage<500 && blood /* && guns[d->diedgun].splash>30*/)
+    else if(damage<500 && blood && guns[d->diedgun].splash>30)
     {
         loopi(min(gibnum, 50)+1) spawnbouncer(from, vel, d, BNC_GIBS, damage/2);
         particle_splash(PART_BLOOD, damage*3, 10000, d->o, 0x99FFFF, 2.f, 4000); //damage/5
