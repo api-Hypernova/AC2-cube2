@@ -1687,7 +1687,7 @@ void explodeevent::process(clientinfo *ci)
         int damage = guns[gun].damage;
         damage = int(damage*(1-h.dist/RL_DISTSCALE/guns[gun].splash));
         if((gun==GUN_FIREBALL ||gun==GUN_BITE||gun==GUN_CG2||gun==GUN_CROSSBOW) && target==ci)damage=0;
-        if(gun==GUN_CROSSBOW && target!=ci)damage=100;
+        if(gun==GUN_CROSSBOW && target!=ci)damage=200;
         if(gs.quadmillis) damage *= 1.5f;
         dodamage(target, ci, damage, gun, h.dir);
     }
