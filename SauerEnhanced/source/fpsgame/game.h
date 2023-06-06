@@ -397,7 +397,7 @@ static const int msgsizes[] =               // size inclusive message token, 0 f
         N_PAUSEGAME, 0, N_GAMESPEED, 0,
         N_ADDBOT, 2, N_DELBOT, 1, N_INITAI, 0, N_FROMAI, 2, N_BOTLIMIT, 2, N_BOTBALANCE, 2,
         N_MAPCRC, 0, N_CHECKMAPS, 1,
-        N_SWITCHNAME, 0, N_SWITCHMODEL, 2, N_SWITCHTEAM, 0, N_CROUCH, 2, N_CATCH, 6, N_DELMOVABLE, 2,
+        N_SWITCHNAME, 0, N_SWITCHMODEL, 2, N_SWITCHTEAM, 0, N_CROUCH, 2, N_CATCH, 7, N_DELMOVABLE, 2,
         -1
         };
 
@@ -555,6 +555,7 @@ struct fpsstate
     int isholdingnade;
     int isholdingprop;
     int isholdingbarrel;
+    int isholdingshock;
     int propmodeldir;
     int magprogress[NUMGUNS];
 
@@ -793,6 +794,7 @@ struct fpsstate
         isholdingnade = 0;
         isholdingprop = 0;
         isholdingbarrel=0;
+        isholdingshock = 0;
         loopi(NUMGUNS)magprogress[i]=0;
         headshots = 0;
     }

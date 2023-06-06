@@ -49,9 +49,9 @@ void gunselect(int gun, fpsent *d)
         if(gun==GUN_TELEKENESIS)d->gunwait=80;
         if(gun==GUN_HANDGRENADE)d->attacking=d->altattacking=0;
         d->burstprogress=0;
-        if(!d->isholdingnade && !d->isholdingorb && !d->isholdingprop && !d->isholdingbarrel)d->lastswitch=lastmillis;
+        if(!d->isholdingnade && !d->isholdingorb && !d->isholdingprop && !d->isholdingbarrel && !d->isholdingshock)d->lastswitch=lastmillis;
     }
-    if(!d->isholdingnade && !d->isholdingorb && !d->isholdingprop && !d->isholdingbarrel)d->gunselect = gun;
+    if(!d->isholdingnade && !d->isholdingorb && !d->isholdingprop && !d->isholdingbarrel && !d->isholdingshock)d->gunselect = gun;
 }
 
 void nextweapon(int dir, bool force = false)
@@ -519,7 +519,7 @@ void updatebouncers(int time)
             loopv(players)
             {
                 fpsent *d = players[i];
-                if(!d->ai || bnc.o.dist(d->o)>guns[GUN_TELEKENESIS2].range || d->isholdingbarrel || d->isholdingnade || d->isholdingorb || d->isholdingprop)continue;
+                if(!d->ai || bnc.o.dist(d->o)>guns[GUN_TELEKENESIS2].range || d->isholdingbarrel || d->isholdingnade || d->isholdingorb || d->isholdingprop || d->isholdingshock)continue;
                 vec check;
                 if(raycubelos(bnc.o, d->o, check) && bnc.owner!=d && bnc.o.dist(d->o)<=guns[GUN_TELEKENESIS2].range) { d->aicatch=bnc.o; d->aicancatch=1; }
                 else d->aicancatch=0;
@@ -529,7 +529,7 @@ void updatebouncers(int time)
 
         vec old(bnc.o);
         if(bnc.bouncetype==BNC_ORB) stopped = bounce(&bnc, 1.001f, 1.0001f, 0.0f) || (bnc.lifetime -= time)<0;
-        else if(bnc.bouncetype==BNC_GRENADE) stopped = bounce(&bnc, 0.4f, 0.5f, 0.8f) || (bnc.lifetime -= time)<0;
+        else if(bnc.bouncetype==BNC_GRENADE) stopped = bounce(&bnc, 0.5f, 0.5f, 0.8f) || (bnc.lifetime -= time)<0;
         else if(bnc.bouncetype==BNC_SHELL)stopped = bounce(&bnc, .6f, .8f, .8f) || (bnc.lifetime -= time)<0;
         else if(bnc.bouncetype==BNC_SMGNADE) stopped = bounce(&bnc, 0.6f, 0.5f, 0.6f) || (bnc.bounces) > 0;
         else if(bnc.bouncetype==BNC_PROP) stopped = bounce(&bnc, 0.4f, 0.5f, 1.f)||(bnc.lifetime -= time)<0;
@@ -1591,7 +1591,7 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
     { //server should add grenade and orb bouncers
         //float dist;
         // dynent *o = intersectclosest(from, to, d, dist);
-        if((!d->isholdingnade && !d->isholdingorb && !d->isholdingprop && !d->isholdingbarrel)) break;
+        if((!d->isholdingnade && !d->isholdingorb && !d->isholdingprop && !d->isholdingbarrel && !d->isholdingshock)) break;
         particle_splash(PART_SPARK, 200, 250, to, 0xFF64FF, 0.10f);
         particle_flare(hudgunorigin(gun, from, to, d), to, 200, PART_LIGHTNING, 0xFF64FF, 2.f);
         if(muzzleflash && d->muzzle.x >= 0)
@@ -1603,7 +1603,7 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
         if(d->isholdingorb)finaltimer = 5000;
         d->attacking=0;
         d->altattacking=0;
-        int proptype = 0;
+        int proptype = -1;
         if(d->isholdingnade)proptype = BNC_GRENADE;
         if(d->isholdingorb)proptype = BNC_ORB;
         if(d->isholdingprop)proptype = BNC_PROP;
@@ -1618,7 +1618,13 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
         // vec up = to;
         // up.z -= dist/8;
         //char *mdlname= { d->propmodeldir };
-        newbouncer(from, to, local, id, d, proptype, finaltimer, d->dropitem?10:(d->isholdingorb?700:500), NULL); //fixme, need from = p and noo bncer offset compensation
+        // TODO: Shoot projectile here instead of bouncer if holding shockball
+        int speed = d->dropitem ? 10 : (d->isholdingorb ? 700 : 500);
+        if (d->isholdingshock) speed = 400;
+        if(proptype>-1) newbouncer(from, to, local, id, d, proptype, finaltimer, speed, NULL); //fixme, need from = p and noo bncer offset compensation
+        else if (d->isholdingshock) {
+            newprojectile(from, to, (float)speed, local, id, d, GUN_ELECTRO2);
+        }
         //particle_splash(PART_SMOKE, 3, 500, d->muzzle, 0xFF64FF, 1.f, 50, 501, NULL, 2, NULL, 2);
         //strcpy(d->propmodeldir, "");
         //conoutf(CON_GAMEINFO, "%s", d->propmodeldir);
@@ -1627,9 +1633,9 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
         d->isholdingorb=0;
         d->isholdingnade=0;
         d->isholdingprop=0;
-
+        d->isholdingshock = 0;
         d->isholdingbarrel=0;
-        if(d==player1 || d->ai)addmsg(N_CATCH, "rciiiii", d, d->isholdingnade, d->isholdingorb, d->isholdingprop, d->isholdingbarrel, d->propmodeldir);
+        if(d==player1 || d->ai)addmsg(N_CATCH, "rciiiiii", d, d->isholdingnade, d->isholdingorb, d->isholdingprop, d->isholdingbarrel, d->isholdingshock, d->propmodeldir);
         //d->gunwait+=500;
         if(d==hudplayer()) { d->screenjumpheight=30; screenjump(); screenjump();}
         //d->blewup=0;
@@ -1644,17 +1650,42 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
         int steps = clamp(int(dist*2), 1, 200);
         v.div(steps);
         vec p = from;
-        if(d->isholdingbarrel || d->isholdingnade || d->isholdingorb || d->isholdingprop)return;
+        if(d->isholdingbarrel || d->isholdingnade || d->isholdingorb || d->isholdingprop || d->isholdingshock)return;
         vec raycheck;
         if(muzzleflash && d->muzzle.x >= 0 && raycubelos(camera1->o, d->muzzle, raycheck) && d!=player1)
             particle_flare(d->muzzle, d->muzzle, 25, PART_GLOW, 0xFF64FF, 2.5f);
+
+        // TODO: Try catching shock balls
         loopi(steps) //try catching bouncers
         {
             p.add(v);
+
+            loopv(projs)
+            {
+                projectile& proj = projs[i];
+                if (proj.o.dist(p) <= 15 && !d->isholdingprop && !d->isholdingnade && !d->isholdingorb && !d->isholdingshock && !d->isholdingbarrel && proj.gun==GUN_ELECTRO2)
+                {
+                    vec pos(proj.o);
+                    if (proj.local)
+                        addmsg(N_EXPLODE, "rci3iv", proj.owner, lastmillis - maptime, proj.gun, proj.id - maptime,
+                            hits.length(), hits.length() * sizeof(hitmsg) / sizeof(int), hits.getbuf());
+                    if (d == player1 || d->ai)addmsg(N_CATCH, "rciiiiii", d, d->isholdingnade, d->isholdingorb, d->isholdingprop, d->isholdingbarrel, d->isholdingshock, NULL);
+                    projs.remove(i);
+
+                    if(d == player1 || d->ai) d->isholdingshock = 1;
+                    if (d->ai)d->ailastcatch = lastmillis;
+                    d->caughttime = lastmillis;
+                    d->altattacking = 0;
+                    d->flarepos = d->o;
+                    if (d == player1 || d->ai)d->propmodeldir = NULL;
+
+                }
+            }
+
             loopv(bouncers){
                 bouncer &bnc = *bouncers[i];
                 vec pos = bnc.o;
-                if(pos.dist(p) <= 15 && !d->isholdingprop && !d->isholdingnade && !d->isholdingorb && !d->isholdingbarrel &&(bnc.bouncetype==BNC_GRENADE || bnc.bouncetype==BNC_ORB || bnc.bouncetype==BNC_PROP || bnc.bouncetype==BNC_BARREL || bnc.bouncetype==BNC_WEAPON))
+                if(pos.dist(p) <= 15 && !d->isholdingprop && !d->isholdingnade && !d->isholdingorb && !d->isholdingshock && !d->isholdingbarrel &&(bnc.bouncetype==BNC_GRENADE || bnc.bouncetype==BNC_ORB || bnc.bouncetype==BNC_PROP || bnc.bouncetype==BNC_BARREL || bnc.bouncetype==BNC_WEAPON))
                 {
                     if(bnc.bouncetype==BNC_WEAPON && d==player1)
                     {
@@ -1739,7 +1770,7 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
                     //int skillshot =0;
                     //if(d->isholdingnade) skillshot=1;
                     //else if(d->isholdingorb) skillshot=2;
-                    if(d==player1 || d->ai)addmsg(N_CATCH, "rciiiii", d, d->isholdingnade, d->isholdingorb, d->isholdingprop, d->isholdingbarrel, bnc.model);
+                    if(d==player1 || d->ai)addmsg(N_CATCH, "rciiiiii", d, d->isholdingnade, d->isholdingorb, d->isholdingprop, d->isholdingbarrel, d->isholdingshock, bnc.model);
                     if(d->ai)d->ailastcatch=lastmillis;
                     //particle_flare(d->muzzle, pos, 200, PART_LIGHTNING, 0x5050FF, 1.f);
 
@@ -1747,13 +1778,13 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
 
             }
         }
-        if(!d->isholdingbarrel&&!d->isholdingnade&&!d->isholdingorb&&!d->isholdingprop)
+        if(!d->isholdingbarrel&&!d->isholdingnade&&!d->isholdingorb&&!d->isholdingprop&&!d->isholdingshock)
             loopv(entities::ents) //picking up items
         {
             extentity &e = *entities::ents[i];
             if(e.type==NOTUSED) continue;
             if(!e.spawned || e.type==TELEPORT || e.type==JUMPPAD || e.type==RESPAWNPOINT) continue;
-            if(!d->isholdingorb && !d->isholdingnade && !d->isholdingprop && !d->isholdingbarrel)
+            if(!d->isholdingorb && !d->isholdingnade && !d->isholdingprop && !d->isholdingbarrel && !d->isholdingshock)
             {
                 float dist2 = e.o.dist(to);
                 if(dist2<(8) && d==player1) { entities::trypickup(i, d); d->altattacking=0; if(d->canpickup(i)){particle_flare(d->muzzle, e.o, 50, PART_LIGHTNING, 0xFF64FF, 1.f); break;}
@@ -1787,7 +1818,6 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
 
 
         // Check if we hit a shock combo. If so, explode the projectile in the air
-        // The question is how do we create an explosion that is more powerful than the normal secondary explosion, on the server side?
         vec v;
         float dist = to.dist(from, v);
         int steps = clamp(int(dist * 2), 1, 200);
@@ -2227,7 +2257,7 @@ void shoot(fpsent *d, const vec &targ)
         if(d->gunselect==GUN_SMG2){d->gunselect=GUN_SMG; addmsg(N_GUNSELECT, "rci", d, GUN_SMG); }
     }
     if((d->lastattackgun==GUN_SHOTGUN2 || d->lastattackgun==GUN_SG) && d->gunselect==GUN_SHOTGUN2 || d->gunselect==GUN_SG)d->lastattackgun=d->gunselect; //no hax switching from sg1 to sg2 :)
-    if(d->gunselect==GUN_TELEKENESIS && (!d->isholdingnade && !d->isholdingorb && !d->isholdingbarrel && !d->isholdingprop)) return;
+    if(d->gunselect==GUN_TELEKENESIS && (!d->isholdingnade && !d->isholdingorb && !d->isholdingbarrel && !d->isholdingprop && !d->isholdingshock)) return;
     if(d->lastattackgun!=d->gunselect){
         d->magprogress[d->lastattackgun]=0;
         if(d->lastattackgun==GUN_SG || d->lastattackgun==GUN_SHOTGUN2)d->magprogress[GUN_SG]=d->magprogress[GUN_SHOTGUN2]=0;
@@ -2515,7 +2545,7 @@ void rendercaughtitems()
             d->beepleft-=1;
             if(!d->beepleft) { playsound(S_NADEBEEP, &p); d->beepleft=50;} //beep delay longer because this is looped faster
             if(p.dist(d->flarepos)>1 && d->state==CS_ALIVE) {particle_flare(d->flarepos, p, 500, PART_RAILTRAIL, nadetrailcol, .2f); d->flarepos=p; d->flareleft=2;}
-            if(d->state==CS_ALIVE)particle_flare(d==hudplayer()?d->muzzle:d->o, p, 1, PART_LIGHTNING, 0xFF64FF, .5f);
+            if(d->state==CS_ALIVE)particle_flare(d->muzzle, p, 1, PART_LIGHTNING, 0xFF64FF, .5f);
         }
         if(d->isholdingorb && d->gunselect==GUN_TELEKENESIS2) {
             rendermodel(NULL, "projectiles/teslaball", ANIM_MAPMODEL|ANIM_LOOP, p, d->yaw, 0, MDL_LIGHT|MDL_LIGHT_FAST|MDL_DYNSHADOW);
@@ -2524,12 +2554,23 @@ void rendercaughtitems()
             {
                 particle_flare(p, p, 75, PART_GLOW, 0x553322, 4.0f);
             }
-            if(d->state==CS_ALIVE)particle_flare(d==hudplayer()?d->muzzle:d->o, p, 1, PART_LIGHTNING, 0xFF64FF, .5f);
+            if(d->state==CS_ALIVE)particle_flare(d->muzzle, p, 1, PART_LIGHTNING, 0xFF64FF, .5f);
+        }
+
+        if (d->isholdingshock && d->gunselect==GUN_TELEKENESIS2) {
+            if (d->state == CS_ALIVE)particle_flare(d->muzzle, p, 1, PART_LIGHTNING, 0xFF64FF, .5f);
+            vec occlusioncheck;
+            if (raycubelos(p, camera1->o, occlusioncheck))
+            {
+                regular_particle_splash(PART_SMOKE, 2, 300, p, 0x404040, 0.6f, 150, -20);
+                int color = 0xFFFFFF;
+                particle_splash(PART_FIREBALL2, 1, 1, p, color, 4.8f, 150, 20);
+            }
         }
 
         if(d->isholdingprop || d->isholdingbarrel) {
             if(!mdlname) continue;
-            if(d->state==CS_ALIVE)particle_flare(d==hudplayer()?d->muzzle:d->o, p, 1, PART_LIGHTNING, 0xFF64FF, .5f);
+            if(d->state==CS_ALIVE)particle_flare(d->muzzle, p, 1, PART_LIGHTNING, 0xFF64FF, .5f);
             p.z-=3;
             if(d->state==CS_ALIVE)rendermodel(NULL, mdlname, ANIM_MAPMODEL|ANIM_LOOP, p, d->yaw, 0, MDL_LIGHT|MDL_LIGHT_FAST|MDL_DYNSHADOW);
             if(d->isholdingbarrel==2)
@@ -2539,6 +2580,8 @@ void rendercaughtitems()
                 regular_particle_flame(PART_SMOKE, p, 1, 1, 0x303020, 1, 4.0f, 100.0f, 2000.0f, -20);
             }
         }
+
+        //TODO: Add rendering for shock here
     }
 }
 
@@ -2573,7 +2616,7 @@ void renderprojectiles()
         yaw += 90;
         v.mul(3);
         v.add(pos);
-        if(p.owner->o.dist(v)<=100)rendermodel(&p.light, "projectiles/rocket", ANIM_MAPMODEL|ANIM_LOOP, v, yaw, pitch, MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_LIGHT);
+        if(p.owner->o.dist(v)<=100 && p.gun==GUN_RL)rendermodel(&p.light, "projectiles/rocket", ANIM_MAPMODEL|ANIM_LOOP, v, yaw, pitch, MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_LIGHT);
     }
 }
 

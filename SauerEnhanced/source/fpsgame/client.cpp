@@ -1378,7 +1378,7 @@ namespace game
                 if(!d) return;
                 int gun = getint(p);
                 d->gunselect = max(gun, 0);
-                d->isholdingbarrel=d->isholdingnade=d->isholdingorb=d->isholdingprop=0;
+                d->isholdingbarrel=d->isholdingnade=d->isholdingorb=d->isholdingprop=d->isholdingshock=0;
                 //if(d==hudplayer()) playsound(S_WEAPLOAD, &d->o);
                 break;
             }
@@ -1407,12 +1407,14 @@ namespace game
                 int isholdingorb=getint(p); 
                 int isholdingprop=getint(p);
                 int isholdingbarrel=getint(p);
+                int isholdingshock = getint(p);
                 int model=getint(p);
                 // getstring(text, p);
                 d->isholdingnade=isholdingnade;
                 d->isholdingorb=isholdingorb;
                 d->isholdingprop=isholdingprop;
                 d->isholdingbarrel=isholdingbarrel;
+                d->isholdingshock = isholdingshock;
                 d->propmodeldir=model;
                 //strcpy(d->propmodeldir, text);
                 break;

@@ -478,7 +478,7 @@ namespace game
             //disablezoom();
             if(!restore) loopi(NUMGUNS) savedammo[i] = player1->ammo[i];
             d->reloading = false;
-            if(d->isholdingbarrel || d->isholdingnade || d->isholdingorb || d->isholdingprop){d->dropitem=1; d->attacking=1; }
+            if(d->isholdingbarrel || d->isholdingnade || d->isholdingorb || d->isholdingprop || d->isholdingshock){d->dropitem=1; d->attacking=1; }
             d->altattacking = false;
             //addmsg(N_CATCH, "rcii", player1, player1->isholdingnade, player1->isholdingorb);
             d->crouching=false;
@@ -563,7 +563,7 @@ namespace game
         }
         else if(d->state!=CS_ALIVE || intermission) return;
 
-        if(d->isholdingbarrel || d->isholdingnade||d->isholdingorb||d->isholdingprop) { d->dropitem=1; d->attacking=true;}
+        if(d->isholdingbarrel || d->isholdingnade||d->isholdingorb||d->isholdingprop || d->isholdingshock) { d->dropitem=1; d->attacking=true;}
         fpsent *h = followingplayer();
         if(!h) h = player1;
         //int contype = d==h || actor==h ? CON_FRAG_SELF : CON_FRAG_OTHER;
