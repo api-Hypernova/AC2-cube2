@@ -1666,7 +1666,7 @@ void explodeevent::process(clientinfo *ci)
         if(!gs.xbolts.remove(id)) return;
         break;
     case GUN_TELEKENESIS:
-        if(!gs.orbs.remove(id) && !gs.grenades.remove(id) && !gs.props.remove(id)  && !gs.barrels.remove(id)) return;
+        if(!gs.orbs.remove(id) && !gs.grenades.remove(id) && !gs.props.remove(id)  && !gs.barrels.remove(id) && !gs.electro.remove(id)) return;
         //if(!gs.tkobjs.remove(id)) return;
         break;
 
@@ -1728,7 +1728,7 @@ void shotevent::process(clientinfo *ci)
         //case GUN_ELECTRO: gs.electro.add(id); break;
     case GUN_ELECTRO2: gs.electro.add(id); break;
     case GUN_HANDGRENADE: gs.grenades.add(id); break;
-    case GUN_TELEKENESIS: gs.grenades.add(id); gs.orbs.add(id); gs.props.add(id); gs.barrels.add(id); break;
+    case GUN_TELEKENESIS: gs.grenades.add(id); gs.orbs.add(id); gs.props.add(id); gs.barrels.add(id); gs.electro.add(id); break;
     default:
     {
         int totalrays = 0, maxrays = guns[gun].rays;

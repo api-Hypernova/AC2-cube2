@@ -1414,7 +1414,7 @@ namespace game
                 d->isholdingorb=isholdingorb;
                 d->isholdingprop=isholdingprop;
                 d->isholdingbarrel=isholdingbarrel;
-                d->isholdingshock = isholdingshock;
+                d->isholdingshock=isholdingshock;
                 d->propmodeldir=model;
                 //strcpy(d->propmodeldir, text);
                 break;

@@ -235,19 +235,19 @@ namespace game
         m->damaged(damage, at, gun);
         if(gun==GUN_TELEKENESIS2 && m->state==CS_ALIVE) {
             if(at->isholdingbarrel || at->isholdingnade || at->isholdingorb || at->isholdingprop || at->isholdingshock)return;
-        if(at==player1 || at->ai)at->propmodeldir = m->mapmodel;
-        if(m->etype==BOX)at->isholdingprop=1;
-        //m->iscaught=1;
-        else if(m->etype==BARREL) at->isholdingbarrel=m->health<BARRELHEALTH?2:1;
-        //const char *mdlname = mapmodelname(m->mapmodel);
-        //at->propmodeldir=string(mdlname);
-        addmsg(N_CATCH, "rciiiiii", at, at->isholdingnade, at->isholdingorb, at->isholdingprop, at->isholdingbarrel, at->isholdingshock, m->mapmodel);
-        if(at->ai)at->ailastcatch=lastmillis;
-        //conoutf(CON_GAMEINFO, "%d", m->id);
-        //at->propmodeldir=mdl;
-        //long mv = ((long)m);
-        //at->movable=mv;
-        //conoutf(CON_GAMEINFO, "at->movable=%d", at->movable);
+            if(at==player1 || at->ai)at->propmodeldir = m->mapmodel;
+            if(m->etype==BOX)at->isholdingprop=1;
+            //m->iscaught=1;
+            else if(m->etype==BARREL) at->isholdingbarrel=m->health<BARRELHEALTH?2:1;
+            //const char *mdlname = mapmodelname(m->mapmodel);
+            //at->propmodeldir=string(mdlname);
+            addmsg(N_CATCH, "rciiiiii", at, at->isholdingnade, at->isholdingorb, at->isholdingprop, at->isholdingbarrel, at->isholdingshock, m->mapmodel);
+            if(at->ai)at->ailastcatch=lastmillis;
+            //conoutf(CON_GAMEINFO, "%d", m->id);
+            //at->propmodeldir=mdl;
+            //long mv = ((long)m);
+            //at->movable=mv;
+            //conoutf(CON_GAMEINFO, "at->movable=%d", at->movable);
         }
     }
 }
