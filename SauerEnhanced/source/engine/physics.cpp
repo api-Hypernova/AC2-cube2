@@ -458,7 +458,8 @@ const float SLOPEZ = 0.5f;
 const float WALLZ = 0.2f;
 extern const float JUMPVEL = 90.f;
 extern const float GRAVITY = 200.0f;
-extern const float DODGEVEL = 50.f;
+extern const float DODGEVEL = 500.f;
+extern const float DODGEUPVEL = 40.f;
 
 bool ellipserectcollide(physent *d, const vec &dir, const vec &o, const vec &center, float yaw, float xr, float yr, float hi, float lo)
 {
@@ -1692,20 +1693,6 @@ void modifyvelocity(physent *pl, bool local, bool water, bool floating, int curt
     }
     else if(pl->physstate >= PHYS_SLOPE || water)
     {
-        // test dodging mechanic
-        // physics impulse in the direction of strafe
-        // slight physics impulse upwards
-        conoutf("pl->vel.x: %f", pl->vel.x);
-        conoutf("pl->vel.y: %f", pl->vel.y);
-        if (pl->strafe && game::player1->sprinting) {
-            pl->strafe = 0;
-            game::player1->sprinting = false;
-            conoutf("Triggering dodge impulse");
-            //pl->vel.x += pl->strafe * cosf(RAD * pl->yaw) * DODGEVEL;
-            //pl->vel.y += pl->strafe * sinf(RAD * pl->yaw) * DODGEVEL;
-            pl->vel.x = max(pl->vel.x, DODGEVEL);
-        }
-
         if(water && !pl->inwater) pl->vel.div(8);
         if(pl->jumping)
         {
@@ -1784,6 +1771,22 @@ void modifyvelocity(physent *pl, bool local, bool water, bool floating, int curt
         pl->vel.lerp(d, pl->vel, pow(1 - 1/fric, curtime/20.0f)); //to make no fric, disable this when player is in air
 
 //    static const char *states[] = {"float", "fall", "slide", "slope", "floor", "step up", "step down", "bounce"};
+
+    if(game::allowmove(pl) && pl->physstate >= PHYS_SLOPE) {
+        // test dodging mechanic
+        // physics impulse in the direction of strafe
+        // slight physics impulse upwards
+        if (pl->strafe && game::player1->sprinting) {
+            pl->strafe = 0;
+            game::player1->sprinting = false;
+            conoutf("Triggering dodge impulse");
+            //pl->vel.x += pl->strafe * cosf(RAD * pl->yaw) * 100;
+            //pl->vel.y += pl->strafe * sinf(RAD * pl->yaw) * 100;
+            pl->vel.x = max(pl->vel.x, DODGEVEL);
+            pl->vel.z = max(pl->vel.z, DODGEUPVEL);
+        }
+    }
+
 }
 
 void modifygravity(physent *pl, bool water, int curtime)
