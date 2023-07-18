@@ -458,6 +458,7 @@ const float SLOPEZ = 0.5f;
 const float WALLZ = 0.2f;
 extern const float JUMPVEL = 90.f;
 extern const float GRAVITY = 200.0f;
+extern const float DODGEVEL = 50.f;
 
 bool ellipserectcollide(physent *d, const vec &dir, const vec &o, const vec &center, float yaw, float xr, float yr, float hi, float lo)
 {
@@ -1650,7 +1651,7 @@ void vectoyawpitch(const vec &v, float &yaw, float &pitch)
 }
 
 VARP(maxroll, 0, 3, 20);
-FVAR(straferoll, 0, 0.033f, 90);
+FVAR(straferoll, 0, 0.0f, 90);
 VAR(floatspeed, 10, 100, 1000);
 VARP(ahk, 0, 0, 1);
 #include "../fpsgame/game.h"
@@ -1691,6 +1692,20 @@ void modifyvelocity(physent *pl, bool local, bool water, bool floating, int curt
     }
     else if(pl->physstate >= PHYS_SLOPE || water)
     {
+        // test dodging mechanic
+        // physics impulse in the direction of strafe
+        // slight physics impulse upwards
+        conoutf("pl->vel.x: %f", pl->vel.x);
+        conoutf("pl->vel.y: %f", pl->vel.y);
+        if (pl->strafe && game::player1->sprinting) {
+            pl->strafe = 0;
+            game::player1->sprinting = false;
+            conoutf("Triggering dodge impulse");
+            //pl->vel.x += pl->strafe * cosf(RAD * pl->yaw) * DODGEVEL;
+            //pl->vel.y += pl->strafe * sinf(RAD * pl->yaw) * DODGEVEL;
+            pl->vel.x = max(pl->vel.x, DODGEVEL);
+        }
+
         if(water && !pl->inwater) pl->vel.div(8);
         if(pl->jumping)
         {
@@ -1753,7 +1768,7 @@ void modifyvelocity(physent *pl, bool local, bool water, bool floating, int curt
     }
     float fric = 0; //water && !floating ? 20.0f : (pl->physstate >= PHYS_SLOPE || floating ? 6.0f : 1.0f); //last = 30.f ////////max boost = 2.2+1.2+1.3 = 4.7
     if(water && !floating) fric = 20.f;
-    else if(pl->physstate >= PHYS_SLOPE || floating) fric = 6.f; //6.f;
+    else if(pl->physstate >= PHYS_SLOPE || floating) fric = 3.f; //6.f;
     else fric = 30.f; //30.f higher makes feel sluggish, lower makes it feel low jumping vel (hardly gets you off the ground when low)
 
     /*if (pl->physstate != PHYS_FALL ||
@@ -1849,7 +1864,6 @@ bool moveplayer(physent *pl, int moveres, bool local, int curtime)
     if(pl->state==CS_ALIVE) updatedynentcache(pl);
 
     // automatically apply smooth roll when strafing
-    /*
     if(pl->strafe==0)
     {
         pl->roll = pl->roll/(1+(float)sqrtf((float)curtime)/25);
@@ -1860,7 +1874,6 @@ bool moveplayer(physent *pl, int moveres, bool local, int curtime)
         if(pl->roll > maxroll) pl->roll = maxroll;
         else if(pl->roll < -maxroll) pl->roll = -maxroll;
     }
-    */
 
     // play sounds on water transitions
 
