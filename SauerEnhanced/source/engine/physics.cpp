@@ -1849,7 +1849,7 @@ bool moveplayer(physent *pl, int moveres, bool local, int curtime)
     if(pl->state==CS_ALIVE) updatedynentcache(pl);
 
     // automatically apply smooth roll when strafing
-
+    /*
     if(pl->strafe==0)
     {
         pl->roll = pl->roll/(1+(float)sqrtf((float)curtime)/25);
@@ -1860,6 +1860,7 @@ bool moveplayer(physent *pl, int moveres, bool local, int curtime)
         if(pl->roll > maxroll) pl->roll = maxroll;
         else if(pl->roll < -maxroll) pl->roll = -maxroll;
     }
+    */
 
     // play sounds on water transitions
 
