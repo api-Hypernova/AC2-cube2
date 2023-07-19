@@ -458,7 +458,7 @@ const float SLOPEZ = 0.5f;
 const float WALLZ = 0.2f;
 extern const float JUMPVEL = 90.f;
 extern const float GRAVITY = 200.0f;
-extern const float DODGEVEL = 500.f;
+extern const float DODGEVEL = 250.f;
 extern const float DODGEUPVEL = 40.f;
 
 bool ellipserectcollide(physent *d, const vec &dir, const vec &o, const vec &center, float yaw, float xr, float yr, float hi, float lo)
@@ -1667,6 +1667,69 @@ void modifyvelocity(physent *pl, bool local, bool water, bool floating, int curt
         pl->jumping=false;
     }
 
+    // Update "key press" events
+
+    // 1 is left, -1 is right
+
+    if (pl->strafe == -1 && ! game::player1->movestate[0]) { // we're strafing but trigger hasn't been updated - KEY PRESS EVENT
+        conoutf("STARTED STRAFING RIGHT...");
+        game::player1->movestate[0] = true; // we capture this and use it for calculating the double tap
+        if (lastmillis - game::player1->lastmovemillis[0] < 500) {
+            conoutf("DOUBLE TAP!");
+            game::player1->candodge = true;
+        }
+        game::player1->lastmovemillis[0] = lastmillis;
+    }
+    else if (pl->strafe == 0 && game::player1->movestate[0]) {// KEY STOP EVENT - update game state
+        conoutf("STOPPED STRAFING RIGHT...");
+        game::player1->movestate[0] = false;
+    }
+
+
+    if (pl->strafe == 1 && ! game::player1->movestate[1]) {
+        conoutf("STARTED STRAFING LEFT...");
+        game::player1->movestate[1] = true; 
+        if (lastmillis - game::player1->lastmovemillis[1] < 500) {
+            conoutf("DOUBLE TAP!");
+            game::player1->candodge = true;
+        }
+        game::player1->lastmovemillis[1] = lastmillis; 
+    }
+    else if (pl->strafe == 0 && game::player1->movestate[1]) {
+        conoutf("STOPPED STRAFING LEFT...");   
+        game::player1->movestate[1] = false;
+    }
+
+
+    if (pl->move == -1 && !game::player1->movestate[2]) {
+        conoutf("STARTED MOVING FORWARD...");
+        game::player1->movestate[2] = true;
+        if (lastmillis - game::player1->lastmovemillis[2] < 500) {
+            conoutf("DOUBLE TAP!");
+            game::player1->candodge = true;
+        }
+        game::player1->lastmovemillis[2] = lastmillis;
+    }
+    else if (pl->move == 0 && game::player1->movestate[2]) { // KEY STOP EVENT - update game state
+        conoutf("STOPPED MOVING FORWARD...");
+        game::player1->movestate[2] = false;
+    }
+
+    if (pl->move == 1 && !game::player1->movestate[3]) {
+        conoutf("STARTED MOVING BACKWARD...");
+        game::player1->movestate[3] = true;
+        if (lastmillis - game::player1->lastmovemillis[3] < 500) {
+            conoutf("DOUBLE TAP!");
+            game::player1->candodge = true;
+        }
+        game::player1->lastmovemillis[3] = lastmillis;
+    }
+    else if (pl->move == 0 && game::player1->movestate[3]) {
+        conoutf("STOPPED MOVING BACKWARD...");
+        game::player1->movestate[3] = false;
+    }
+
+
     if(game::player1->sprinting)
         game::player1->sprintleft-=1;
 
@@ -1772,19 +1835,20 @@ void modifyvelocity(physent *pl, bool local, bool water, bool floating, int curt
 
 //    static const char *states[] = {"float", "fall", "slide", "slope", "floor", "step up", "step down", "bounce"};
 
-    if(game::allowmove(pl) && pl->physstate >= PHYS_SLOPE) {
-        // test dodging mechanic
+    if(game::allowmove(pl) && pl->physstate >= PHYS_SLOPE && game::player1->candodge && (lastmillis - game::player1->lastdodge > 500)) {
+        // dodging mechanic
         // physics impulse in the direction of strafe
         // slight physics impulse upwards
-        if (pl->strafe && game::player1->sprinting) {
-            pl->strafe = 0;
-            game::player1->sprinting = false;
-            conoutf("Triggering dodge impulse");
-            //pl->vel.x += pl->strafe * cosf(RAD * pl->yaw) * 100;
-            //pl->vel.y += pl->strafe * sinf(RAD * pl->yaw) * 100;
-            pl->vel.x = max(pl->vel.x, DODGEVEL);
-            pl->vel.z = max(pl->vel.z, DODGEUPVEL);
-        }
+        conoutf("velx: %f", pl->vel.x);
+        conoutf("vely: %f", pl->vel.y);
+        pl->vel.z = max(pl->vel.z, DODGEUPVEL);
+        long velratio = DODGEVEL / (abs((long)pl->vel.x) + abs((long)pl->vel.y));
+        pl->vel.x *= velratio;
+        pl->vel.y *= velratio;
+        conoutf("New velx: %f", pl->vel.x);
+        conoutf("New vely: %f", pl->vel.y);
+        game::player1->lastdodge = lastmillis;
+        game::player1->candodge = false;
     }
 
 }

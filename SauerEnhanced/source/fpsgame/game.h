@@ -548,6 +548,10 @@ struct fpsstate
     bool aicancatch;
     int ailastcatch;
     int walkleft;
+    bool movestate[4];
+    int lastmovemillis[4];
+    bool candodge;
+    int lastdodge;
     int aitype, skill;
     vec aimpos;
     vec flarepos;
@@ -791,6 +795,16 @@ struct fpsstate
         lastswitch=0;
         sprintleft = 1000;
         walkleft = 50;
+        movestate[0] = 0;
+        movestate[1] = 0;
+        movestate[2] = 0;
+        movestate[3] = 0;
+        lastmovemillis[0] = 0;
+        lastmovemillis[1] = 0;
+        lastmovemillis[2] = 0;
+        lastmovemillis[3] = 0;
+        candodge = false;
+        lastdodge = 0;
         beepleft = 50;
         isholdingnade = 0;
         isholdingprop = 0;
