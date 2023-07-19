@@ -1896,8 +1896,8 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
         if((gun==GUN_MAGNUM || gun==GUN_ELECTRO)&& d==hudplayer()){d->screenjumpheight=20; screenjump(); screenjump(); d->attacking=0; d->altattacking=0;}
         //else if(d==player1) {d->screendown=1; d->screenup=1; screenjump(); screenjump(); }
         if(gun==GUN_PISTOL)d->attacking=d->altattacking=0;
-        if(gun!=GUN_MAGNUM)
-        {
+        //if(gun!=GUN_MAGNUM)
+        //{
             vec shelldir = hudgunorigin(GUN_SG, d->o, to, d);
             vec shellstart = d->o;
             shellstart.z=hudgunorigin(GUN_SG, d->o, to, d).z-2.5f;
@@ -1906,7 +1906,7 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
             shelldir.x+=.4f-(rnd(8)/10);
             shelldir.z-=2;
             newbouncer(shellstart, shelldir, local, id, d, BNC_SHELL, 8000, 40+rnd(20));
-        }
+        //}
         if(gun!=GUN_CG && gun!=GUN_SMG)
         {
             if(d->roll >= 0)

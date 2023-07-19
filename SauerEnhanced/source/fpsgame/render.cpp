@@ -381,6 +381,7 @@ namespace game
 
         int rtime = d->gunselect==GUN_SMG2?350:guns[d->gunselect].attackdelay;
         if(d->gunselect==GUN_FIST)rtime=500;
+        if (d->gunselect == GUN_MAGNUM)rtime = 0;
         if(d->gunselect==GUN_SHOTGUN2)rtime=260;
         if(d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2)rtime=0;
         if(d->gunselect==GUN_ELECTRO2 || d->gunselect==GUN_ELECTRO)rtime=75;
