@@ -1673,7 +1673,7 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
                 if (proj.o.dist(p) <= 15 && !d->isholdingprop && !d->isholdingnade && !d->isholdingorb && !d->isholdingshock && !d->isholdingbarrel && proj.gun==GUN_ELECTRO2)
                 {
                     vec pos(proj.o);
-                    if (proj.local) // This causes an unnecessary explosion. Why doesn't this happen for bouncers?
+                    if (proj.local)
                         if (d == player1 || d->ai) addmsg(N_EXPLODE, "rci3iv", proj.owner, lastmillis - maptime, GUN_TELEKENESIS, proj.id - maptime, //delete all tk objects
                             hits.length(), hits.length() * sizeof(hitmsg) / sizeof(int), hits.getbuf());
                     if (d == player1 || d->ai)addmsg(N_CATCH, "rciiiiii", d, d->isholdingnade, d->isholdingorb, d->isholdingprop, d->isholdingbarrel, d->isholdingshock, "");
@@ -1901,7 +1901,7 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
 
         adddecal(DECAL_BULLET, to, vec(from).sub(to).normalize(), 2.0f);
         if(muzzlelight) adddynlight(hudgunorigin(gun, d->o, to, d), gun==GUN_CG ? 30 : 15, vec(0.5f, 0.375f, 0.25f), gun==GUN_CG ? 50 : 100, gun==GUN_CG ? 50 : 100, DL_FLASH, 0, vec(0, 0, 0), d);
-        if((gun==GUN_MAGNUM || gun==GUN_ELECTRO)&& d==hudplayer()){d->screenjumpheight=20; screenjump(); screenjump(); d->attacking=0; d->altattacking=0;}
+        if ((gun == GUN_MAGNUM || gun == GUN_ELECTRO) && d == hudplayer()) { d->screenjumpheight = 20; screenjump(); screenjump(); } //d->attacking=0; d->altattacking=0;}
         //else if(d==player1) {d->screendown=1; d->screenup=1; screenjump(); screenjump(); }
         if(gun==GUN_PISTOL)d->attacking=d->altattacking=0;
         //if(gun!=GUN_MAGNUM)
@@ -2229,6 +2229,7 @@ void doreload(fpsent *d)
 
 void shoot(fpsent *d, const vec &targ)
 {
+    if (d->gunselect == GUN_MAGNUM && d->altattacking && !d->attacking) return;
     int prevaction = d->lastaction, attacktime = lastmillis-prevaction;
     //if attacking, increment spread to MAXSPREAD, if not, decrease spread to 0
     if(d->lastattackmillis<MAXSPREAD && d->attacking && (d->gunselect==GUN_SMG || d->gunselect==GUN_CG || d->gunselect==GUN_PISTOL))d->lastattackmillis+=d->gunselect==GUN_PISTOL?6:1;
@@ -2263,6 +2264,8 @@ void shoot(fpsent *d, const vec &targ)
         //if(d->gunselect==GUN_RL2){d->gunselect=GUN_RL; addmsg(N_GUNSELECT, "rci", d, GUN_RL); }
         if(d->gunselect==GUN_SMG2){d->gunselect=GUN_SMG; addmsg(N_GUNSELECT, "rci", d, GUN_SMG); }
     }
+
+
     if((d->lastattackgun==GUN_SHOTGUN2 || d->lastattackgun==GUN_SG) && d->gunselect==GUN_SHOTGUN2 || d->gunselect==GUN_SG)d->lastattackgun=d->gunselect; //no hax switching from sg1 to sg2 :)
     if(d->gunselect==GUN_TELEKENESIS && (!d->isholdingnade && !d->isholdingorb && !d->isholdingbarrel && !d->isholdingprop && !d->isholdingshock)) return;
     if(d->lastattackgun!=d->gunselect){

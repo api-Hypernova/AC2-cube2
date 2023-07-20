@@ -2067,6 +2067,46 @@ void drawdamagescreen(int w, int h)
     notextureshader->set();
 }
 
+void drawsniperscope(int w, int h) {
+    if (game::hudplayer()->gunselect != GUN_MAGNUM || !game::hudplayer()->altattacking) { 
+        if (zoom == 1) {
+            execute("hudgun 1; zoom -1");
+            zoom = -1;
+        }
+        return; 
+    }
+    // let's just "exec" this one here. 
+    // if was not zooming and sniper selected and altattacking; set zoom to 1
+    // if zooming or (not sniper selected or not altattacking) disabled zoom
+    if (!zoom && game::hudplayer()->gunselect == GUN_MAGNUM && game::hudplayer()->altattacking) {
+        execute("zoom 1; hudgun 0");
+    }
+
+    defaultshader->set();
+    glEnable(GL_TEXTURE_2D);
+
+    static Texture* damagetex = NULL;
+    if (!damagetex) damagetex = textureload("packages/hud/scope.png", 3);
+
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    glBindTexture(GL_TEXTURE_2D, damagetex->id);
+    fade = 100.f;
+    if (!fade) removedscreen = false;
+
+    glColor4f(fade, fade, fade, fade);
+
+    glBegin(GL_TRIANGLE_STRIP);
+    glTexCoord2f(0, 0); glVertex2f(0, 0);
+    glTexCoord2f(1, 0); glVertex2f(w, 0);
+    glTexCoord2f(0, 1); glVertex2f(0, h);
+    glTexCoord2f(1, 1); glVertex2f(w, h);
+    glEnd();
+
+    glDisable(GL_TEXTURE_2D);
+    notextureshader->set();
+}
+
+
 VAR(hidestats, 0, 0, 1);
 VAR(hidehud, 0, 0, 1);
 
@@ -2193,6 +2233,7 @@ void drawcrosshair(int w, int h)
 {
     bool windowhit = g3d_windowhit(true, false);
     if(!windowhit && (hidehud || mainmenu)) return; //(hidehud || player->state==CS_SPECTATOR || player->state==CS_DEAD)) return;
+    if (game::hudplayer()->gunselect == GUN_MAGNUM && game::hudplayer()->altattacking) return;
 
     float r = 1, g = 1, b = 1, cx = 0.5f, cy = 0.5f, chsize;
     Texture *crosshair;
@@ -2299,6 +2340,7 @@ void gl_drawhud(int w, int h)
     if(!mainmenu)
     {
         drawdamagescreen(w, h);
+        drawsniperscope(w, h);
         drawdamagecompass(w, h);
         crosshairbumpcheck();
         screenjumpcheck();

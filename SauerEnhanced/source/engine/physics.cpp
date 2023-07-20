@@ -1675,7 +1675,7 @@ void modifyvelocity(physent *pl, bool local, bool water, bool floating, int curt
         if (pl->strafe == -1 && ! ((fpsent *)pl)->movestate[0]) { // we're strafing but trigger hasn't been updated - KEY PRESS EVENT
             //conoutf("STARTED STRAFING RIGHT...");
             ((fpsent *)pl)->movestate[0] = true; // we capture this and use it for calculating the double tap
-            if (lastmillis - ((fpsent *)pl)->lastmovemillis[0] < 500) {
+            if (lastmillis - ((fpsent *)pl)->lastmovemillis[0] < 250) {
                 //conoutf("DOUBLE TAP!");
                 ((fpsent *)pl)->candodge = true;
             }
@@ -1690,7 +1690,7 @@ void modifyvelocity(physent *pl, bool local, bool water, bool floating, int curt
         if (pl->strafe == 1 && ! ((fpsent *)pl)->movestate[1]) {
             //conoutf("STARTED STRAFING LEFT...");
             ((fpsent *)pl)->movestate[1] = true; 
-            if (lastmillis - ((fpsent *)pl)->lastmovemillis[1] < 500) {
+            if (lastmillis - ((fpsent *)pl)->lastmovemillis[1] < 250) {
                 //conoutf("DOUBLE TAP!");
                 ((fpsent *)pl)->candodge = true;
             }
@@ -1705,7 +1705,7 @@ void modifyvelocity(physent *pl, bool local, bool water, bool floating, int curt
         if (pl->move == -1 && !((fpsent *)pl)->movestate[2]) {
             //conoutf("STARTED MOVING FORWARD...");
             ((fpsent *)pl)->movestate[2] = true;
-            if (lastmillis - ((fpsent *)pl)->lastmovemillis[2] < 500) {
+            if (lastmillis - ((fpsent *)pl)->lastmovemillis[2] < 250) {
                 //conoutf("DOUBLE TAP!");
                 ((fpsent *)pl)->candodge = true;
             }
@@ -1719,7 +1719,7 @@ void modifyvelocity(physent *pl, bool local, bool water, bool floating, int curt
         if (pl->move == 1 && !((fpsent *)pl)->movestate[3]) {
             //conoutf("STARTED MOVING BACKWARD...");
             ((fpsent *)pl)->movestate[3] = true;
-            if (lastmillis - ((fpsent *)pl)->lastmovemillis[3] < 500) {
+            if (lastmillis - ((fpsent *)pl)->lastmovemillis[3] < 250) {
                 //conoutf("DOUBLE TAP!");
                 ((fpsent *)pl)->candodge = true;
             }
