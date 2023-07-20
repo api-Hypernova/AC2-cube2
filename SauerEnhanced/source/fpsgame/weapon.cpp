@@ -2468,7 +2468,6 @@ void renderbouncers()
         if(vel.magnitude() <= 25.0f) {
             if (bnc.bouncetype == BNC_XBOLT) {
                 pitch = bnc.lastpitch;
-                yaw += 1;
             }
         }
         else
@@ -2523,7 +2522,7 @@ void renderbouncers()
             case BNC_BARRELDEBRIS: mdl = barreldebrisnames[bnc.variant]; break;
             default: continue;
             }
-            if (bnc.bouncetype == BNC_GIBS) pos.z -= 12.f;
+            if (bnc.bouncetype == BNC_GIBS) pos.z -= 12.5f;
             rendermodel(&bnc.light, mdl, ANIM_MAPMODEL|ANIM_LOOP, pos, yaw, pitch, cull, NULL, NULL, 0, 0, fade);
         }
     }
