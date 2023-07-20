@@ -1083,8 +1083,8 @@ namespace game
         if(hudplayer()->state==CS_DEAD || hudplayer()->state==CS_SPECTATOR) return;
         glPushMatrix();
         glScalef(1/1.2f, 1/1.2f, 1);
-        if(!m_insta) draw_textf("%s%d", 80, h*1.2f-128, hudplayer()->health>51?"":(hudplayer()->health>26?"\f2":"\f3"), hudplayer()->health);
-        if(!m_insta && hudplayer()->armour) draw_textf("%s%d", 300, h*1.2f-80, hudplayer()->armour>51?"":(hudplayer()->armour>26?"\f2":"\f3"), hudplayer()->armour);
+        draw_textf("%s%d", 80, h*1.2f-128, hudplayer()->health>51?"":(hudplayer()->health>26?"\f2":"\f3"), hudplayer()->health);
+        if(hudplayer()->armour) draw_textf("%s%d", 300, h*1.2f-80, hudplayer()->armour>51?"":(hudplayer()->armour>26?"\f2":"\f3"), hudplayer()->armour);
         //defformatstring(ammo)("%d", hudplayer()->ammo[hudplayer()->gunselect]);
         int magleft[NUMGUNS];
         loopi(NUMGUNS) magleft[i]=guns[i].magsize-hudplayer()->magprogress[i];
@@ -1154,7 +1154,7 @@ namespace game
         if     (cas>as) cas -= max(0.01f, ((cas-as)/4));
         else if(cas<as) cas += max(0.01f, ((as-cas)/4));
 
-        if(hudplayer()->health > 0 && !m_insta)
+        if(hudplayer()->health > 0)
         {
             settexture("packages/hud/hud_health.png");  //Health bar
             glBegin(GL_QUADS);
@@ -1176,16 +1176,13 @@ namespace game
             glEnd();
         }
 
-        if(!m_insta)
-        {
-            settexture("packages/hud/hud_left.png"); //left HUD
-            glBegin(GL_QUADS);
-            glTexCoord2f(0.0f, 0.0f);   glVertex2f(0,   h*1.2f-207);
-            glTexCoord2f(1.0f, 0.0f);   glVertex2f(539, h*1.2f-207);
-            glTexCoord2f(1.0f, 1.0f);   glVertex2f(539, h*1.2f);
-            glTexCoord2f(0.0f, 1.0f);   glVertex2f(0,   h*1.2f);
-            glEnd();
-        }
+        settexture("packages/hud/hud_left.png"); //left HUD
+        glBegin(GL_QUADS);
+        glTexCoord2f(0.0f, 0.0f);   glVertex2f(0,   h*1.2f-207);
+        glTexCoord2f(1.0f, 0.0f);   glVertex2f(539, h*1.2f-207);
+        glTexCoord2f(1.0f, 1.0f);   glVertex2f(539, h*1.2f);
+        glTexCoord2f(0.0f, 1.0f);   glVertex2f(0,   h*1.2f);
+        glEnd();
 
         settexture("packages/hud/hud_right.png"); //right HUD
         glBegin(GL_QUADS);

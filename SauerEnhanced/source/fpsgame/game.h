@@ -826,9 +826,9 @@ struct fpsstate
         else if(m_insta)
         {
             armour = 0;
-            health = 1;
+            health = 100;
             gunselect = GUN_MAGNUM;
-            ammo[GUN_MAGNUM] = 100;
+            ammo[GUN_MAGNUM] = 24;
         }
         else if(m_regencapture)
         {
