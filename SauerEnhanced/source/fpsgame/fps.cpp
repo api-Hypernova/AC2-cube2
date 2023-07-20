@@ -95,7 +95,7 @@ namespace game
         {
             if(player1->respawned!=player1->lifesequence)
             {
-                if (m_check(gamemode, M_CTF)) execute("spectator 1");
+                //if (m_check(gamemode, M_CTF)) execute("spectator 1");
                 addmsg(N_TRYSPAWN, "rc", player1);
                 player1->respawned = player1->lifesequence;
             }
