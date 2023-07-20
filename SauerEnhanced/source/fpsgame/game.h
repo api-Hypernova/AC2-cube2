@@ -491,16 +491,16 @@ static struct itemstat { int add, max, sound; const char *name; int icon, info, 
 static const struct guninfo { short sound, reloadsound, magsize, attackdelay, damage, spread, projspeed, part, kickamount, rays, range, hitpush, splash, ttl, burstlen, guided, sub; const char *name, *file; } guns[NUMGUNS] =
 {
     { S_SLASH,   -1, 0,  500,  150, 0,   0,   0, 0,  1, 60,  200, 0, 0,    0, 0, 0, "katana", "katana"  },
-    { S_SHOTGUN2,  -1, 6, 900,  14, 150, 0,   0, 20, 12,1024, 200, 0, 0,    0, 0, 2, "*",         "solaris_shotgun" }, //shotgdefault
+    { S_SHOTGUN2,  -1, 6, 1000,  14, 150, 0,   0, 20, 12,1024, 200, 0, 0,    0, 0, 2, "*",         "solaris_shotgun" }, //shotgdefault
     { S_PULSERIFLE, -1, 30, 100,  26, 0,  0,   0, 7,  1, 1024, 150, 0, 0,    0, 0, 1,  "}",        "pulse_rifle"},
     { S_RPG,    -1, 0, 1500, 120, 0,   400,  0, 10, 1, 1024, 200, 40,0,    0, 1, 1,  "Z",  "rocketold"},  //rocket_solaris
     //{ S_MAGNUM,   -1, 6, 1200, 100, 0,   0,   0, 30, 1, 2048, 200, 0, 0,    0, 0, 1, "#",           "pyccna_svd" },
-    { S_MAGNUM,   -1, 6, 600, 70, 0,   0,   0, 30, 1, 2048, 200, 0, 0,    0, 0, 1, "#",           "pyccna_svd" },
+    { S_RIFLE,   -1, 6, 600, 70, 0,   0,   0, 30, 1, 2048, 200, 0, 0,    0, 0, 1, "#",           "pyccna_svd" },
     { S_HANDNADE,  -1, 0, 1000, 150, 0,  300,  0,  5, 1, 1024, 200, 55, 1500, 0, 0, 1,  "@", "gl" },
     { S_MINSTANEX,  -1, 0, 500,  60, 0,   0,   0, 10, 1, 1024, 300, 25, 0,  0,  0,  1,  "<", "pyccna_railgun"},
     { S_LIGHTNING,  -1, 0, 400, 60,  0,  250,  PART_FIREBALL2,  5,  1,  1024,  300,  65,  0,  0,  0,  1, "<",  "pyccna_railgun"},
     { S_ORB,      -1, 0, 1000, 8000, 0,  350,  0, 30, 1, 1024, 10, 40, 5000, 0, 0, 1, ";", "pulse_rifle"},
-    { S_SHOTGUNBURST,  -1, 6, 500,  14, 90, 0,   0, 10, 6, 1024, 200, 0, 0,    3, 0, 1, "*", "solaris_shotgun"}, //shotgdefault
+    { S_SHOTGUNBURST,  -1, 6, 500,  14, 100, 0,   0, 10, 6, 1024, 200, 0, 0,    3, 0, 1, "*", "solaris_shotgun"}, //shotgdefault
     { S_UZI,       -1, 30, 100,   23,  0,  0,   0, 3,  1, 1024, 150, 0, 0,    0, 0, 1, "&",  "ak74"},
     { S_SMGNADE,   -1, 0, 800,  120, 0,  300,  0, 10, 1, 1024, 200, 40,5000, 0, 0, 1, "@",  "ak74"}, //"pistol"
     { S_CROSSBOWFIRE, -1, 0, 1000,300,0, 800,  0, 30, 1, 1024, 50, 20,10000, 0, 1, 1, "{",       "crossbow"},
@@ -534,6 +534,7 @@ struct fpsstate
     int ammo[NUMGUNS];
     int hasgun[NUMGUNS];
     int diedgun;
+    bool diedbyheadshot;
     int dropgun;
     int uncrouchtime;
     int sprintleft;
@@ -790,7 +791,8 @@ struct fpsstate
         hasgun[GUN_PISTOL] = 1;
         hasgun[GUN_HANDGRENADE] = 1;
         isholdingorb = 0;
-        holdingweapon=1;
+        diedbyheadshot = false;
+        holdingweapon = 1;
         flareleft = 5;
         lastswitch=0;
         sprintleft = 1000;
@@ -1213,7 +1215,7 @@ extern void getbestteams(vector<const char *> &best);
 // render
 struct playermodelinfo
 {
-    const char *ffa, *blueteam, *redteam, *hudguns,
+    const char *ffa, *blueteam, *redteam, *blueheadless, *redheadless, *hudguns,
     *vwep, *quad, *armour[3],
     *ffaicon, *blueicon, *redicon;
     bool ragdoll, selectable;

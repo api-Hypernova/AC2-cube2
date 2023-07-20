@@ -48,12 +48,12 @@ namespace game
 
     static const playermodelinfo playermodels[5] =
     {
-        { "mrfixit", "mrfixit/blue", "mrfixit/red", "snoutx10k/hudguns", NULL, "mrfixit/horns", { "mrfixit/armor/blue", "mrfixit/armor/green", "mrfixit/armor/yellow" }, "mrfixit", "mrfixit_blue", "mrfixit_red", true, true},
-        { "snoutx10k", "snoutx10k/blue", "snoutx10k/red", "snoutx10k/hudguns", NULL, "snoutx10k/wings", { "snoutx10k/armor/blue", "snoutx10k/armor/green", "snoutx10k/armor/yellow" }, "snoutx10k", "snoutx10k_blue", "snoutx10k_red", true, true },
-        { "mrfixit", "mrfixit/blue", "mrfixit/red", "snoutx10k/hudguns", NULL, "mrfixit/horns", { "mrfixit/armor/blue", "mrfixit/armor/green", "mrfixit/armor/yellow" }, "mrfixit", "mrfixit_blue", "mrfixit_red", true, true},
-        { "snoutx10k", "snoutx10k/blue", "snoutx10k/red", "snoutx10k/hudguns", NULL, "snoutx10k/wings", { "snoutx10k/armor/blue", "snoutx10k/armor/green", "snoutx10k/armor/yellow" }, "snoutx10k", "snoutx10k_blue", "snoutx10k_red", true, true },
+        { "mrfixit", "mrfixit/blue", "mrfixit/red", "mrfixit/blue_nohead", "mrfixit/red_nohead", "snoutx10k/hudguns", NULL, "mrfixit/horns", {"mrfixit/armor/blue", "mrfixit/armor/green", "mrfixit/armor/yellow"}, "mrfixit", "mrfixit_blue", "mrfixit_red", true, true},
+        { "snoutx10k", "snoutx10k/blue", "snoutx10k/red", "snoutx10k/blue", "snoutx10k/red", "snoutx10k/hudguns", NULL, "snoutx10k/wings", { "snoutx10k/armor/blue", "snoutx10k/armor/green", "snoutx10k/armor/yellow" }, "snoutx10k", "snoutx10k_blue", "snoutx10k_red", true, true },
+        { "mrfixit", "mrfixit/blue", "mrfixit/red", "mrfixit/blue_nohead", "mrfixit/red_nohead", "snoutx10k/hudguns", NULL, "mrfixit/horns", {"mrfixit/armor/blue", "mrfixit/armor/green", "mrfixit/armor/yellow"}, "mrfixit", "mrfixit_blue", "mrfixit_red", true, true},
+        { "snoutx10k", "snoutx10k/blue", "snoutx10k/red", "snoutx10k/blue", "snoutx10k/red", "snoutx10k/hudguns", NULL, "snoutx10k/wings", { "snoutx10k/armor/blue", "snoutx10k/armor/green", "snoutx10k/armor/yellow" }, "snoutx10k", "snoutx10k_blue", "snoutx10k_red", true, true },
         //sorry ogro :){ "ogro/green", "ogro/blue", "ogro/red", "mrfixit/hudguns", "ogro/vwep", NULL, { NULL, NULL, NULL }, "ogro", "ogro_blue", "ogro_red", false, false },
-        { "snoutx10k", "snoutx10k/blue", "snoutx10k/red", "snoutx10k/hudguns", NULL, "snoutx10k/wings", { "snoutx10k/armor/blue", "snoutx10k/armor/green", "snoutx10k/armor/yellow" }, "snoutx10k", "snoutx10k_blue", "snoutx10k_red", true, true },
+        { "mrfixit", "mrfixit/blue", "mrfixit/red", "mrfixit/blue_nohead", "mrfixit/red_nohead", "snoutx10k/hudguns", NULL, "mrfixit/horns", {"mrfixit/armor/blue", "mrfixit/armor/green", "mrfixit/armor/yellow"}, "mrfixit", "mrfixit_blue", "mrfixit_red", true, true},
         //{ "inky", "inky/blue", "inky/red", "inky/hudguns", NULL, "inky/quad", { "inky/armor/blue", "inky/armor/green", "inky/armor/yellow" }, "inky", "inky_blue", "inky_red", true, true },
         //{ "captaincannon", "captaincannon/blue", "captaincannon/red", "captaincannon/hudguns", NULL, "captaincannon/quad", { "captaincannon/armor/blue", "captaincannon/armor/green", "captaincannon/armor/yellow" }, "captaincannon", "captaincannon_blue", "captaincannon_red", true, true }
     };
@@ -183,10 +183,10 @@ namespace game
         const char *mdlname = mdl.ffa;
         switch(testteam ? testteam-1 : team)
         {
-            case 1: mdlname = mdl.blueteam; break;
-            case 2: mdlname = mdl.redteam; break;
+            case 1: mdlname = d->diedbyheadshot ? mdl.blueheadless : mdl.blueteam; break;
+            case 2: mdlname = d->diedbyheadshot ? mdl.redheadless : mdl.redteam; break;
         }
-        if(d->health>-40 ||d->health<-3000 || guns[d->diedgun].splash <= 30)renderclient(d, mdlname, a[0].tag ? a : NULL, hold, attack, delay, lastaction, intermission && d->state != CS_DEAD ? 0 : d->lastpain, fade, ragdoll && mdl.ragdoll);
+        /*if(d->health>-40 ||d->health<-3000 || guns[d->diedgun].splash <= 30)*/renderclient(d, mdlname, a[0].tag ? a : NULL, hold, attack, delay, lastaction, intermission && d->state != CS_DEAD ? 0 : d->lastpain, fade, ragdoll && mdl.ragdoll);
         d->o.z-=5.f;
         if(d->diedgun==GUN_CROSSBOW && (lastmillis-d->lastpain)<2000)rendermodel(NULL, "projectiles/xbolt", ANIM_MAPMODEL|ANIM_LOOP, d->o, 0, 90, MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_LIGHT|MDL_LIGHT_FAST|MDL_DYNSHADOW);
         d->o.z+=5.f;
@@ -357,7 +357,7 @@ namespace game
         if(lastmillis-d->lastswitch<3)hudgunpitch=d->pitch-90;
         if(lastmillis-d->lastaction<3 && (d->gunselect==GUN_MAGNUM || d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2 || d->gunselect==GUN_ELECTRO) && (lastmillis-d->lastaction)<10)jump=1;
         if(jump && (d->gunselect==GUN_MAGNUM || d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2 || d->gunselect==GUN_ELECTRO))hudgunpitch+=d->gunselect==GUN_SMG?1:2;
-        if((d->gunselect==GUN_MAGNUM || d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2 || d->gunselect==GUN_ELECTRO) && jump && hudgunpitch>d->pitch+((d->gunselect==GUN_SMG||d->gunselect==GUN_ELECTRO)?6:25))jump=0;
+        if((d->gunselect==GUN_MAGNUM || d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2 || d->gunselect==GUN_ELECTRO) && jump && hudgunpitch>d->pitch+((d->gunselect==GUN_SMG||d->gunselect==GUN_ELECTRO)?6:20))jump=0;
         if(hudgunpitch<d->pitch-2 && !jump)hudgunpitch+=2; //raise hudgun to normal pos in case player looked up during firing
         else if(hudgunpitch>d->pitch+2 && !jump)hudgunpitch-=d->gunselect==GUN_SMG?1:2;
         if(lastmillis-d->lastaction>350&&lastmillis-d->lastswitch>200&&(d->gunselect==GUN_MAGNUM || d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2|| d->gunselect==GUN_ELECTRO))hudgunpitch=d->pitch;
@@ -382,7 +382,7 @@ namespace game
         int rtime = d->gunselect==GUN_SMG2?350:guns[d->gunselect].attackdelay;
         if(d->gunselect==GUN_FIST)rtime=500;
         if (d->gunselect == GUN_MAGNUM)rtime = 0;
-        if(d->gunselect==GUN_SHOTGUN2)rtime=260;
+        if(d->gunselect==GUN_SHOTGUN2)rtime=280;
         if(d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2)rtime=0;
         if(d->gunselect==GUN_ELECTRO2 || d->gunselect==GUN_ELECTRO)rtime=75;
         if(d->gunselect==GUN_TELEKENESIS2)rtime=2;

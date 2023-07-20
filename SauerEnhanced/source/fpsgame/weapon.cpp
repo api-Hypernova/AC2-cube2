@@ -794,7 +794,15 @@ void gibeffect(int damage, const vec &vel, fpsent *d)
 {
     vec from = d->o;
     //if(blood || damage <= 40) //return;
-    if(damage < 40)
+
+    if (d->diedbyheadshot) {
+        // lookup the playermodel, spawn gib for head
+        conoutf("d->playermodel: %d", d->playermodel);
+        spawnbouncer(d->headpos(), vel, d, BNC_GIBS, damage / 2);
+    }
+
+
+    /*if (damage < 40)
     {
         //loopi(min(gibnum, 50)+1) diebouncer(from, vel, d, BNC_DEBRIS); //20 gibnum
     }
@@ -805,7 +813,7 @@ void gibeffect(int damage, const vec &vel, fpsent *d)
         //particle_splash(PART_SMOKE, 5, 200, d->feetpos(), 0xFF0000, 12.0f, 50, 250, NULL, 1, false, 4);
         //particle_splash(PART_SMOKE, 5, 1250, d->feetpos(), 0xFF0000, 12.0f, 50, 250, NULL, 1, false, 3);
         playsound (S_GIB, &d->o);
-    }
+    }*/
     //if(d->gunselect!=GUN_TELEKENESIS)
     //spawnbouncer(d->o, vel, d, BNC_WEAPON, damage/4);
     int proptype;
@@ -1135,7 +1143,7 @@ void explodeeffects(int gun, fpsent *d, bool local, int id)
 
 bool isheadshot(dynent *d, vec to)
 {
-    if ((to.z - (d->o.z - d->eyeheight)) / (d->eyeheight + d->aboveeye) > 0.9f) return true;
+    if ((to.z - (d->o.z - d->eyeheight)) / (d->eyeheight + d->aboveeye) > 0.8f) return true;
     return false;
 }
 
@@ -2120,7 +2128,7 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
     case S_RIFLE:
         if(d==hudplayer()) {
             playsound(lookupmaterial(camera1->o)!=MAT_WATER?S_RIFLE1+rnd(3):S_UWST3);
-            if(lookupmaterial(camera1->o) != MAT_WATER) playsound(S_RIFLELOAD);
+            //if(lookupmaterial(camera1->o) != MAT_WATER) playsound(S_RIFLELOAD);
         } else {
             if(lookupmaterial(camera1->o)==MAT_WATER)
                 playsound(S_UWST3, &d->o);
@@ -2428,7 +2436,8 @@ void adddynlights()
 
 
 static const char * const projnames[7] = { "projectiles/grenade", "projectiles/rocket", "projectils/orb", "pickups/hand_grenade", "projectiles/plasmabolt", "mrfixit", "snoutx10k" };
-static const char * const gibnames[6] = { "gibs/gib01", "gibs/gib01d", "gibs/gib02", "gibs/gib02d", "gibs/gib03", "gibs/gib03d" };
+//static const char * const gibnames[6] = { "gibs/gib01", "gibs/gib01d", "gibs/gib02", "gibs/gib02d", "gibs/gib03", "gibs/gib03d" };
+static const char * const gibnames[1] = { "mrfixit_head" };
 static const char * const debrisnames[4] = { "debris/debris01", "debris/debris02", "debris/debris03", "debris/debris04" };
 static const char * const barreldebrisnames[4] = { "barreldebris/debris01", "barreldebris/debris02", "barreldebris/debris03", "barreldebris/debris04" };
 static const char * const weaponmodelnames[NUMGUNS] =
@@ -2454,8 +2463,10 @@ void renderbouncers()
         pos.add(vec(bnc.offset).mul(bnc.offsetmillis/float(OFFSETMILLIS)));
         vec vel(bnc.vel);
         if(vel.magnitude() <= 25.0f) {
-            yaw = bnc.lastyaw;
-            if(bnc.bouncetype==BNC_XBOLT)pitch = bnc.lastpitch;
+            if (bnc.bouncetype == BNC_XBOLT) {
+                pitch = bnc.lastpitch;
+                yaw += 1;
+            }
         }
         else
         {
@@ -2504,11 +2515,12 @@ void renderbouncers()
             if(bnc.lifetime < 250) fade = bnc.lifetime/250.0f;
             switch(bnc.bouncetype)
             {
-            case BNC_GIBS: mdl = gibnames[bnc.variant]; cull |= MDL_LIGHT|MDL_LIGHT_FAST|MDL_DYNSHADOW; break;
+            case BNC_GIBS: mdl = gibnames[0]; cull |= MDL_LIGHT|MDL_LIGHT_FAST|MDL_DYNSHADOW; break;
             case BNC_DEBRIS: mdl = debrisnames[bnc.variant]; break;
             case BNC_BARRELDEBRIS: mdl = barreldebrisnames[bnc.variant]; break;
             default: continue;
             }
+            if (bnc.bouncetype == BNC_GIBS) pos.z -= 12.f;
             rendermodel(&bnc.light, mdl, ANIM_MAPMODEL|ANIM_LOOP, pos, yaw, pitch, cull, NULL, NULL, 0, 0, fade);
         }
     }

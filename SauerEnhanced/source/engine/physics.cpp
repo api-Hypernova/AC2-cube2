@@ -1837,7 +1837,7 @@ void modifyvelocity(physent *pl, bool local, bool water, bool floating, int curt
 
 //    static const char *states[] = {"float", "fall", "slide", "slope", "floor", "step up", "step down", "bounce"};
 
-    if(game::allowmove(pl) && pl->physstate >= PHYS_SLOPE && game::player1->candodge && (lastmillis - game::player1->lastdodge > 500) && (pl==game::player1 || ((fpsent *)pl)->ai)) {
+    if(game::allowmove(pl) && pl->physstate >= PHYS_SLOPE && game::player1->candodge /* && (lastmillis - game::player1->lastdodge > 500) */ && (pl == game::player1 || ((fpsent*)pl)->ai)) {
         // dodging mechanic
         // physics impulse in the direction of strafe
         // slight physics impulse upwards
