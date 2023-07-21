@@ -477,7 +477,7 @@ static struct itemstat { int add, max, sound; const char *name; int icon, info, 
 {15,    100,    S_LGPICKUP, "", HICON_BLUE_ARMOUR, A_YELLOW},
 {2,    60,    S_ITEMARMOUR, "GA", HICON_GREEN_ARMOUR, A_YELLOW},
 {2,   200,    S_ITEMARMOUR, "YA", HICON_YELLOW_ARMOUR, A_YELLOW},
-{20000, INT_MAX-1, S_ITEMPUP,    "Q",  HICON_QUAD, -1},
+{60000, INT_MAX-1, S_ITEMPUP,    "Q",  HICON_QUAD, -1},
 };
 
 #define MAXRAYS 12
@@ -564,6 +564,7 @@ struct fpsstate
     int isholdingshock;
     int propmodeldir;
     int magprogress[NUMGUNS];
+    bool helicopter;
 
 
 
@@ -687,6 +688,7 @@ struct fpsstate
             break;
         case I_QUAD:
             quadmillis = min(quadmillis+is.add, is.max);
+            health = 1000;
             break;
         case I_MAGNUM:
             ammo[GUN_MAGNUM]=min(ammo[GUN_MAGNUM]+12, 24); //check maxammo when changing full ammo cap
@@ -795,6 +797,7 @@ struct fpsstate
         holdingweapon = 1;
         flareleft = 5;
         lastswitch=0;
+        helicopter = 0;
         sprintleft = 1000;
         walkleft = 50;
         movestate[0] = 0;

@@ -1752,7 +1752,7 @@ void modifyvelocity(physent *pl, bool local, bool water, bool floating, int curt
     {
         if(pl->jumping)
         {
-            pl->jumping = false;
+            //pl->jumping = false;
             pl->vel.z = max(pl->vel.z, JUMPVEL);
         }
     }
@@ -1892,7 +1892,7 @@ bool moveplayer(physent *pl, int moveres, bool local, int curtime)
 {
     int material = lookupmaterial(vec(pl->o.x, pl->o.y, pl->o.z + (3*pl->aboveeye - pl->eyeheight)/4));
     bool water = isliquid(material&MATF_VOLUME);
-    bool floating = pl->type==ENT_PLAYER && (pl->state==CS_EDITING || pl->state==CS_SPECTATOR);
+    bool floating = pl->type==ENT_PLAYER && (pl->state==CS_EDITING || pl->state==CS_SPECTATOR || ((fpsent *)pl)->quadmillis);
     float secs = curtime/1000.f;
 
     // apply gravity
