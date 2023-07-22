@@ -186,6 +186,10 @@ namespace game
             case 1: mdlname = d->diedbyheadshot ? mdl.blueheadless : mdl.blueteam; break;
             case 2: mdlname = d->diedbyheadshot ? mdl.redheadless : mdl.redteam; break;
         }
+        if (d->quadmillis) {
+            mdlname = "mapmodels/sitters/vehicles/heli";
+        }
+
         /*if(d->health>-40 ||d->health<-3000 || guns[d->diedgun].splash <= 30)*/renderclient(d, mdlname, a[0].tag ? a : NULL, hold, attack, delay, lastaction, intermission && d->state != CS_DEAD ? 0 : d->lastpain, fade, ragdoll && mdl.ragdoll);
         d->o.z-=5.f;
         if(d->diedgun==GUN_CROSSBOW && (lastmillis-d->lastpain)<2000)rendermodel(NULL, "projectiles/xbolt", ANIM_MAPMODEL|ANIM_LOOP, d->o, 0, 90, MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_LIGHT|MDL_LIGHT_FAST|MDL_DYNSHADOW);
@@ -276,9 +280,12 @@ namespace game
     VARP(chainsawhudgun, 0, 1, 1);
     VAR(testhudgun, 0, 0, 1);
 
-    FVAR(swaystep, 1, 35.0f, 100);
-    FVAR(swayside, 0, 0.04f, 1);
-    FVAR(swayup, 0, 0.05f, 1);
+    //FVAR(swaystep, 1, 35.0f, 100);
+    FVAR(swaystep, 30.f, 30.f, 30.f);
+    //FVAR(swayside, 0, 0.04f, 1);
+    FVAR(swayside, 0.1f, 0.1f, 0.1f);
+    //FVAR(swayup, 0, 0.05f, 1);
+    FVAR(swayup, 0.1f, 0.1f, 0.1f);
 
     float swayfade = 0, swayspeed = 0, swaydist = 0;
     vec swaydir(0, 0, 0);

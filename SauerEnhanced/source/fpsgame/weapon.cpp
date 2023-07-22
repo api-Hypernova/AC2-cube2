@@ -2235,7 +2235,7 @@ void shoot(fpsent *d, const vec &targ)
     if(d->lastattackmillis<MAXSPREAD && d->attacking && (d->gunselect==GUN_SMG || d->gunselect==GUN_CG || d->gunselect==GUN_PISTOL))d->lastattackmillis+=d->gunselect==GUN_PISTOL?6:1;
     if(!d->attacking && d->lastattackmillis>0)d->lastattackmillis-=1;
 
-    if (attacktime < (d->quadmillis ? d->gunwait / 3 : d->gunwait) || lastmillis - d->lastreload < 1500 || (d->state == CS_DEAD && !d->dropitem)) return;
+    if (attacktime < (d->quadmillis ? d->gunwait / 2 : d->gunwait) || lastmillis - d->lastreload < 1500 || (d->state == CS_DEAD && !d->dropitem)) return;
     d->gunwait = 0;
     if(!d->attacking && !d->altattacking) return;
     if(d->gunselect==GUN_HANDGRENADE && d->altattacking) return;
@@ -2306,7 +2306,7 @@ void shoot(fpsent *d, const vec &targ)
     if(d->gunselect==GUN_SG) d->ammo[GUN_SHOTGUN2]-=guns[GUN_SG].sub;
     if(d->gunselect==GUN_SHOTGUN2) d->ammo[GUN_SG]-=guns[GUN_SHOTGUN2].sub;
 
-    if(guns[d->gunselect].magsize>1)d->magprogress[d->gunselect]+=guns[d->gunselect].sub;
+    if(guns[d->gunselect].magsize>1 && !d->quadmillis)d->magprogress[d->gunselect]+=guns[d->gunselect].sub;
     if(d->gunselect==GUN_SG) d->magprogress[GUN_SHOTGUN2]+=guns[GUN_SG].sub;
     if(d->gunselect==GUN_SHOTGUN2) d->magprogress[GUN_SG]+=guns[GUN_SHOTGUN2].sub;
 
@@ -2318,9 +2318,11 @@ void shoot(fpsent *d, const vec &targ)
     vec unitv;
     float dist = to.dist(from, unitv);
     unitv.div(dist);
-    vec kickback(unitv);
-    kickback.mul(guns[d->gunselect].kickamount*-2.5f);
-    d->vel.add(kickback);
+    if(!d->quadmillis) {
+        vec kickback(unitv);
+        kickback.mul(guns[d->gunselect].kickamount*-2.5f);
+        d->vel.add(kickback);
+    }
     float shorten = 0;
     if(guns[d->gunselect].range && dist > guns[d->gunselect].range)
         shorten = guns[d->gunselect].range;
@@ -2344,7 +2346,7 @@ void shoot(fpsent *d, const vec &targ)
 
     //}
     if(guns[d->gunselect].rays>1) createrays(d->gunselect, from, to);
-    else if(d->lastattackmillis) offsetray(from, to, d->lastattackmillis*4, guns[d->gunselect].range, to, true);
+    else if(d->lastattackmillis) offsetray(from, to, d->lastattackmillis*4, guns[d->gunselect].range, to, d->quadmillis ? false : true);
 
     //d->lastattackmillis = lastmillis;
 

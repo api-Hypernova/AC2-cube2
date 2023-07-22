@@ -2111,7 +2111,10 @@ void drawsniperscope(int w, int h) {
 
 void drawhelicopterhud(int w, int h) {
     //basically we just detect if the player is in helicopter mode, and enable/disable the helo hud
-    if (!game::hudplayer()->quadmillis || game::hudplayer()->gunselect != GUN_RL || game::hudplayer()->gunselect!=GUN_CG) {
+    if (!game::hudplayer()->quadmillis || (game::hudplayer()->gunselect != GUN_RL && game::hudplayer()->gunselect!=GUN_CG)) {
+        if (game::hudplayer()->gunselect != GUN_MAGNUM || !game::hudplayer()->altattacking) {
+            if (getvar("hudgun") == 0) setvar("hudgun", 1);
+        }
         return;
     }
     if (getvar("hudgun") == 1) setvar("hudgun", 0);
@@ -2267,7 +2270,7 @@ void drawcrosshair(int w, int h)
 {
     bool windowhit = g3d_windowhit(true, false);
     if(!windowhit && (hidehud || mainmenu)) return; //(hidehud || player->state==CS_SPECTATOR || player->state==CS_DEAD)) return;
-    if (game::hudplayer()->gunselect == GUN_MAGNUM && game::hudplayer()->altattacking) return;
+    if ((game::hudplayer()->gunselect == GUN_MAGNUM && game::hudplayer()->altattacking) || game::hudplayer()->quadmillis) return;
 
     float r = 1, g = 1, b = 1, cx = 0.5f, cy = 0.5f, chsize;
     Texture *crosshair;
