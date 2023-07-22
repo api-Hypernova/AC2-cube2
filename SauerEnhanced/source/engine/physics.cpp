@@ -1663,7 +1663,7 @@ void modifyvelocity(physent *pl, bool local, bool water, bool floating, int curt
 {
     //int lastsprintmillis = 0;
     //if(game::player1->sprinting) lastsprintmillis=lastmillis;
-    if(pl->physstate==PHYS_FALL && !water && !ahk) { 
+    if (pl->physstate == PHYS_FALL && !water && !ahk && !floating) {
         pl->jumping=false;
     }
 
@@ -1748,12 +1748,15 @@ void modifyvelocity(physent *pl, bool local, bool water, bool floating, int curt
 
     if(!game::player1->sprinting)game::player1->sprintleft=1000; //full sprint whenever not using it
 
-    if(floating)
+    if(floating || ((fpsent *)pl)->quadmillis)
     {
         if(pl->jumping)
         {
             //pl->jumping = false;
             pl->vel.z = max(pl->vel.z, JUMPVEL);
+        }
+        if (((fpsent*)pl)->crouching) {
+            pl->vel.z = -max(pl->vel.z, JUMPVEL);
         }
     }
     else if(pl->physstate >= PHYS_SLOPE || water)
@@ -1892,11 +1895,11 @@ bool moveplayer(physent *pl, int moveres, bool local, int curtime)
 {
     int material = lookupmaterial(vec(pl->o.x, pl->o.y, pl->o.z + (3*pl->aboveeye - pl->eyeheight)/4));
     bool water = isliquid(material&MATF_VOLUME);
-    bool floating = pl->type==ENT_PLAYER && (pl->state==CS_EDITING || pl->state==CS_SPECTATOR || ((fpsent *)pl)->quadmillis);
+    bool floating = pl->type==ENT_PLAYER && (pl->state==CS_EDITING || pl->state==CS_SPECTATOR);
     float secs = curtime/1000.f;
 
     // apply gravity
-    if(!floating) modifygravity(pl, water, curtime);
+    if(!floating && !((fpsent*)pl)->quadmillis) modifygravity(pl, water, curtime);
     // apply any player generated changes in velocity
     modifyvelocity(pl, local, water, floating, curtime);
 
@@ -1907,7 +1910,7 @@ bool moveplayer(physent *pl, int moveres, bool local, int curtime)
 
     pl->blocked = false;
 
-    if(floating)                // just apply velocity
+    if(floating) // just apply velocity
     {
         if(pl->physstate != PHYS_FLOAT)
         {

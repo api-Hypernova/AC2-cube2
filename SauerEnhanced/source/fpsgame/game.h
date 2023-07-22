@@ -687,8 +687,16 @@ struct fpsstate
             health = min(health+2, maxhealth);
             break;
         case I_QUAD:
+            loopi(NUMGUNS) ammo[i] = 0;
+            loopi(NUMGUNS) hasgun[i] = 0;
             quadmillis = min(quadmillis+is.add, is.max);
             health = 1000;
+            hasgun[GUN_RL] = 1;
+            hasgun[GUN_CG] = 1;
+            ammo[GUN_RL] = 1;
+            ammo[GUN_CG] = 1;
+            gunselect = GUN_RL;
+            //ammo[GUN_RL2]=min(ammo[GUN_RL2]+3, 3);
             break;
         case I_MAGNUM:
             ammo[GUN_MAGNUM]=min(ammo[GUN_MAGNUM]+12, 24); //check maxammo when changing full ammo cap

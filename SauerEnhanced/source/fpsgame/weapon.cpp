@@ -2235,7 +2235,7 @@ void shoot(fpsent *d, const vec &targ)
     if(d->lastattackmillis<MAXSPREAD && d->attacking && (d->gunselect==GUN_SMG || d->gunselect==GUN_CG || d->gunselect==GUN_PISTOL))d->lastattackmillis+=d->gunselect==GUN_PISTOL?6:1;
     if(!d->attacking && d->lastattackmillis>0)d->lastattackmillis-=1;
 
-    if(attacktime<d->gunwait || lastmillis-d->lastreload<1500 || (d->state==CS_DEAD && !d->dropitem)) return;
+    if (attacktime < (d->quadmillis ? d->gunwait / 3 : d->gunwait) || lastmillis - d->lastreload < 1500 || (d->state == CS_DEAD && !d->dropitem)) return;
     d->gunwait = 0;
     if(!d->attacking && !d->altattacking) return;
     if(d->gunselect==GUN_HANDGRENADE && d->altattacking) return;
@@ -2302,7 +2302,7 @@ void shoot(fpsent *d, const vec &targ)
         }
         return;
     }
-    if(d->gunselect) d->ammo[d->gunselect]-=guns[d->gunselect].sub;
+    if(d->gunselect && !d->quadmillis) d->ammo[d->gunselect]-=guns[d->gunselect].sub;
     if(d->gunselect==GUN_SG) d->ammo[GUN_SHOTGUN2]-=guns[GUN_SG].sub;
     if(d->gunselect==GUN_SHOTGUN2) d->ammo[GUN_SG]-=guns[GUN_SHOTGUN2].sub;
 
