@@ -381,6 +381,13 @@ void updatebouncers(int time)
             regular_particle_splash(PART_SPARK, 1, 25, pos, 0x553322, 1.2f, 50, -20);
         }
 
+        if (bnc.bouncetype == BNC_BARRELDEBRIS) {
+            vec pos(bnc.o);
+            pos.add(vec(bnc.offset).mul(bnc.offsetmillis / float(OFFSETMILLIS)));
+            regular_particle_flame(PART_FLAME, pos, 1, 1, 0x903020, 3, 2.0f);
+            regular_particle_flame(PART_SMOKE, pos, 1, 1, 0x303020, 1, 4.0f, 100.0f, 2000.0f, -20);
+        }
+
         if(bnc.bouncetype==BNC_GIBS && bnc.vel.magnitude() > 50.f)
         {
             vec pos(bnc.o);
@@ -776,13 +783,13 @@ void spawnbouncer(const vec &p, const vec &vel, fpsent *d, int type, int speed, 
     if(to.iszero()) to.z += 1;
     to.normalize();
     to.add(p);
-    if(d!=player1 && worldpos.dist(d->o)<200 && guns[d->diedgun].splash<=30 && type==BNC_GIBS)
+    /*if (d != player1 && worldpos.dist(d->o)<200 && guns[d->diedgun].splash <= 30 && type == BNC_GIBS)
     {
         to=worldpos;
         to.x+=rnd(15)-30;
         to.y+=rnd(15)-30;
         to.z+=rnd(15)-30;
-    }
+    }*/
     int timer = type!=BNC_DEBRIS?rnd(1000)+spawnbouncerttl:3000;
     if(type==BNC_GRENADE || type==BNC_ORB || type==BNC_PROP || type==BNC_BARREL)timer=type==BNC_GRENADE?1500:(type==BNC_ORB?5000:20000);
     if(type==BNC_WEAPON)timer=20000;
@@ -794,6 +801,15 @@ void gibeffect(int damage, const vec &vel, fpsent *d)
 {
     vec from = d->o;
     //if(blood || damage <= 40) //return;
+
+    if(d->quadmillis) {
+        vec debrisvel(d->o), debrisorigin(d->o);
+        debrisorigin.add(vec(debrisvel).mul(8));
+        entitylight light;
+        lightreaching(debrisorigin, light.color, light.dir);
+        loopi(10)spawnbouncer(debrisorigin, debrisvel, d, BNC_BARRELDEBRIS, 200, &light);
+    }
+
 
     if (d->diedbyheadshot) {
         // lookup the playermodel, spawn gib for head

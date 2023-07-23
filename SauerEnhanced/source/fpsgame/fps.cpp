@@ -469,6 +469,18 @@ namespace game
         d->state = CS_DEAD;
         d->lastpain = lastmillis;
         if(!restore) gibeffect(max(-d->health, 0), d->vel, d);
+        if (d->quadmillis) { //helicopter explosion
+            regular_particle_flame(PART_FLAME, d->o, 1, 1, 0x903020, 3, 20.0f);
+            regular_particle_flame(PART_SMOKE, d->o, 1, 1, 0x303020, 1, 40.0f, 100.0f, 2000.0f, -20);
+            particle_splash(PART_SMOKE, 5, 1250, d->o, 0x222222, 120.0f, 200, 250, NULL, 1, false, 3);
+            particle_splash(PART_SMOKE, 5, 200, d->o, 0x222222, 120.0f, 200, 250, NULL, 1, false, 4);
+            particle_splash(PART_FLAME1, 15, 70, d->o, 0xFFFFFF, 30.2f, 200, NULL, NULL, NULL, true);
+            particle_splash(PART_FLAME2, 15, 70, d->o, 0xFFFFFF, 30.2f, 200, NULL, NULL, NULL, true);
+            particle_splash(PART_FLAME2, 15, 70, d->o, 0xFFFFFF, 30.2f, 500, NULL, NULL, NULL, true);
+            particle_flare(d->o, d->o, 150, PART_MUZZLE_FLASH2, 0xFFFFFF, 100.f);
+            particle_splash(PART_SPARK, 160, 30, d->o, 0xFFC864, 1.4f, 300, NULL, NULL, NULL, true);
+            particle_fireball(d->o, 100.f, PART_EXPLOSION, 300, 0x333333, 500);
+        }
         //dropweapon(d->health==0?20:-d->health, d->vel, d);
         //d->diedgun=d->gunselect;
         //vec to(rnd(100)-50, rnd(100)-50, rnd(100)-50);
