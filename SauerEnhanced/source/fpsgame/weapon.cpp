@@ -384,8 +384,8 @@ void updatebouncers(int time)
         if (bnc.bouncetype == BNC_BARRELDEBRIS) {
             vec pos(bnc.o);
             pos.add(vec(bnc.offset).mul(bnc.offsetmillis / float(OFFSETMILLIS)));
-            regular_particle_flame(PART_FLAME, pos, 1, 1, 0x903020, 3, 2.0f);
-            regular_particle_flame(PART_SMOKE, pos, 1, 1, 0x303020, 1, 4.0f, 100.0f, 2000.0f, -20);
+            regular_particle_flame(PART_FLAME, pos, 1, 1, 0x903020, 3, 4.0f);
+            regular_particle_flame(PART_SMOKE, pos, 1, 1, 0x303020, 1, 8.0f, 100.0f, 2000.0f, -20);
         }
 
         if(bnc.bouncetype==BNC_GIBS && bnc.vel.magnitude() > 50.f)
@@ -536,7 +536,7 @@ void updatebouncers(int time)
 
         vec old(bnc.o);
         if(bnc.bouncetype==BNC_ORB) stopped = bounce(&bnc, 1.001f, 1.0001f, 0.0f) || (bnc.lifetime -= time)<0;
-        else if(bnc.bouncetype==BNC_GRENADE) stopped = bounce(&bnc, 0.5f, 0.5f, 0.8f) || (bnc.lifetime -= time)<0;
+        else if(bnc.bouncetype==BNC_GRENADE) stopped = bounce(&bnc, 0.45f, 0.5f, 0.8f) || (bnc.lifetime -= time)<0;
         else if(bnc.bouncetype==BNC_SHELL)stopped = bounce(&bnc, .6f, .8f, .8f) || (bnc.lifetime -= time)<0;
         else if(bnc.bouncetype==BNC_SMGNADE) stopped = bounce(&bnc, 0.6f, 0.5f, 0.6f) || (bnc.bounces) > 0;
         else if(bnc.bouncetype==BNC_PROP) stopped = bounce(&bnc, 0.4f, 0.5f, 1.f)||(bnc.lifetime -= time)<0;
@@ -545,6 +545,7 @@ void updatebouncers(int time)
         else if(bnc.bouncetype==BNC_ELECTROBOLT) stopped = bounce(&bnc, 0.6f, 0.5f, 0.8f) || (bnc.lifetime -= time)<0 || bnc.owner->detonateelectro;
         else if(bnc.bouncetype==BNC_MISSILE) stopped = bounce(&bnc, 0.6f, 0.5f, 0.0f) || (bnc.lifetime -= time)<0;
         else if(bnc.bouncetype==BNC_WEAPON) stopped = bounce(&bnc, .6f, .8f, .8f) || (bnc.lifetime -= time)<0 || bnc.caught==1;
+        else if(bnc.bouncetype==BNC_BARRELDEBRIS) stopped = bounce(&bnc, .3f, .8f, .3f) || (bnc.lifetime -= time)<0;
         else
         {
             // cheaper variable rate physics for debris, gibs, etc.
@@ -802,18 +803,8 @@ void gibeffect(int damage, const vec &vel, fpsent *d)
     vec from = d->o;
     //if(blood || damage <= 40) //return;
 
-    if(d->quadmillis) {
-        vec debrisvel(d->o), debrisorigin(d->o);
-        debrisorigin.add(vec(debrisvel).mul(8));
-        entitylight light;
-        lightreaching(debrisorigin, light.color, light.dir);
-        loopi(10)spawnbouncer(debrisorigin, debrisvel, d, BNC_BARRELDEBRIS, 200, &light);
-    }
-
-
-    if (d->diedbyheadshot) {
+    if (d->diedbyheadshot && !d->quadmillis) {
         // lookup the playermodel, spawn gib for head
-        conoutf("d->playermodel: %d", d->playermodel);
         spawnbouncer(d->headpos(), vel, d, BNC_GIBS, damage / 2);
     }
 
@@ -850,6 +841,11 @@ void gibeffect(int damage, const vec &vel, fpsent *d)
         }
     }
     if(d->gunselect!=GUN_TELEKENESIS&&d->gunselect!=GUN_TELEKENESIS2&&d->gunselect!=GUN_FIST&&d->gunselect!=GUN_CG&&d->gunselect!=GUN_CG2)spawnbouncer(from, vel, d, BNC_WEAPON, damage/3);
+
+
+    if (d->quadmillis) {
+        loopi(5)spawnbouncer(from, vel, d, BNC_BARRELDEBRIS, rnd(50)+10);
+    }
 }
 
 void hit(int damage, dynent *d, fpsent *at, const vec &vel, int gun, float info1, int info2 = 1)
