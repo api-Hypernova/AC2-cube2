@@ -1461,8 +1461,8 @@ void raydamage(vec &from, vec &to, fpsent *d)
     }
     if(d->gunselect==GUN_ELECTRO)
     {
-        /*loopi(2)*/particle_flare(d->muzzle.x >= 0 ? d->muzzle : hudgunorigin(d->gunselect, from, to, d), to, 400, PART_STREAK, 0x0789FC, 0.35f);
-        particle_trail(PART_RAILSPIRAL, 500, d->muzzle.x>=0?d->muzzle:hudgunorigin(d->gunselect, from, to, d), to, 0, 0.5f, 0, true);
+        ///*loopi(2)*/particle_flare(d->muzzle.x >= 0 ? d->muzzle : hudgunorigin(d->gunselect, from, to, d), to, 400, PART_STREAK, 0x0789FC, 0.35f);
+        //particle_trail(PART_RAILSPIRAL, 500, d->muzzle.x>=0?d->muzzle:hudgunorigin(d->gunselect, from, to, d), to, 0, 0.5f, 0, true);
     }
     if((o = intersectclosest(from, to, d, dist)) && guns[d->gunselect].rays==1)
     {
@@ -1482,6 +1482,17 @@ void raydamage(vec &from, vec &to, fpsent *d)
 
 VARP(serifletrail, 0, 0, 1);
 VARP(nadetimer, 500, 1000, 3000);
+VARFP(mod_lightninggun, 0, 0, 1, 
+    if (mod_lightninggun) { 
+        player1->mods |= MOD_LIGHTNINGGUN; 
+        addmsg(N_MODS, "rci", player1, player1->mods);
+    } else {
+        player1->mods &= ~MOD_LIGHTNINGGUN;
+        addmsg(N_MODS, "rci", player1, player1->mods);
+    }
+);
+
+
 //void screenjump();
 void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local, int id, int prevaction)     // create visual effect from a shot
 {
@@ -1818,9 +1829,18 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
         playsound(S_NEXIMPACT, &to);
         particle_flare(to, to, 200, PART_MUZZLE_FLASH2, 0x0789FC, 6.f);
         particle_splash(PART_SMOKE, 3, 500, d->muzzle, 0x0789FC, 1.4f, 50, 501, NULL, 2, NULL, 2);
-        particle_trail(1, 1, from, to, 1, 1, 1, true);
-        //particle_splash(PART_SPARK, 1000, 550, v, 0xFFC864, 0.10f, guns[gun].splash/2);
-        particle_splash(PART_SPARK, 2, 200, to, 0x0789FC, 3.96f, 2, 50);
+        //particle_trail(1, 1, from, to, 1, 1, 1, true);
+        vec lolwut(to);
+        lolwut.sub(d->muzzle.x >= 0 ? d->muzzle : hudgunorigin(gun, from, to, d));
+        loopi(40) {
+            vec temp(lolwut);
+            temp.normalize().mul(6000.f-(i*125));
+            if (raycubelos(d->muzzle.x >= 0 ? d->muzzle : hudgunorigin(gun, from, to, d), camera1->o, check) || raycubelos(to, camera1->o, check))
+                //particle_flying_flare(d->muzzle.x >= 0 ? d->muzzle : hudgunorigin(gun, from, to, d), temp, 1000, PART_ELECTRO, 0x0789FC, 5.f-(i*.1), 100);
+                particle_flying_flare(d->muzzle.x >= 0 ? d->muzzle : hudgunorigin(gun, from, to, d), temp, 1000, PART_SPARK, 0x0789FC, 5.f - (i * .1), 100);
+        }
+
+        particle_splash(PART_SPARK, 2, 300, to, 0x0789FC, 5.f, 2, 50);
         //particle_fireball(to, 5.f, PART_EXPLOSION, 200, 0x0789FC, 5.f);
         //particle_flare(hudgunorigin(gun, from, to, d), to, 1000, PART_STREAK, 0x0789FC, 0.65f);
         //particle_trail(0, 0, from, to, 0, 0, 0, true);
@@ -1829,11 +1849,10 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
             particle_flare(d->muzzle, d->muzzle, gun==GUN_CG ? 100 : 200, PART_MUZZLE_FLASH1, 0x0789FC, gun==GUN_CG ? 2.25f : 1.25f, d);
         adddecal(DECAL_BULLET, to, vec(from).sub(to).normalize(), 3.0f); //BULLET //4.0
         //adddecal(DECAL_GLOW, to, vec(from).sub(to).normalize(), 3.0f, bvec(0x07, 0x89, 0xFC)); //  0x0789FC);
-        if(muzzlelight) adddynlight(hudgunorigin(gun, d->o, to, d), gun==GUN_CG ? 30 : 15, vec(0.5f, 0.5f, 1.f), gun==GUN_CG ? 50 : 100, gun==GUN_CG ? 50 : 100, DL_FLASH, 0, vec(0, 0, 1), d);
+        if(muzzlelight) adddynlight(hudgunorigin(gun, d->o, to, d), 15, vec(0.5f, 0.5f, 1.f), 100, 100, DL_FLASH, 0, vec(0, 0, 1), d);
         if(muzzlelight) adddynlight(to, 30, vec(0.5f, 0.5f, 1.f), 100, 100, DL_FLASH, 0, vec(0, 0, 1), d);
-        d->altattacking=0;
-        d->attacking=0;
-        if(d==hudplayer()) { d->screenjumpheight=10; screenjump(); screenjump();}
+        if (d == hudplayer()) { d->screenjumpheight = 10; screenjump(); screenjump(); }
+
 
 
         // Check if we hit a shock combo. If so, explode the projectile in the air
@@ -1879,6 +1898,21 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
     case GUN_SMG:
         //case GUN_ELECTRO:
     {
+        if (d->gunselect==GUN_MAGNUM && d->mods & MOD_LIGHTNINGGUN) {
+            playsound(S_LG_IMPACT, &to);
+            particle_splash(PART_SPARK, 200, 250, to, 0x5050FF, 0.10f);
+            particle_splash(PART_SMOKE, 3, 500, d->muzzle, 0x5050FF, 1.5f, 50, 501, NULL, 2, NULL, 2);
+            particle_splash(PART_SMOKE, 3, 500, to, 0x5050FF, 2.f, 50, 501, NULL, 2, NULL, 2);
+            particle_trail(1, 1, from, to, 1, 1, 1, true);
+            particle_flare(hudgunorigin(gun, from, to, d), to, 300, PART_LIGHTNING, 0x5050FF, 0.7f);
+            particle_flare(d->muzzle.x >= 0 ? d->muzzle : hudgunorigin(gun, from, to, d), d->muzzle.x >= 0 ? d->muzzle : hudgunorigin(gun, from, to, d), 200, PART_MUZZLE_FLASH3, 0x5050FF, .5f, d);
+            adddecal(DECAL_BULLET, to, vec(from).sub(to).normalize(), 2.0f); //BULLET //4.0
+            //adddecal(DECAL_GLOW, to, vec(from).sub(to).normalize(), 3.0f, bvec(0x07, 0x89, 0xFC)); //  0x0789FC);
+            if (muzzlelight) adddynlight(hudgunorigin(gun, d->o, to, d), 15, vec(0.3f, 0.3f, 1.5f), 100, 100, DL_FLASH, 0, vec(0, 1, 0), d);
+            if (d == hudplayer()) { d->screenjumpheight = 25; screenjump(); screenjump(); }
+            break;
+        }
+
         //if(isheadshot(d, from, to))d->headshot=1;
         if(sebulletimpactsound && lookupmaterial(camera1->o)!=MAT_WATER) playsound(S_BHIT1+rnd(3), &to);
         //particle_splash(PART_SPARK, d->quadmillis ? 100 : 20, 100, to, 0xFFFFFF, 0.1f);
@@ -2119,6 +2153,7 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
     bool looped = false;
     if(d->attacksound >= 0 && d->attacksound != sound) d->stopattacksound();
     if(d->idlesound >= 0) d->stopidlesound();
+    if (d->gunselect==GUN_MAGNUM && d->mods & MOD_LIGHTNINGGUN) sound = S_LG_FIRE;
     switch(sound)
     {
     case S_CHAINSAW_ATTACK:
@@ -2375,7 +2410,8 @@ void shoot(fpsent *d, const vec &targ)
     shoteffects(d->gunselect, from, to, d, true, 0, prevaction);
     if(d==player1 || d->ai)
     {
-        addmsg(N_SHOOT, "rici2i6iv", d->headshots, d, lastmillis-maptime, d->gunselect,
+        loopi((d->gunselect==GUN_MAGNUM && d->mods & MOD_LIGHTNINGGUN) ? 2 : 1)
+            addmsg(N_SHOOT, "rici2i6iv", d->headshots, d, lastmillis-maptime, d->gunselect,
                (int)(from.x*DMF), (int)(from.y*DMF), (int)(from.z*DMF),
                (int)(to.x*DMF), (int)(to.y*DMF), (int)(to.z*DMF),
                hits.length(), hits.length()*sizeof(hitmsg)/sizeof(int), hits.getbuf());
@@ -2414,7 +2450,7 @@ void shoot(fpsent *d, const vec &targ)
     //                d->magprogress[d->gunselect]=0;
     //        }
     if(d==player1 && d->gunselect==GUN_HANDGRENADE && d->ammo[GUN_HANDGRENADE]==0){ d->attacking=0; d->gunwait=300; weaponswitch(d);}
-    d->gunwait=guns[d->gunselect].attackdelay;
+    d->gunwait=(d->gunselect==GUN_MAGNUM && d->mods & MOD_LIGHTNINGGUN) ? 1300 : guns[d->gunselect].attackdelay;
     if(d->gunselect == GUN_PISTOL && d->ai) d->gunwait += int(d->gunwait*(((101-d->skill)+rnd(111-d->skill))/100.f));
     d->totalshots += guns[d->gunselect].damage*(d->quadmillis ? 2 : 1)*(guns[d->gunselect].rays);
     //if(d->magprogress[d->gunselect]>=guns[d->gunselect].magsize && guns[d->gunselect].magsize && d->ammo[d->gunselect]) doreload(d);

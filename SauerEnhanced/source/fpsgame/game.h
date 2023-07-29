@@ -339,7 +339,9 @@ enum
     S_D2,
     S_D3,
     S_COMBO,
-    S_SLASH
+    S_SLASH,
+    S_LG_FIRE,
+    S_LG_IMPACT
 
 };
 
@@ -370,7 +372,7 @@ enum
     N_PAUSEGAME, N_GAMESPEED,
     N_ADDBOT, N_DELBOT, N_INITAI, N_FROMAI, N_BOTLIMIT, N_BOTBALANCE,
     N_MAPCRC, N_CHECKMAPS,
-    N_SWITCHNAME, N_SWITCHMODEL, N_SWITCHTEAM, N_CROUCH, N_CATCH, N_DELMOVABLE,
+    N_SWITCHNAME, N_SWITCHMODEL, N_SWITCHTEAM, N_CROUCH, N_CATCH, N_DELMOVABLE, N_MODS,
     NUMSV
 };
 
@@ -397,7 +399,7 @@ static const int msgsizes[] =               // size inclusive message token, 0 f
         N_PAUSEGAME, 0, N_GAMESPEED, 0,
         N_ADDBOT, 2, N_DELBOT, 1, N_INITAI, 0, N_FROMAI, 2, N_BOTLIMIT, 2, N_BOTBALANCE, 2,
         N_MAPCRC, 0, N_CHECKMAPS, 1,
-        N_SWITCHNAME, 0, N_SWITCHMODEL, 2, N_SWITCHTEAM, 0, N_CROUCH, 2, N_CATCH, 7, N_DELMOVABLE, 2,
+        N_SWITCHNAME, 0, N_SWITCHMODEL, 2, N_SWITCHTEAM, 0, N_CROUCH, 2, N_CATCH, 7, N_DELMOVABLE, 2, N_MODS, 2,
         -1
         };
 
@@ -486,17 +488,34 @@ static struct itemstat { int add, max, sound; const char *name; int icon, info, 
 #define RL_SELFDAMDIV 2
 #define RL_DISTSCALE 1.5f
 
+
+enum // Here are our weapon mods. They can be used to manage dynamic settings 
+    // Maybe we can make the following struct not "static const" to allow permuting for the client's perspective?
+    // If we make it so the client can send damage over in the shot message that would make the client almost completely autonomous
+        // and greatly simplify the whole modding process
+{
+    MOD_PROXYMISSILE = 1 << 0, // missile will automatically explode when close to target. Also increases blast radius substantially
+    MOD_LIGHTNINGGUN = 1 << 1, // similar to LG from UT2k4. Not sure if/which weapon it will replace/mod. Perhaps duplicate of singlesniper
+    MOD_PISTOL = 1 << 2, // switch between pistol and blaster
+    MOD_MISSILELOCK = 1 << 3, // allow locking missile onto target, fire & forget
+    MOD_SINGLESNIPER = 1 << 4, // slower but more powerful sniper. Requires anim update
+    MOD_NUKE = 1 << 5, // nuke mod for RPG
+    MOD_GRAPPLE = 1 << 6 // grappling hook secondary for katana
+};
+
 //enum { GUN_FIST = 0, GUN_SG, GUN_CG, GUN_RL, GUN_MAGNUM, GUN_HANDGRENADE, GUN_ELECTRO, GUN_ELECTRO2, GUN_CG2, GUN_SHOTGUN2, GUN_SMG, GUN_SMG2, GUN_TELEKENESIS, GUN_TELEKENESIS2, GUN_PISTOL, GUN_FIREBALL, GUN_ICEBALL, GUN_SLIMEBALL, GUN_BITE, GUN_BARREL, NUMGUNS };
 //guns change: game, weapon, render, animsthing, server, fps, playeranim files, autocrosshair, weapon binds, bouncers, gun icons
-static const struct guninfo { short sound, reloadsound, magsize, attackdelay, damage, spread, projspeed, part, kickamount, rays, range, hitpush, splash, ttl, burstlen, guided, sub; const char *name, *file; } guns[NUMGUNS] =
+static const struct guninfo { short sound, reloadsound, magsize, attackdelay, damage, spread, projspeed, part, kickamount, rays, range, hitpush, splash, ttl, burstlen, guided, sub; const char* name, * file; }
+
+guns[NUMGUNS] =
 {
-    { S_SLASH,   -1, 0,  500,  150, 0,   0,   0, 0,  1, 60,  200, 0, 0,    0, 0, 0, "katana", "katana"  },
+    { S_SLASH,   -1, 0,  500,  150, 0,   0,   0, 0,  1, 60,  200, 0, 0,    0, 0, 0, "katana", "katana" },
     { S_SHOTGUN2,  -1, 6, 1000,  14, 150, 0,   0, 20, 12,1024, 200, 0, 0,    0, 0, 2, "*",         "solaris_shotgun" }, //shotgdefault
-    { S_PULSERIFLE, -1, 30, 100,  26, 0,  0,   0, 7,  1, 1024, 150, 0, 0,    0, 0, 1,  "}",        "pulse_rifle"},
+    { S_PULSERIFLE, -1, 30, 100,  26, 0,  0,   0, 7,  1, 1024, 150, 0, 0,    0, 0, 1,  "}",        "pulse_rifle" },
     { S_RPG,    -1, 0, 1500, 120, 0,   400,  0, 10, 1, 1024, 200, 40,0,    0, 1, 1,  "Z",  "rocketold"},  //rocket_solaris
     //{ S_MAGNUM,   -1, 6, 1200, 100, 0,   0,   0, 30, 1, 2048, 200, 0, 0,    0, 0, 1, "#",           "pyccna_svd" },
-    { S_RIFLE,   -1, 6, 600, 70, 0,   0,   0, 30, 1, 2048, 200, 0, 0,    0, 0, 1, "#",           "pyccna_svd" },
-    { S_HANDNADE,  -1, 0, 1000, 150, 0,  300,  0,  5, 1, 1024, 200, 55, 1500, 0, 0, 1,  "@", "gl" },
+    { S_RIFLE,   -1, 6, 600, 70, 0,   0,   0, 30, 1, 2048, 200, 0, 0,    0, 0, 1, "#",           "pyccna_svd"},
+    { S_HANDNADE,  -1, 0, 1000, 150, 0,  300,  0,  5, 1, 1024, 200, 55, 1500, 0, 0, 1,  "@", "gl"},
     { S_MINSTANEX,  -1, 0, 500,  60, 0,   0,   0, 10, 1, 1024, 300, 25, 0,  0,  0,  1,  "<", "pyccna_railgun"},
     { S_LIGHTNING,  -1, 0, 400, 60,  0,  250,  PART_FIREBALL2,  5,  1,  1024,  300,  65,  0,  0,  0,  1, "<",  "pyccna_railgun"},
     { S_ORB,      -1, 0, 1000, 8000, 0,  350,  0, 30, 1, 1024, 10, 40, 5000, 0, 0, 1, ";", "pulse_rifle"},
@@ -507,12 +526,12 @@ static const struct guninfo { short sound, reloadsound, magsize, attackdelay, da
     { S_PUNT,     -1, 0, 200,   0, 0,   0,   0, 0,  1,  50, 0,  0,  0,  0,  0,  0, "$",     "electrodriver"},
     { S_TRYGRAB,   -1, 0, 50,   0, 0,   0,   0, 0,  1, 75, 0,  0,  0,  0,  0,  0, "$",     "electrodriver2"},
     //{ S_PISTOL,    -1, 18, 100, 20, 0,  0,   0, 8,  1, 1024, 150, 0, 0,    0, 0, 1, "%",          "pyccna_fn57" },
-    { S_LASER,    -1, 0, 500, 20, 0,  0,   0, 100,  1, 1024, 150, 0, 0,    0, 0, 1, "%",          "laser" },
-    { S_FLAUNCH,   -1, 0, 200,  20, 0,   50,PART_FIREBALL1,1, 1, 1024, 0, 0, 0, 0, 0, 0, "fireball",  NULL },
-    { S_ICEBALL,   -1, 0, 200,  40, 0,   30,PART_FIREBALL2,1, 1, 1024, 0, 0, 0, 0, 0, 0,  "iceball",   NULL },
-    { S_SLIMEBALL, -1, 0, 200,  30, 0, 160, PART_FIREBALL3,1, 1, 1024, 0, 0, 0, 0, 0, 0, "slimeball", NULL },
-    { S_PIGR1,     -1, 0, 250,  150, 0,    0,  0,  1,  1, 1024, 300, 40, 0, 0, 0, 0, "bite",            NULL }, //prop
-    { -1,          -1, 0,  0, 150, 0,    0,  0,  0,  1, 1024, 300, 50, 0, 0, 0, 0, "barrel",          NULL } //barrel
+    { S_LASER,    -1, 0, 500, 20, 0,  0,   0, 100,  1, 1024, 150, 0, 0,    0, 0, 1, "%",          "laser"},
+    { S_FLAUNCH,   -1, 0, 200,  20, 0,   50,PART_FIREBALL1,1, 1, 1024, 0, 0, 0, 0, 0, 0, "fireball",  NULL},
+    { S_ICEBALL,   -1, 0, 200,  40, 0,   30,PART_FIREBALL2,1, 1, 1024, 0, 0, 0, 0, 0, 0,  "iceball",   NULL},
+    { S_SLIMEBALL, -1, 0, 200,  30, 0, 160, PART_FIREBALL3,1, 1, 1024, 0, 0, 0, 0, 0, 0, "slimeball", NULL},
+    { S_PIGR1,     -1, 0, 250,  150, 0,    0,  0,  1,  1, 1024, 300, 40, 0, 0, 0, 0, "bite",            NULL}, //prop
+    { -1,          -1, 0,  0, 150, 0,    0,  0,  0,  1, 1024, 300, 50, 0, 0, 0, 0, "barrel",          NULL} //barrel
 };
 
 #include "ai.h"
@@ -533,6 +552,7 @@ struct fpsstate
     int burstprogress;
     int ammo[NUMGUNS];
     int hasgun[NUMGUNS];
+    int mods;
     int diedgun;
     bool diedbyheadshot;
     int dropgun;

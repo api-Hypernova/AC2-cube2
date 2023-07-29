@@ -1399,6 +1399,13 @@ namespace game
                 else if(!d->crouching) { ((dynent *)d)->eyeheight=16; }
                 break;
             }
+            case N_MODS:
+            {
+                if (!d) return;
+                int mods = getint(p);
+                d->mods = mods;
+                break;
+            }
             case N_CATCH:
             {
                 if(!d) return;
