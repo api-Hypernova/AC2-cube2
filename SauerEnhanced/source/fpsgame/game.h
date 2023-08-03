@@ -859,9 +859,13 @@ struct fpsstate
             armour = 0;
             health = 100;
             hasgun[GUN_PISTOL] = 1;
-            ammo[GUN_PISTOL] = 36;
+            hasgun[GUN_MAGNUM] = 1;
+            hasgun[GUN_ELECTRO] = 1;
+            ammo[GUN_PISTOL] = 5;
             gunselect = GUN_MAGNUM;
             ammo[GUN_MAGNUM] = 24;
+            ammo[GUN_ELECTRO] = 30;
+            ammo[GUN_ELECTRO2] = 30;
         }
         else if(m_regencapture)
         {
