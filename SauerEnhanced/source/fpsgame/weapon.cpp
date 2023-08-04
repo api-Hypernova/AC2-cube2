@@ -1482,15 +1482,42 @@ void raydamage(vec &from, vec &to, fpsent *d)
 
 VARP(serifletrail, 0, 0, 1);
 VARP(nadetimer, 500, 1000, 3000);
-VARFP(mod_lightninggun, 0, 0, 1, 
+
+void set_mod(int modset, int mod, int cost, char* name) {
+    if (modset) {
+        if (player1->money - cost < 0) {
+            conoutf("You don't have enough money to buy the %s mod", name);
+            return;
+        }
+        player1->mods |= mod;
+        addmsg(N_MODS, "rci", player1, player1->mods);
+        player1->money -= cost;
+        conoutf("You bought the %s mod!", name);
+    }
+    else {
+        player1->mods &= ~mod;
+        addmsg(N_MODS, "rci", player1, player1->mods);
+    }
+}
+
+/*VARFP(mod_lightninggun, 0, 0, 1,
     if (mod_lightninggun) { 
+        int cost = 2000;
+        if (player1->money - cost < 0) {
+            conoutf("You don't have enough money to buy the lightning gun mod");
+            return;
+        }
         player1->mods |= MOD_LIGHTNINGGUN; 
         addmsg(N_MODS, "rci", player1, player1->mods);
+        player1->money -= cost;
+        conoutf("You bought the lightning gun mod!");
     } else {
         player1->mods &= ~MOD_LIGHTNINGGUN;
         addmsg(N_MODS, "rci", player1, player1->mods);
     }
-);
+);*/
+
+VARFP(mod_lightninggun, 0, 0, 1, set_mod(mod_lightninggun, MOD_LIGHTNINGGUN, 2000, "lightning gun"));
 
 
 //void screenjump();
@@ -1834,10 +1861,10 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
         lolwut.sub(d->muzzle.x >= 0 ? d->muzzle : hudgunorigin(gun, from, to, d));
         loopi(40) {
             vec temp(lolwut);
-            temp.normalize().mul(6000.f-(i*125));
+            temp.normalize().mul(8000.f-(i*150));
             if (raycubelos(d->muzzle.x >= 0 ? d->muzzle : hudgunorigin(gun, from, to, d), camera1->o, check) || raycubelos(to, camera1->o, check))
                 //particle_flying_flare(d->muzzle.x >= 0 ? d->muzzle : hudgunorigin(gun, from, to, d), temp, 1000, PART_ELECTRO, 0x0789FC, 5.f-(i*.1), 100);
-                particle_flying_flare(d->muzzle.x >= 0 ? d->muzzle : hudgunorigin(gun, from, to, d), temp, 1000, PART_SPARK, 0x0789FC, 5.f - (i * .1), 100);
+                particle_flying_flare(d->muzzle.x >= 0 ? d->muzzle : hudgunorigin(gun, from, to, d), temp, 1000, PART_SPARK, 0x0789FC, 5.f - (i * .05), 100);
         }
 
         particle_splash(PART_SPARK, 2, 300, to, 0x0789FC, 5.f, 2, 50);

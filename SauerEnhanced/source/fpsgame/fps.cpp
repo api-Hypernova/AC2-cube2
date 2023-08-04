@@ -250,7 +250,8 @@ namespace game
         }
     }
 
-
+    int lastupdatemoney = 0;
+    int moneyrate = 300;
     void updateworld()        // main game update loop
     {
         if(!maptime) { maptime = lastmillis; maprealtime = totalmillis; return; }
@@ -266,26 +267,18 @@ namespace game
         gets2c();
         updatemovables(curtime);
         updatemonsters(curtime);
-        /*if (!player1->move && player1->strafe &&
-            player1->vel.magnitude2()>=50 && 
-            abs(long(player1->lastyaw-player1->yaw))<3 && 
-            abs(long(player1->lastyaw-player1->yaw))>0)
-        {
-            player1->vel.x += -sinf(RAD*player1->yaw)*(player1->vel.magnitude2()/15);
-            player1->vel.y += cosf(RAD*player1->yaw)*(player1->vel.magnitude2()/15);
-            player1->vel.x += player1->strafe*cosf(RAD*player1->yaw)*(player1->vel.magnitude2()/15);
-            player1->vel.y += player1->strafe*sinf(RAD*player1->yaw)*(player1->vel.magnitude2()/15);    
-            player1->vel.x/=1.06;
-            player1->vel.y/=1.06; //woohoo!
-        }*/
-        // TODO: What if we just force the player location up to where it should be?
-        // Other option - uncrouching can force the player to immediately jump if on the ground, then after this timer, the player's size can increase
 
         if(lastmillis-player1->uncrouchtime<10) {
             player1->jumping = true;
             player1->vel.z=0;
             entinmap(player1); 
         } 
+
+        if (lastmillis - lastupdatemoney > 5000) {
+            player1->money += moneyrate;
+            lastupdatemoney = lastmillis;
+            conoutf("Earned %d money, current money %d", moneyrate, player1->money);
+        }
 
         if(player1->state==CS_DEAD)
         {
@@ -345,6 +338,7 @@ namespace game
             //addmsg(N_CATCH, "rcii", player1, player1->isholdingnade, player1->isholdingorb);
             player1->crouching = false;
             addmsg(N_CROUCH, "rci", player1, player1->crouching);
+            addmsg(N_MODS, "rci", player1, player1->mods);
             int wait = cmode ? cmode->respawnwait(player1) : 2;
             if(wait>0)
             {
@@ -704,6 +698,7 @@ namespace game
             //addmsg(N_CATCH, "rcii", player1, player1->isholdingnade, player1->isholdingorb);
             player1->crouching=false;
             addmsg(N_CROUCH, "rci", player1, player1->crouching);
+            addmsg(N_MODS, "rci", player1, player1->mods);
             if(cmode) cmode->gameover();
             conoutf(CON_GAMEINFO, "\f2intermission:");
             conoutf(CON_GAMEINFO, "\f2game has ended!");
