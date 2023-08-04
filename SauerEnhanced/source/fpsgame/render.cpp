@@ -374,7 +374,7 @@ namespace game
         else dir=90;
         //if(dir>=45)dir+=2;
         //if(lastmillis-d->lastreload>=2000)dir=90;
-        rendermodel(NULL, gunname, anim, sway, testhudgun ? 0 : d->yaw+dir, testhudgun ? 0 :  ((hudgunpitch<d->pitch-2||hudgunpitch>d->pitch+2)?hudgunpitch:d->pitch), MDL_LIGHT, interp, a, base, (int)ceil(speed));
+        rendermodel(NULL, gunname, anim, sway, testhudgun ? 0 : d->yaw + dir, testhudgun ? 0 : ((hudgunpitch<d->pitch - 2 || hudgunpitch>d->pitch + 2) ? hudgunpitch : d->pitch), MDL_LIGHT, interp, a, base, (int)ceil(speed));
         if(d->muzzle.x >= 0) d->muzzle = calcavatarpos(d->muzzle, 12);
     }
 
@@ -389,7 +389,8 @@ namespace game
 
         int rtime = d->gunselect==GUN_SMG2?350:guns[d->gunselect].attackdelay;
         if(d->gunselect==GUN_FIST)rtime=500;
-        if (d->gunselect == GUN_MAGNUM)rtime = 0;
+        if(!(d->mods & MOD_LIGHTNINGGUN) && d->gunselect == GUN_MAGNUM)rtime = 0;
+        if(d->mods & MOD_LIGHTNINGGUN && d->gunselect == GUN_MAGNUM)rtime = 1300;
         if(d->gunselect==GUN_SHOTGUN2)rtime=280;
         if(d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2)rtime=0;
         if(d->gunselect==GUN_ELECTRO2 || d->gunselect==GUN_ELECTRO)rtime=75;
