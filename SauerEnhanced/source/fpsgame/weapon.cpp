@@ -1518,6 +1518,7 @@ void set_mod(int modset, int mod, int cost, char* name) {
 );*/
 
 VARFP(mod_lightninggun, 0, 0, 1, set_mod(mod_lightninggun, MOD_LIGHTNINGGUN, 2000, "lightning gun"));
+VARP(lgsniper, 0, 0, 1);
 
 
 //void screenjump();
@@ -1925,7 +1926,7 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
     case GUN_SMG:
         //case GUN_ELECTRO:
     {
-        if (d->gunselect==GUN_MAGNUM && d->mods & MOD_LIGHTNINGGUN) {
+        if (d->gunselect==GUN_MAGNUM && d->mods & MOD_LIGHTNINGGUN && !lgsniper) {
             playsound(S_LG_IMPACT, &to);
             particle_splash(PART_SPARK, 200, 250, to, 0x5050FF, 0.10f);
             particle_splash(PART_SMOKE, 3, 500, d->muzzle, 0x5050FF, 1.5f, 50, 501, NULL, 2, NULL, 2);
@@ -2180,7 +2181,8 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
     bool looped = false;
     if(d->attacksound >= 0 && d->attacksound != sound) d->stopattacksound();
     if(d->idlesound >= 0) d->stopidlesound();
-    if (d->gunselect==GUN_MAGNUM && d->mods & MOD_LIGHTNINGGUN) sound = S_LG_FIRE;
+    if (d->gunselect==GUN_MAGNUM && d->mods & MOD_LIGHTNINGGUN && !lgsniper) sound = S_LG_FIRE;
+    if (d->gunselect == GUN_MAGNUM && d->mods & MOD_LIGHTNINGGUN && lgsniper) sound = S_MAGNUM;
     switch(sound)
     {
     case S_CHAINSAW_ATTACK:
@@ -2477,7 +2479,7 @@ void shoot(fpsent *d, const vec &targ)
     //                d->magprogress[d->gunselect]=0;
     //        }
     if(d==player1 && d->gunselect==GUN_HANDGRENADE && d->ammo[GUN_HANDGRENADE]==0){ d->attacking=0; d->gunwait=300; weaponswitch(d);}
-    d->gunwait=(d->gunselect==GUN_MAGNUM && d->mods & MOD_LIGHTNINGGUN) ? 1300 : guns[d->gunselect].attackdelay;
+    d->gunwait=(d->gunselect==GUN_MAGNUM && d->mods & MOD_LIGHTNINGGUN) ? 1200 : guns[d->gunselect].attackdelay;
     if(d->gunselect == GUN_PISTOL && d->ai) d->gunwait += int(d->gunwait*(((101-d->skill)+rnd(111-d->skill))/100.f));
     d->totalshots += guns[d->gunselect].damage*(d->quadmillis ? 2 : 1)*(guns[d->gunselect].rays);
     //if(d->magprogress[d->gunselect]>=guns[d->gunselect].magsize && guns[d->gunselect].magsize && d->ammo[d->gunselect]) doreload(d);
