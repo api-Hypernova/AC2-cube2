@@ -825,7 +825,7 @@ struct fpsstate
         diedbyheadshot = false;
         holdingweapon = 1;
         flareleft = 5;
-        mods |= MOD_LIGHTNINGGUN;
+        //mods |= MOD_LIGHTNINGGUN;
         lastswitch=0;
         helicopter = 0;
         sprintleft = 1000;
@@ -863,7 +863,7 @@ struct fpsstate
             hasgun[GUN_PISTOL] = 1;
             hasgun[GUN_ELECTRO] = 1;
             hasgun[GUN_MAGNUM] = 1;
-            ammo[GUN_PISTOL] = 5;
+            ammo[GUN_PISTOL] = 36;
             gunselect = GUN_MAGNUM;
             ammo[GUN_MAGNUM] = 24;
             ammo[GUN_ELECTRO] = 30;
