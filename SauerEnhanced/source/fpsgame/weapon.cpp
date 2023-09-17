@@ -384,8 +384,8 @@ void updatebouncers(int time)
         if (bnc.bouncetype == BNC_BARRELDEBRIS) {
             vec pos(bnc.o);
             pos.add(vec(bnc.offset).mul(bnc.offsetmillis / float(OFFSETMILLIS)));
-            regular_particle_flame(PART_FLAME, pos, 1, 1, 0x903020, 3, 4.0f);
-            regular_particle_flame(PART_SMOKE, pos, 1, 1, 0x303020, 1, 8.0f, 100.0f, 2000.0f, -20);
+            regular_particle_flame(PART_FLAME, pos, 1, 1, 0x903020, 3, 2.0f);
+            regular_particle_flame(PART_SMOKE, pos, 1, 1, 0x303020, 1, 4.0f, 100.0f, 2000.0f, -20);
         }
 
         if(bnc.bouncetype==BNC_GIBS && bnc.vel.magnitude() > 50.f)
