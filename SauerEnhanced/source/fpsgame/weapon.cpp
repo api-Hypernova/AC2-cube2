@@ -545,7 +545,7 @@ void updatebouncers(int time)
         else if(bnc.bouncetype==BNC_ELECTROBOLT) stopped = bounce(&bnc, 0.6f, 0.5f, 0.8f) || (bnc.lifetime -= time)<0 || bnc.owner->detonateelectro;
         else if(bnc.bouncetype==BNC_MISSILE) stopped = bounce(&bnc, 0.6f, 0.5f, 0.0f) || (bnc.lifetime -= time)<0;
         else if(bnc.bouncetype==BNC_WEAPON) stopped = bounce(&bnc, .6f, .8f, .8f) || (bnc.lifetime -= time)<0 || bnc.caught==1;
-        else if(bnc.bouncetype==BNC_BARRELDEBRIS) stopped = bounce(&bnc, .3f, .8f, .3f) || (bnc.lifetime -= time)<0;
+        else if(bnc.bouncetype==BNC_BARRELDEBRIS) stopped = bounce(&bnc, .6f, .8f, .6f) || (bnc.lifetime -= time)<0;
         else
         {
             // cheaper variable rate physics for debris, gibs, etc.
