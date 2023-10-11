@@ -384,8 +384,8 @@ void updatebouncers(int time)
         if (bnc.bouncetype == BNC_BARRELDEBRIS) {
             vec pos(bnc.o);
             pos.add(vec(bnc.offset).mul(bnc.offsetmillis / float(OFFSETMILLIS)));
-            regular_particle_flame(PART_FLAME, pos, 1, 1, 0x903020, 3, 4.0f);
-            regular_particle_flame(PART_SMOKE, pos, 1, 1, 0x303020, 1, 8.0f, 100.0f, 2000.0f, -20);
+            //regular_particle_flame(PART_FLAME, pos, 1, 1, 0x903020, 3, 4.0f);
+            //regular_particle_flame(PART_SMOKE, pos, 1, 1, 0x303020, 1, 8.0f, 100.0f, 2000.0f, -20);
         }
 
         if(bnc.bouncetype==BNC_GIBS && bnc.vel.magnitude() > 50.f)
@@ -1879,7 +1879,7 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
         //adddecal(DECAL_GLOW, to, vec(from).sub(to).normalize(), 3.0f, bvec(0x07, 0x89, 0xFC)); //  0x0789FC);
         if(muzzlelight) adddynlight(hudgunorigin(gun, d->o, to, d), 15, vec(0.5f, 0.5f, 1.f), 100, 100, DL_FLASH, 0, vec(0, 0, 1), d);
         if(muzzlelight) adddynlight(to, 30, vec(0.5f, 0.5f, 1.f), 100, 100, DL_FLASH, 0, vec(0, 0, 1), d);
-        if (d == hudplayer()) { d->screenjumpheight = 10; screenjump(); screenjump(); }
+        //if (d == hudplayer()) { d->screenjumpheight = 10; screenjump(); screenjump(); }
 
 
 
