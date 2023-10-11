@@ -2439,7 +2439,9 @@ void shoot(fpsent *d, const vec &targ)
     shoteffects(d->gunselect, from, to, d, true, 0, prevaction);
     if(d==player1 || d->ai)
     {
-        loopi((d->gunselect==GUN_MAGNUM && d->mods & MOD_LIGHTNINGGUN) ? 2 : 1)
+        int loopval = (d->gunselect == GUN_MAGNUM && d->mods & MOD_LIGHTNINGGUN) ? 3 : 1;
+        if (d->gunselect == GUN_MAGNUM && !(d->mods & MOD_LIGHTNINGGUN)) loopval = 2;
+        loopi(loopval)
             addmsg(N_SHOOT, "rici2i6iv", d->headshots, d, lastmillis-maptime, d->gunselect,
                (int)(from.x*DMF), (int)(from.y*DMF), (int)(from.z*DMF),
                (int)(to.x*DMF), (int)(to.y*DMF), (int)(to.z*DMF),

@@ -1655,6 +1655,7 @@ VARP(maxroll, 0, 3, 20);
 FVAR(straferoll, 0, 0.0f, 90);
 VAR(floatspeed, 10, 100, 1000);
 VARP(ahk, 0, 0, 1);
+VARP(allowdodge, 0, 0, 1);
 #include "../fpsgame/game.h"
 #include <math.h>
 
@@ -1671,7 +1672,7 @@ void modifyvelocity(physent *pl, bool local, bool water, bool floating, int curt
 
     // 1 is left, -1 is right
 
-    if(pl==((fpsent *)pl) || ((fpsent *)pl)->ai) {
+    if((pl==((fpsent *)pl) || ((fpsent *)pl)->ai) && allowdodge) {
         if (pl->strafe == -1 && ! ((fpsent *)pl)->movestate[0]) { // we're strafing but trigger hasn't been updated - KEY PRESS EVENT
             //conoutf("STARTED STRAFING RIGHT...");
             ((fpsent *)pl)->movestate[0] = true; // we capture this and use it for calculating the double tap
