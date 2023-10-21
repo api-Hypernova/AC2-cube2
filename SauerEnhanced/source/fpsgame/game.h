@@ -509,8 +509,8 @@ static const struct guninfo { short sound, reloadsound, magsize, attackdelay, da
 
 guns[NUMGUNS] =
 {
-    { S_SLASH,   -1, 0,  500,  150, 0,   0,   0, 0,  1, 60,  200, 0, 0,    0, 0, 0, "katana", "katana" },
-    { S_SHOTGUN2,  -1, 6, 1000,  14, 150, 0,   0, 20, 12,1024, 200, 0, 0,    0, 0, 2, "*",         "solaris_shotgun" }, //shotgdefault
+    { S_SLASH,   -1, 0,  500,  100, 0,   0,   0, 0,  1, 45,  200, 0, 0,    0, 0, 0, "katana", "katana" },
+    { S_SHOTGUN2,  -1, 6, 800,  14, 150, 0,   0, 20, 12,1024, 200, 0, 0,    0, 0, 2, "*",         "solaris_shotgun" }, //shotgdefault
     { S_PULSERIFLE, -1, 30, 100,  26, 0,  0,   0, 7,  1, 1024, 150, 0, 0,    0, 0, 1,  "}",        "pulse_rifle" },
     { S_RPG,    -1, 0, 1500, 120, 0,   400,  0, 10, 1, 1024, 200, 40,0,    0, 1, 1,  "Z",  "rocketold"},  //rocket_solaris
     //{ S_MAGNUM,   -1, 6, 1200, 100, 0,   0,   0, 30, 1, 2048, 200, 0, 0,    0, 0, 1, "#",           "pyccna_svd" },
