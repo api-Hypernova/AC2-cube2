@@ -456,7 +456,7 @@ static struct itemstat { int add, max, sound; const char *name; int icon, info, 
 {10,   30,    S_ROCKETPICKUP,   "PI", HICON_GL, GUN_ELECTRO, 0},
 {30,   120,    S_ROCKETPICKUP,   "CG", HICON_CG, GUN_CG, 0},
 //{10,     40,     S_RLPICKUP,   "RL", HICON_RL, GUN_RL},
-{3,     3,     S_ROCKETPICKUP,   "RL", HICON_RL, GUN_RL, 0},
+{1,     3,     S_ROCKETPICKUP,   "RL", HICON_RL, GUN_RL, 0},
 {12,    24,     S_ROCKETPICKUP,   "RI", HICON_GL, GUN_MAGNUM, 0},
 {5,     10,     S_ROCKETPICKUP,   "GL", HICON_RL, GUN_CROSSBOW, 0},
 //{20,    100,    S_SGPICKUP,   "SG", HICON_SG, GUN_SG},
@@ -479,7 +479,7 @@ static struct itemstat { int add, max, sound; const char *name; int icon, info, 
 {15,    100,    S_LGPICKUP, "", HICON_BLUE_ARMOUR, A_YELLOW},
 {2,    60,    S_ITEMARMOUR, "GA", HICON_GREEN_ARMOUR, A_YELLOW},
 {2,   200,    S_ITEMARMOUR, "YA", HICON_YELLOW_ARMOUR, A_YELLOW},
-{15*60000, INT_MAX-1, S_ITEMPUP,    "Q",  HICON_QUAD, -1},
+{10000, INT_MAX-1, S_ITEMPUP,    "Q",  HICON_QUAD, -1},
 };
 
 #define MAXRAYS 12
@@ -509,8 +509,8 @@ static const struct guninfo { short sound, reloadsound, magsize, attackdelay, da
 
 guns[NUMGUNS] =
 {
-    { S_SLASH,   -1, 0,  500,  100, 0,   0,   0, 0,  1, 45,  200, 0, 0,    0, 0, 0, "katana", "katana" },
-    { S_SHOTGUN2,  -1, 6, 800,  14, 150, 0,   0, 20, 12,1024, 200, 0, 0,    0, 0, 2, "*",         "solaris_shotgun" }, //shotgdefault
+    { S_SLASH,   -1, 0,  500,  100, 0,   0,   0, 0,  1, 65,  200, 0, 0,    0, 0, 0, "katana", "katana" },
+    { S_SHOTGUN2,  -1, 6, 800,  9, 150, 0,   0, 20, 12,1024, 200, 0, 0,    0, 0, 2, "*",         "solaris_shotgun" }, //shotgdefault
     { S_PULSERIFLE, -1, 30, 100,  26, 0,  0,   0, 7,  1, 1024, 150, 0, 0,    0, 0, 1,  "}",        "pulse_rifle" },
     { S_RPG,    -1, 0, 1500, 120, 0,   400,  0, 10, 1, 1024, 200, 40,0,    0, 1, 1,  "Z",  "rocketold"},  //rocket_solaris
     //{ S_MAGNUM,   -1, 6, 1200, 100, 0,   0,   0, 30, 1, 2048, 200, 0, 0,    0, 0, 1, "#",           "pyccna_svd" },
@@ -519,7 +519,7 @@ guns[NUMGUNS] =
     { S_MINSTANEX,  -1, 0, 500,  60, 0,   0,   0, 10, 1, 1024, 300, 25, 0,  0,  0,  1,  "<", "pyccna_railgun"},
     { S_LIGHTNING,  -1, 0, 400, 60,  0,  250,  PART_FIREBALL2,  5,  1,  1024,  300,  65,  0,  0,  0,  1, "<",  "pyccna_railgun"},
     { S_ORB,      -1, 0, 1000, 8000, 0,  350,  0, 30, 1, 1024, 10, 40, 5000, 0, 0, 1, ";", "pulse_rifle"},
-    { S_SHOTGUNBURST,  -1, 6, 500,  14, 100, 0,   0, 10, 6, 1024, 200, 0, 0,    3, 0, 1, "*", "solaris_shotgun"}, //shotgdefault
+    { S_SHOTGUNBURST,  -1, 6, 500,  9, 100, 0,   0, 10, 6, 1024, 200, 0, 0,    3, 0, 1, "*", "solaris_shotgun"}, //shotgdefault
     { S_UZI,       -1, 30, 100,   23,  0,  0,   0, 3,  1, 1024, 150, 0, 0,    0, 0, 1, "&",  "ak74"},
     { S_SMGNADE,   -1, 0, 800,  120, 0,  300,  0, 10, 1, 1024, 200, 40,5000, 0, 0, 1, "@",  "ak74"}, //"pistol"
     { S_CROSSBOWFIRE, -1, 0, 1000,300,0, 800,  0, 30, 1, 1024, 50, 20,10000, 0, 1, 1, "{",       "crossbow"},
@@ -711,7 +711,7 @@ struct fpsstate
             loopi(NUMGUNS) ammo[i] = 0;
             loopi(NUMGUNS) hasgun[i] = 0;
             quadmillis = min(quadmillis+is.add, is.max);
-            health = 1000;
+            health = 200;
             hasgun[GUN_RL] = 1;
             hasgun[GUN_CG] = 1;
             ammo[GUN_RL] = 1;
@@ -784,7 +784,7 @@ struct fpsstate
             ammo[GUN_CROSSBOW]=min(ammo[GUN_CROSSBOW]+5, 10);
             break;
         case I_RPGAMMO:
-            ammo[GUN_RL]=min(ammo[GUN_RL]+4, 15);
+            ammo[GUN_RL]=min(ammo[GUN_RL]+1, 15);
             break;
         case I_SNIPERAMMO:
             ammo[GUN_MAGNUM]=min(ammo[GUN_MAGNUM]+6, 24);

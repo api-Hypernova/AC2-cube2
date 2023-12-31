@@ -599,8 +599,8 @@ int spawntime(int type)
     case I_HEALTH: msec = np*7*1000; break;
     case I_GREENARMOUR:
     case I_YELLOWARMOUR: msec = 100; break;
-    case I_BOOST: msec = 30*1000; break;
-    case I_QUAD: msec = 10*1000; break;
+    case I_BOOST: msec = 120*1000; break;
+    case I_QUAD: msec = 180*1000; break;
     }
     return msec;
 }

@@ -193,7 +193,7 @@ namespace entities
                 conoutf(CON_TEAMCHAT, "+5 Crossbow Bolts");
                 break;
             case I_RPGAMMO:
-                conoutf(CON_TEAMCHAT, "+4 RPG Missiles");
+                conoutf(CON_TEAMCHAT, "+1 RPG Missile");
                 break;
             case I_SMALLHEALTH:
                 conoutf(CON_TEAMCHAT, "+15 Health");
