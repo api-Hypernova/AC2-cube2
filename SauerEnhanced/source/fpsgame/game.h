@@ -456,7 +456,7 @@ static struct itemstat { int add, max, sound; const char *name; int icon, info, 
 {10,   30,    S_ROCKETPICKUP,   "PI", HICON_GL, GUN_ELECTRO, 0},
 {30,   120,    S_ROCKETPICKUP,   "CG", HICON_CG, GUN_CG, 0},
 //{10,     40,     S_RLPICKUP,   "RL", HICON_RL, GUN_RL},
-{1,     3,     S_ROCKETPICKUP,   "RL", HICON_RL, GUN_RL, 0},
+{5,     15,     S_ROCKETPICKUP,   "RL", HICON_RL, GUN_RL, 0},
 {12,    24,     S_ROCKETPICKUP,   "RI", HICON_GL, GUN_MAGNUM, 0},
 {5,     10,     S_ROCKETPICKUP,   "GL", HICON_RL, GUN_CROSSBOW, 0},
 //{20,    100,    S_SGPICKUP,   "SG", HICON_SG, GUN_SG},
@@ -509,7 +509,7 @@ static const struct guninfo { short sound, reloadsound, magsize, attackdelay, da
 
 guns[NUMGUNS] =
 {
-    { S_SLASH,   -1, 0,  500,  100, 0,   0,   0, 0,  1, 65,  200, 0, 0,    0, 0, 0, "katana", "katana" },
+    { S_SLASH,   -1, 0,  500,  150, 0,   0,   0, 0,  1, 65,  200, 0, 0,    0, 0, 0, "katana", "katana" },
     { S_SHOTGUN2,  -1, 6, 800,  9, 150, 0,   0, 20, 12,1024, 200, 0, 0,    0, 0, 2, "*",         "solaris_shotgun" }, //shotgdefault
     { S_PULSERIFLE, -1, 30, 100,  26, 0,  0,   0, 7,  1, 1024, 150, 0, 0,    0, 0, 1,  "}",        "pulse_rifle" },
     { S_RPG,    -1, 0, 1500, 120, 0,   400,  0, 10, 1, 1024, 200, 40,0,    0, 1, 1,  "Z",  "rocketold"},  //rocket_solaris
