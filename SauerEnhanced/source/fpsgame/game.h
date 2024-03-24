@@ -653,7 +653,7 @@ struct fpsstate
         case I_MINIGUNAMMO: return ammo[GUN_CG]<120&& hasgun[GUN_CG];break;
         case I_TESLAORB: return ammo[GUN_CG2]<3&& hasgun[GUN_CG];break;
         case I_XBOWAMMO: return ammo[GUN_CROSSBOW]<10&& hasgun[GUN_CROSSBOW];break;
-        case I_RPGAMMO: return ammo[GUN_RL]<3&& hasgun[GUN_RL];break;
+        case I_RPGAMMO: return ammo[GUN_RL]<15&& hasgun[GUN_RL];break;
         case I_SNIPERAMMO: return ammo[GUN_MAGNUM]<24&& hasgun[GUN_MAGNUM]; break;
 
         default: return false; //ammo[is.info]<is.max;
@@ -784,7 +784,7 @@ struct fpsstate
             ammo[GUN_CROSSBOW]=min(ammo[GUN_CROSSBOW]+5, 10);
             break;
         case I_RPGAMMO:
-            ammo[GUN_RL]=min(ammo[GUN_RL]+1, 3);
+            ammo[GUN_RL]=min(ammo[GUN_RL]+5, 15);
             break;
         case I_SNIPERAMMO:
             ammo[GUN_MAGNUM]=min(ammo[GUN_MAGNUM]+6, 24);
