@@ -163,13 +163,13 @@ namespace entities
                 playsound(S_V_QUAD);
                 break;
             case I_ELECTRO:
-                conoutf(CON_TEAMCHAT, "Sniper Rifle");
+                conoutf(CON_TEAMCHAT, "Shock Rifle");
                 break;
             case I_GRENADE:
                 conoutf(CON_TEAMCHAT, "+1 Hand Grenade");
                 break;
             case I_PISTOLAMMO:
-                conoutf(CON_TEAMCHAT, "+24 Pistol Ammo");
+                conoutf(CON_TEAMCHAT, "+24 Blaster Ammo");
                 break;
             case I_SMGAMMO:
                 conoutf(CON_TEAMCHAT, "+45 Assault Rifle Ammo");
@@ -202,7 +202,7 @@ namespace entities
                 conoutf(CON_TEAMCHAT, "+15 Shield Battery");
                 break;
             case I_SNIPERAMMO:
-                conoutf(CON_TEAMCHAT, "+6 .357 Ammo");
+                conoutf(CON_TEAMCHAT, "+10 Sniper Ammo");
                 break;
             case I_MINIGUN:
                 conoutf(CON_TEAMCHAT, "Pulse Rifle");
@@ -211,7 +211,7 @@ namespace entities
                 conoutf(CON_TEAMCHAT, "RPG");
                 break;
             case I_MAGNUM:
-                conoutf(CON_TEAMCHAT, ".357 Magnum");
+                conoutf(CON_TEAMCHAT, "Sniper Rifle");
                 break;
             case I_CROSSBOW:
                 conoutf(CON_TEAMCHAT, "Crossbow");

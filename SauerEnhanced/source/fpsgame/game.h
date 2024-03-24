@@ -639,7 +639,7 @@ struct fpsstate
         case I_QUAD: return quadmillis<is.max; break;
         case I_MAGNUM: return ammo[GUN_MAGNUM]<24; break;
         case I_CROSSBOW: return ammo[GUN_CROSSBOW]<10;break;
-        case I_RPG: return ammo[GUN_RL]<3;break;
+        case I_RPG: return ammo[GUN_RL]<15;break;
         case I_ELECTRO: return ammo[GUN_ELECTRO]<30; break;
         case I_MINIGUN: return ammo[GUN_CG]<120;break;
         case I_SHOTGUN: return ammo[GUN_SG]<30;break;
@@ -730,7 +730,7 @@ struct fpsstate
             hasgun[GUN_ELECTRO]=1;
             break;
         case I_RPG:
-            ammo[GUN_RL]=min(ammo[GUN_RL]+1, 3);
+            ammo[GUN_RL]=min(ammo[GUN_RL]+5, 15);
             //ammo[GUN_RL2]=min(ammo[GUN_RL2]+3, 3);
             hasgun[GUN_RL]=1;
             break;
