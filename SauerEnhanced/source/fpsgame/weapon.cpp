@@ -191,9 +191,9 @@ void offsetray(const vec &from, const vec &to, int spread, float range, vec &des
 }
 
 VARP(rifle, 0, 1, 1);
-void createrays(int gun, const vec &from, const vec &to)             // create random spread of rays
+void createrays(int gun, const vec &from, const vec &to, fpsent *d)             // create random spread of rays
 {
-    loopi(guns[gun].rays) offsetray(from, to, (rifle&&gun==GUN_SHOTGUN2)?0:guns[gun].spread, guns[gun].range, rays[i], false);
+    loopi(guns[gun].rays) offsetray(from, to, (rifle&&gun==GUN_SHOTGUN2)?0:guns[gun].spread * (d->crouching ? .7f : 1), guns[gun].range, rays[i], false);
 }
 
 enum { BNC_GRENADE, BNC_GIBS, BNC_DEBRIS, BNC_BARRELDEBRIS, BNC_MISSILE, BNC_XBOLT, BNC_SMGNADE, BNC_ELECTROBOLT, BNC_ORB, BNC_WEAPON, BNC_PROP, BNC_SHELL, BNC_BARREL };
@@ -1539,7 +1539,7 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
     case GUN_SG:
     case GUN_SHOTGUN2:
     {
-        if(!local) createrays(d->gunselect, from, to);
+        if(!local) createrays(d->gunselect, from, to, d);
         if(muzzleflash && d->muzzle.x >= 0)
         {
             particle_flare(d->muzzle, d->muzzle, 50, PART_MUZZLE_FLASH3, 0xFFFFFF, 2.75f, d);
@@ -2317,17 +2317,6 @@ void shoot(fpsent *d, const vec &targ)
     if(d->gunselect==GUN_HANDGRENADE && d->altattacking) return;
     if(d->gunselect==GUN_RL && d->altattacking) return;
     //if(d->gunselect==GUN_TELEKENESIS && d->altattacking) d->tkisbusy=1; //make sure to set this because multiple tk functions should not apply at once (pickup item, catch bnc, throw bnc)
-    if(d->altattacking)
-    {
-        if(d->gunselect==GUN_SHOTGUN2){d->gunselect=GUN_SG; addmsg(N_GUNSELECT, "rci", d, GUN_SG); }
-        if(d->gunselect==GUN_CG){d->gunselect=GUN_CG2; addmsg(N_GUNSELECT, "rci", d, GUN_CG2); }
-        if(d->gunselect==GUN_TELEKENESIS){d->gunselect=GUN_TELEKENESIS2; addmsg(N_GUNSELECT, "rci", d, GUN_TELEKENESIS2); }
-        if(d->gunselect==GUN_ELECTRO){d->gunselect=GUN_ELECTRO2; addmsg(N_GUNSELECT, "rci", d, GUN_ELECTRO2); }
-        //if(d->gunselect==GUN_CROSSBOW){d->gunselect=GUN_HANDGRENADE; addmsg(N_GUNSELECT, "rci", d, GUN_HANDGRENADE); }
-        //if(d->gunselect==GUN_PISTOL){d->gunselect=GUN_PISTOL2; addmsg(N_GUNSELECT, "rci", d, GUN_PISTOL2); }
-        //if(d->gunselect==GUN_RL){d->gunselect=GUN_RL2; addmsg(N_GUNSELECT, "rci", d, GUN_RL2); }
-        if(d->gunselect==GUN_SMG){d->gunselect=GUN_SMG2; addmsg(N_GUNSELECT, "rci", d, GUN_SMG2); }
-    }
     if(d->attacking && !d->ai)
     {
         if(d->gunselect==GUN_SG){d->gunselect=GUN_SHOTGUN2; addmsg(N_GUNSELECT, "rci", d, GUN_SHOTGUN2); }
@@ -2339,6 +2328,17 @@ void shoot(fpsent *d, const vec &targ)
         //if(d->gunselect==GUN_PISTOL2){d->gunselect=GUN_PISTOL; addmsg(N_GUNSELECT, "rci", d, GUN_PISTOL); }
         //if(d->gunselect==GUN_RL2){d->gunselect=GUN_RL; addmsg(N_GUNSELECT, "rci", d, GUN_RL); }
         if(d->gunselect==GUN_SMG2){d->gunselect=GUN_SMG; addmsg(N_GUNSELECT, "rci", d, GUN_SMG); }
+    }
+    if(d->altattacking)
+    {
+        if(d->gunselect==GUN_SHOTGUN2){d->gunselect=GUN_SG; addmsg(N_GUNSELECT, "rci", d, GUN_SG); }
+        if(d->gunselect==GUN_CG){d->gunselect=GUN_CG2; addmsg(N_GUNSELECT, "rci", d, GUN_CG2); }
+        if(d->gunselect==GUN_TELEKENESIS){d->gunselect=GUN_TELEKENESIS2; addmsg(N_GUNSELECT, "rci", d, GUN_TELEKENESIS2); }
+        if(d->gunselect==GUN_ELECTRO){d->gunselect=GUN_ELECTRO2; addmsg(N_GUNSELECT, "rci", d, GUN_ELECTRO2); }
+        //if(d->gunselect==GUN_CROSSBOW){d->gunselect=GUN_HANDGRENADE; addmsg(N_GUNSELECT, "rci", d, GUN_HANDGRENADE); }
+        //if(d->gunselect==GUN_PISTOL){d->gunselect=GUN_PISTOL2; addmsg(N_GUNSELECT, "rci", d, GUN_PISTOL2); }
+        //if(d->gunselect==GUN_RL){d->gunselect=GUN_RL2; addmsg(N_GUNSELECT, "rci", d, GUN_RL2); }
+        if(d->gunselect==GUN_SMG){d->gunselect=GUN_SMG2; addmsg(N_GUNSELECT, "rci", d, GUN_SMG2); }
     }
 
 
@@ -2421,7 +2421,7 @@ void shoot(fpsent *d, const vec &targ)
         //addedspread=-diff; //adding spread based on how close/far we are away from the cooldown
 
     //}
-    if(guns[d->gunselect].rays>1) createrays(d->gunselect, from, to);
+    if(guns[d->gunselect].rays>1) createrays(d->gunselect, from, to, d);
     else if(d->lastattackmillis) offsetray(from, to, d->lastattackmillis*4, guns[d->gunselect].range, to, d->quadmillis ? false : true);
 
     //d->lastattackmillis = lastmillis;
@@ -2446,6 +2446,12 @@ void shoot(fpsent *d, const vec &targ)
                (int)(from.x*DMF), (int)(from.y*DMF), (int)(from.z*DMF),
                (int)(to.x*DMF), (int)(to.y*DMF), (int)(to.z*DMF),
                hits.length(), hits.length()*sizeof(hitmsg)/sizeof(int), hits.getbuf());
+        if (d->gunselect == GUN_SG && d->attacking) { // invisibly fire both primary and secondary at same time
+            addmsg(N_SHOOT, "rici2i6iv", d->headshots, d, lastmillis - maptime, GUN_SHOTGUN2,
+                (int)(from.x * DMF), (int)(from.y * DMF), (int)(from.z * DMF),
+                (int)(to.x * DMF), (int)(to.y * DMF), (int)(to.z * DMF),
+                hits.length(), hits.length() * sizeof(hitmsg) / sizeof(int), hits.getbuf());
+        }
     }
 
     //        if(d->gunselect==GUN_ELECTRO2)d->burstprogress++;
