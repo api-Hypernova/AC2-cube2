@@ -193,7 +193,7 @@ void offsetray(const vec &from, const vec &to, int spread, float range, vec &des
 VARP(rifle, 0, 1, 1);
 void createrays(int gun, const vec &from, const vec &to, fpsent *d)             // create random spread of rays
 {
-    loopi(guns[gun].rays) offsetray(from, to, (rifle&&gun==GUN_SHOTGUN2)?0:guns[gun].spread * (d->crouching ? .7f : 1), guns[gun].range, rays[i], false);
+    loopi(guns[gun].rays) offsetray(from, to, (rifle&&gun==GUN_SHOTGUN2)?0:guns[gun].spread * (d->crouching ? .9f : 1), guns[gun].range, rays[i], false);
 }
 
 enum { BNC_GRENADE, BNC_GIBS, BNC_DEBRIS, BNC_BARRELDEBRIS, BNC_MISSILE, BNC_XBOLT, BNC_SMGNADE, BNC_ELECTROBOLT, BNC_ORB, BNC_WEAPON, BNC_PROP, BNC_SHELL, BNC_BARREL };
