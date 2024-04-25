@@ -1310,7 +1310,7 @@ void updateprojectiles(int time)
             p.to.mul(barrier).add(p.owner->o);
             //player1->guiding=1;
         }
-        if(!raycube(p.o, p.o, guns[p.gun].range, RAY_CLIPMAT|RAY_ALPHAPOLY))
+        if(!raycube(p.o, p.o, guns[p.gun].range, RAY_CLIPMAT|RAY_ALPHAPOLY) || (p.owner->altattacking && p.owner->gunselect == GUN_RL))
         {
             int qdam = guns[p.gun].damage*(p.owner->quadmillis ? 2 : 1);
             projsplash(p, p.o, NULL, qdam);
