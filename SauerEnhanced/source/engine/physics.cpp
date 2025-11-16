@@ -1814,7 +1814,7 @@ void modifyvelocity(physent *pl, bool local, bool water, bool floating, int curt
             if(abs(long(game::player1->lastyaw-game::player1->yaw))>1 && 
                 abs(long(game::player1->lastyaw-game::player1->yaw))<10 && 
                 pl->move && pl->strafe)
-                    d.mul(abs(long(game::player1->lastyaw-game::player1->yaw)) * .8);
+                    d.mul(abs(long(game::player1->lastyaw-game::player1->yaw)) * .6);
                     game::player1->lastyaw=game::player1->yaw;
         }
 //        if(pl==game::player1 && abs(game::player1->lastyaw-game::player1->yaw)>0 && !pl->move && abs(game::player1->lastyaw-game::player1->yaw)<3 && pl->strafe && game::player1->vel.magnitude2()>=50) //slow down that air accel :)

@@ -26,7 +26,7 @@ int iters=0;
 
 
 void updatescreenshake() {
-    if(lastmillis-player1->lastshake<20)return;
+    if(lastmillis-player1->lastshake<30)return;
     if(iters>startyaw){player1->doshake=0; player1->yaw-=startyaw/2*(sdir*=-1); iters=0; return;}
     //player1->yaw+=-3+rnd(7);
     player1->yaw+=(startyaw-iters)*sdir;
@@ -2300,8 +2300,8 @@ void doreload(fpsent *d)
     if(d==player1)setvar("tryreload", 0);
 }
 
-#define RECOIL_COOLDOWN 200 //300ms until our recoil is reset and next shot will have 0 spread
-#define MAXSPREAD 100
+#define RECOIL_COOLDOWN 200 //200ms until our recoil is reset and next shot will have 0 spread
+#define MAXSPREAD 25
 
 void shoot(fpsent *d, const vec &targ)
 {
