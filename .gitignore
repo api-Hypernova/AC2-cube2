@@ -1,1 +1,6 @@
 /SauerEnhanced/source/vcpp/
+
+# Installer output
+installer_output/
+*.exe
+!SauerEnhanced/bin/*.exe
