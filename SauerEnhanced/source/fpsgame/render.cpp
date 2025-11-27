@@ -363,13 +363,18 @@ namespace game
 //            interp = &guninterp;
 //        }
         if(lastmillis-d->lastswitch<3)hudgunpitch=d->pitch-90;
-        if(lastmillis-d->lastaction<3 && (d->gunselect==GUN_MAGNUM || d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2 || d->gunselect==GUN_ELECTRO) && (lastmillis-d->lastaction)<10)jump=1;
-        if(jump && (d->gunselect==GUN_MAGNUM || d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2 || d->gunselect==GUN_ELECTRO))hudgunpitch+=d->gunselect==GUN_SMG?1:1;
-        if((d->gunselect==GUN_MAGNUM || d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2 || d->gunselect==GUN_ELECTRO) && jump && hudgunpitch>d->pitch+((d->gunselect==GUN_SMG)?6:20))jump=0;
+        if(lastmillis-d->lastaction<3 && (d->gunselect==GUN_MAGNUM || d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2 || d->gunselect==GUN_CG || d->gunselect==GUN_SG || d->gunselect==GUN_SHOTGUN2 || d->gunselect==GUN_ELECTRO) && (lastmillis-d->lastaction)<10)jump=1;
+        if(jump && (d->gunselect==GUN_MAGNUM || d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2 || d->gunselect==GUN_CG || d->gunselect==GUN_SG || d->gunselect==GUN_SHOTGUN2 || d->gunselect==GUN_ELECTRO))hudgunpitch+=(d->gunselect==GUN_SMG||d->gunselect==GUN_SMG2)?0.5f:(d->gunselect==GUN_CG?1:(d->gunselect==GUN_SHOTGUN2?10:(d->gunselect==GUN_SG?8:1)));
+        if((d->gunselect==GUN_MAGNUM || d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2 || d->gunselect==GUN_CG || d->gunselect==GUN_SG || d->gunselect==GUN_SHOTGUN2 || d->gunselect==GUN_ELECTRO) && jump && hudgunpitch>d->pitch+((d->gunselect==GUN_SMG||d->gunselect==GUN_SMG2)?3:(d->gunselect==GUN_CG?5:(d->gunselect==GUN_SHOTGUN2?36:(d->gunselect==GUN_SG?32:20)))))jump=0;
         if(hudgunpitch<d->pitch-2 && !jump)hudgunpitch+=2; //raise hudgun to normal pos in case player looked up during firing
-        else if(hudgunpitch>d->pitch+2 && !jump)hudgunpitch-=d->gunselect==GUN_SMG?1:2;
-        if(lastmillis-d->lastaction>350&&lastmillis-d->lastswitch>200&&(d->gunselect==GUN_MAGNUM || d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2|| d->gunselect==GUN_ELECTRO))hudgunpitch=d->pitch;
-        if(lastmillis-d->lastswitch>200&&(d->gunselect!=GUN_MAGNUM && d->gunselect!=GUN_SMG && d->gunselect!=GUN_SMG2&& d->gunselect!=GUN_ELECTRO))hudgunpitch=d->pitch;
+        else if(hudgunpitch>d->pitch+2 && !jump)hudgunpitch-=(d->gunselect==GUN_SMG||d->gunselect==GUN_SMG2)?3:(d->gunselect==GUN_CG?1.5:(d->gunselect==GUN_SG||d->gunselect==GUN_SHOTGUN2?0.375:2));
+        // Constantly track towards current pitch during sustained fire to fix model position bug
+        if(lastmillis-d->lastaction<100&&lastmillis-d->lastswitch>200&&(d->gunselect==GUN_MAGNUM || d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2 || d->gunselect==GUN_CG || d->gunselect==GUN_SG || d->gunselect==GUN_SHOTGUN2 || d->gunselect==GUN_ELECTRO)) {
+            if(hudgunpitch < d->pitch - 2) hudgunpitch += 1;
+            else if(hudgunpitch > d->pitch + 2) hudgunpitch -= 1;
+        }
+        if(lastmillis-d->lastaction>350&&lastmillis-d->lastswitch>200&&(d->gunselect==GUN_MAGNUM || d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2 || d->gunselect==GUN_CG || d->gunselect==GUN_SG || d->gunselect==GUN_SHOTGUN2 || d->gunselect==GUN_ELECTRO))hudgunpitch=d->pitch;
+        if(lastmillis-d->lastswitch>200&&(d->gunselect!=GUN_MAGNUM && d->gunselect!=GUN_SMG && d->gunselect!=GUN_SMG2 && d->gunselect!=GUN_CG && d->gunselect!=GUN_SG && d->gunselect!=GUN_SHOTGUN2 && d->gunselect!=GUN_ELECTRO))hudgunpitch=d->pitch;
         if(lastmillis-d->lastreload<1300)dir=30;
         else dir=90;
         //if(dir>=45)dir+=2;

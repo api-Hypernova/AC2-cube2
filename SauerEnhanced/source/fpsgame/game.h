@@ -547,6 +547,8 @@ struct fpsstate
     int dropitem;
     int doshake, lastshake, lastrecoil, lastattackmillis; //amount of spread our weapon had on last fire
     int headshots;
+    int recoilPatternIndex;     // current position in spray pattern
+    int lastShotTime;           // timestamp of last shot for timing-based reset
     int detonateelectro;
     int gunselect, gunwait;
     int burstprogress;
@@ -589,7 +591,7 @@ struct fpsstate
 
 
 
-    fpsstate() : maxhealth(100), aitype(AI_NONE), skill(0) {}
+    fpsstate() : maxhealth(100), aitype(AI_NONE), skill(0), recoilPatternIndex(0), lastShotTime(0) {}
 
     void baseammo(int gun, int k = 2, int scale = 1)
     {

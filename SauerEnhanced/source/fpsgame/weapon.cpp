@@ -20,19 +20,46 @@ VARP(maxbarreldebris, 5, 10, 1000);
 ICOMMAND(getweapon, "", (), intret(player1->gunselect));
 
 
-int startyaw=12;
+int startyaw=6;  // Reduced from 12 to 6 (half intensity)
 int sdir=1;
 int iters=0;
-
+int shakestarttime=0;
+float shakeprogress=0.0f;
 
 void updatescreenshake() {
-    if(lastmillis-player1->lastshake<30)return;
-    if(iters>startyaw){player1->doshake=0; player1->yaw-=startyaw/2*(sdir*=-1); iters=0; return;}
-    //player1->yaw+=-3+rnd(7);
-    player1->yaw+=(startyaw-iters)*sdir;
+    // Clock-based system: twice as fast as the slow version
+    int shakeinterval = 30; // 30ms interval (twice as fast as 60ms)
+    int totalduration = startyaw * shakeinterval * 2;
+    
+    if(lastmillis-player1->lastshake < shakeinterval) return;
+    
+    // Initialize shake start time ONLY if we're starting a new shake
+    if(shakestarttime == 0) {
+        shakestarttime = lastmillis;
+        shakeprogress = 0.0f;
+        sdir = 1; // Reset direction
+        iters = 0;
+    }
+    
+    int elapsed = lastmillis - shakestarttime;
+    if(elapsed >= totalduration) {
+        // Completely reset everything when shake ends
+        player1->doshake = 0;
+        shakestarttime = 0;
+        shakeprogress = 0.0f;
+        iters = 0;
+        sdir = 1;
+        return;
+    }
+    
+    // Calculate current shake position based on time
+    shakeprogress = (float)elapsed / (float)totalduration;
+    float intensity = (1.0f - shakeprogress) * startyaw; // decreases over time
+    
+    player1->yaw += intensity * sdir;
+    sdir *= -1;
     iters++;
-    sdir*=-1;
-    player1->lastshake=lastmillis;
+    player1->lastshake = lastmillis;
 }
 
 
@@ -49,6 +76,8 @@ void gunselect(int gun, fpsent *d)
         if(gun==GUN_TELEKENESIS)d->gunwait=80;
         if(gun==GUN_HANDGRENADE)d->attacking=d->altattacking=0;
         d->burstprogress=0;
+        // Reset recoil state when switching weapons
+        d->recoilPatternIndex = 0;
         if(!d->isholdingnade && !d->isholdingorb && !d->isholdingprop && !d->isholdingbarrel && !d->isholdingshock)d->lastswitch=lastmillis;
     }
     if(!d->isholdingnade && !d->isholdingorb && !d->isholdingprop && !d->isholdingbarrel && !d->isholdingshock)d->gunselect = gun;
@@ -1575,8 +1604,8 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
             vec lolwut(rays[i]);
             lolwut.sub(d->muzzle.x>0?d->muzzle:hudgunorigin(gun, from, rays[i], d));
             lolwut.normalize().mul(6000.0f);
-            //if(raycubelos(d->muzzle, camera1->o, check) /*|| raycubelos(rays[i], camera1->o, check)*/)particle_flying_flare(d->muzzle, lolwut, 500, PART_BULLET, 0xFFFFFF, 0.5f, 1000);
-            if(raycubelos(d->muzzle.x>=0?d->muzzle:hudgunorigin(gun, from, rays[i], d), camera1->o, check) || raycubelos(rays[i], camera1->o, check))particle_flying_flare(d->muzzle.x>=0?d->muzzle:hudgunorigin(gun, from, rays[i], d), lolwut, 500, PART_BULLET, 0xFFFFFF, 0.5f, 100);
+            // ALWAYS show bullet tracers for other players (no occlusion check)
+            particle_flying_flare(d->muzzle.x>=0?d->muzzle:hudgunorigin(gun, from, rays[i], d), lolwut, 500, PART_BULLET, 0xFFFFFF, 0.5f, 100);
             adddecal(DECAL_BULLET, rays[i], vec(from).sub(rays[i]).normalize(), 2.0f);
             //                    dynent *o = intersectclosest(d->muzzle, worldpos, d); //don't use &to, this is shortened!!
             //                    if(o && o->type==ENT_PLAYER && blood) {
@@ -1710,8 +1739,8 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
         v.div(steps);
         vec p = from;
         if(d->isholdingbarrel || d->isholdingnade || d->isholdingorb || d->isholdingprop || d->isholdingshock)return;
-        vec raycheck;
-        if(muzzleflash && d->muzzle.x >= 0 && raycubelos(camera1->o, d->muzzle, raycheck) && d!=player1)
+        // ALWAYS show muzzle flash for other players (no occlusion check)
+        if(muzzleflash && d->muzzle.x >= 0 && d!=player1)
             particle_flare(d->muzzle, d->muzzle, 25, PART_GLOW, 0xFF64FF, 2.5f);
 
         loopi(steps)
@@ -1863,9 +1892,8 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
         loopi(40) {
             vec temp(lolwut);
             temp.normalize().mul(8000.f-(i*150));
-            if (raycubelos(d->muzzle.x >= 0 ? d->muzzle : hudgunorigin(gun, from, to, d), camera1->o, check) || raycubelos(to, camera1->o, check))
-                //particle_flying_flare(d->muzzle.x >= 0 ? d->muzzle : hudgunorigin(gun, from, to, d), temp, 1000, PART_ELECTRO, 0x0789FC, 5.f-(i*.1), 100);
-                particle_flying_flare(d->muzzle.x >= 0 ? d->muzzle : hudgunorigin(gun, from, to, d), temp, 1000, PART_SPARK, 0x0789FC, 5.f - (i * .05), 100);
+            // ALWAYS show electric/spark effects (no occlusion check)
+            particle_flying_flare(d->muzzle.x >= 0 ? d->muzzle : hudgunorigin(gun, from, to, d), temp, 1000, PART_SPARK, 0x0789FC, 5.f - (i * .05), 100);
         }
 
         particle_splash(PART_SPARK, 2, 300, to, 0x0789FC, 5.f, 2, 50);
@@ -1966,7 +1994,8 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
         vec lolwut(to);
         lolwut.sub(d->muzzle.x>=0?d->muzzle:hudgunorigin(gun, from, to, d));
         lolwut.normalize().mul(6000.0f);
-        if(raycubelos(d->muzzle.x>=0?d->muzzle:hudgunorigin(gun, from, to, d), camera1->o, check) || raycubelos(to, camera1->o, check))particle_flying_flare(d->muzzle.x>=0?d->muzzle:hudgunorigin(gun, from, to, d), lolwut, 500, PART_BULLET, 0xFFFFFF, 0.5f, 100);
+        // ALWAYS show bullet tracers (no occlusion check)
+        particle_flying_flare(d->muzzle.x>=0?d->muzzle:hudgunorigin(gun, from, to, d), lolwut, 500, PART_BULLET, 0xFFFFFF, 0.5f, 100);
         if(seimprovedguneffects)
         {
             particle_splash(PART_SMOKE, 3, 500, d->muzzle, 0x222222, 1.4f, 50, 501, NULL, 2, NULL, 2);
@@ -2300,16 +2329,122 @@ void doreload(fpsent *d)
     if(d==player1)setvar("tryreload", 0);
 }
 
+// CS 1.6-style spray patterns (yaw, pitch offsets for each shot)
+// Pattern repeats after last entry
+struct SprayPattern {
+    float yaw;   // horizontal offset (degrees)
+    float pitch; // vertical offset (degrees)
+};
+
+// Default spray pattern (similar to AK-47 in CS 1.6)
+// Each entry is TOTAL offset from center (not incremental)
+// Reaches max spread at shot 15 - REDUCED BY HALF for better accuracy
+static const SprayPattern defaultSprayPattern[] = {
+    {0.0f, 0.0f},       // Shot 1: accurate
+    {0.0f, 0.45f},      // Shot 2: slight upward
+    {0.05f, 1.0f},      // Shot 3: slight right
+    {-0.15f, 1.6f},     // Shot 4: left
+    {0.25f, 2.25f},     // Shot 5: right
+    {-0.4f, 2.95f},     // Shot 6: left
+    {0.55f, 3.7f},      // Shot 7: right
+    {-0.75f, 4.5f},     // Shot 8: left
+    {0.95f, 5.3f},      // Shot 9: right
+    {-1.2f, 6.1f},      // Shot 10: left
+    {1.45f, 6.9f},      // Shot 11: right
+    {-1.75f, 7.65f},    // Shot 12: left
+    {2.05f, 8.35f},     // Shot 13: right
+    {-2.4f, 9.0f},      // Shot 14: left
+    {2.75f, 9.6f},      // Shot 15: right - APPROACHING MAX
+    {-3.0f, 10.0f},     // Shot 16: left - MAX SPREAD
+    {3.0f, 10.0f},      // Shot 17: right (capped)
+    {-3.0f, 10.0f},     // Shot 18: left (capped)
+    {3.0f, 10.0f},      // Shot 19: right (capped)
+    {-3.0f, 10.0f},     // Shot 20: left (capped)
+    {3.0f, 10.0f},      // Shot 21+: stays at max spread
+    {-3.0f, 10.0f},
+    {3.0f, 10.0f},
+    {-3.0f, 10.0f},
+    {3.0f, 10.0f},
+    {-3.0f, 10.0f},
+    {3.0f, 10.0f},
+    {-3.0f, 10.0f},
+    {3.0f, 10.0f},
+    {-3.0f, 10.0f}
+};
+#define DEFAULT_PATTERN_LEN (sizeof(defaultSprayPattern)/sizeof(defaultSprayPattern[0]))
+
+// Recoil configuration per weapon
+struct WeaponRecoil {
+    const SprayPattern* pattern;
+    int patternLength;
+    float multiplier;        // scales the pattern intensity
+    float recoveryRate;      // degrees per millisecond of recovery
+    int resetTime;          // ms before pattern resets
+    float viewPunchScale;   // how much camera moves with recoil
+};
+
+// Weapon-specific recoil settings
+static WeaponRecoil weaponRecoils[NUMGUNS];
+
+void initRecoilPatterns() {
+    static bool initialized = false;
+    if(initialized) return;
+    initialized = true;
+    
+    // Initialize all weapons with no recoil by default
+    loopi(NUMGUNS) {
+        weaponRecoils[i].pattern = NULL;
+        weaponRecoils[i].patternLength = 0;
+        weaponRecoils[i].multiplier = 0.0f;
+        weaponRecoils[i].recoveryRate = 0.01f;
+        weaponRecoils[i].resetTime = 400;
+        weaponRecoils[i].viewPunchScale = 0.0f;
+    }
+    
+    // SMG - moderate recoil
+    weaponRecoils[GUN_SMG].pattern = defaultSprayPattern;
+    weaponRecoils[GUN_SMG].patternLength = DEFAULT_PATTERN_LEN;
+    weaponRecoils[GUN_SMG].multiplier = 0.8f;  // less aggressive
+    weaponRecoils[GUN_SMG].recoveryRate = 0.015f;
+    weaponRecoils[GUN_SMG].resetTime = 300;
+    weaponRecoils[GUN_SMG].viewPunchScale = 0.4f;
+    
+    // Pulse Rifle (CG) - more aggressive recoil
+    weaponRecoils[GUN_CG].pattern = defaultSprayPattern;
+    weaponRecoils[GUN_CG].patternLength = DEFAULT_PATTERN_LEN;
+    weaponRecoils[GUN_CG].multiplier = 1.2f;  // more aggressive
+    weaponRecoils[GUN_CG].recoveryRate = 0.012f;
+    weaponRecoils[GUN_CG].resetTime = 350;
+    weaponRecoils[GUN_CG].viewPunchScale = 0.6f;
+}
+
 #define RECOIL_COOLDOWN 200 //200ms until our recoil is reset and next shot will have 0 spread
 #define MAXSPREAD 25
 
 void shoot(fpsent *d, const vec &targ)
 {
+    // Initialize recoil patterns on first use
+    initRecoilPatterns();
+    
     if (d->gunselect == GUN_MAGNUM && d->altattacking && !d->attacking) return;
     int prevaction = d->lastaction, attacktime = lastmillis-prevaction;
-    //if attacking, increment spread to MAXSPREAD, if not, decrease spread to 0
-    if(d->lastattackmillis<MAXSPREAD && d->attacking && (d->gunselect==GUN_SMG || d->gunselect==GUN_CG || d->gunselect==GUN_PISTOL))d->lastattackmillis+=d->gunselect==GUN_PISTOL?6:1;
-    if(!d->attacking && d->lastattackmillis>0)d->lastattackmillis-=1;
+    
+    // CS 1.6-style timing-based recoil system for automatic weapons
+    if(d->gunselect == GUN_SMG || d->gunselect == GUN_CG) {
+        WeaponRecoil &recoil = weaponRecoils[d->gunselect];
+        
+        // Check if enough time has passed to reset the spray pattern
+        int timeSinceLastShot = lastmillis - d->lastShotTime;
+        if(timeSinceLastShot > recoil.resetTime) {
+            // Reset pattern to beginning
+            d->recoilPatternIndex = 0;
+        }
+    }
+    // Old recoil system for pistol (frame-based)
+    else if(d->gunselect == GUN_PISTOL) {
+        if(d->lastattackmillis<MAXSPREAD && d->attacking) d->lastattackmillis+=6;
+        if(!d->attacking && d->lastattackmillis>0) d->lastattackmillis-=1;
+    }
 
     if (attacktime < (d->quadmillis ? d->gunwait / 2 : d->gunwait) || lastmillis - d->lastreload < 1500 || (d->state == CS_DEAD && !d->dropitem)) return;
     d->gunwait = 0;
@@ -2390,6 +2525,46 @@ void shoot(fpsent *d, const vec &targ)
 
     vec from = d->o;
     vec to = targ;
+    
+    // Apply CS 1.6-style spray pattern for automatic weapons
+    if(d->gunselect == GUN_SMG || d->gunselect == GUN_CG) {
+        WeaponRecoil &recoil = weaponRecoils[d->gunselect];
+        
+        // Update shot time for timing-based system
+        d->lastShotTime = lastmillis;
+        
+        // Get current pattern offset (cap at last entry, don't wrap)
+        int patternIdx = min(d->recoilPatternIndex, recoil.patternLength - 1);
+        const SprayPattern &pattern = recoil.pattern[patternIdx];
+        
+        // Pattern values are TOTAL offset from center (not incremental)
+        float yawOffset = pattern.yaw * recoil.multiplier;
+        float pitchOffset = pattern.pitch * recoil.multiplier;
+        
+        // Apply view punch (camera kick) - only for local player
+        // This is a FIXED kick per shot, independent of pattern position
+        if(d == player1) {
+            // VERY strong kick for visual impact
+            float kickStrength = d->gunselect == GUN_CG ? 4.0f : 3.0f; // CG kicks harder
+            // Add small random horizontal component for realism
+            float horizontalKick = (rnd(21) - 10) * 0.05f; // -0.5 to +0.5 degrees
+            
+            d->pitch += kickStrength * recoil.viewPunchScale;
+            d->yaw += horizontalKick * recoil.viewPunchScale;
+        }
+        
+        // Apply recoil to shot direction (total offset from aim point)
+        vec dir;
+        vecfromyawpitch(d->yaw + yawOffset, d->pitch + pitchOffset, 1, 0, dir);
+        to = dir;
+        to.mul(guns[d->gunselect].range);
+        to.add(from);
+        
+        // Advance pattern index (capped at pattern length)
+        if(d->recoilPatternIndex < recoil.patternLength) {
+            d->recoilPatternIndex++;
+        }
+    }
 
     vec unitv;
     float dist = to.dist(from, unitv);
@@ -2403,8 +2578,17 @@ void shoot(fpsent *d, const vec &targ)
     if(guns[d->gunselect].range && dist > guns[d->gunselect].range)
         shorten = guns[d->gunselect].range;
     float barrier = raycube(d->o, unitv, dist, RAY_CLIPMAT|RAY_ALPHAPOLY);
+    
+    // Store wall info BEFORE modifying anything
+    bool hitWall = (barrier > 0 && barrier < dist);
+    vec wallHitPoint = from;
+    if(hitWall) {
+        wallHitPoint = vec(unitv).mul(barrier).add(from);
+    }
+    
     if(barrier > 0 && barrier < dist && (!shorten || barrier < shorten))
         shorten = barrier;
+    
     if(shorten)
     {
         to = unitv;
@@ -2412,16 +2596,11 @@ void shoot(fpsent *d, const vec &targ)
         to.add(from);
     }
 
-    //int addedspread=guns[d->gunselect].spread;
-    //int diff;
-    //if(d->gunselect==GUN_CG||d->gunselect==GUN_SMG||d->gunselect==GUN_PISTOL) {
-        //diff=lastmillis-d->lastattackmillis; //positive number, increases as we wait 1200-1000=200
-        //diff-=RECOIL_COOLDOWN; //200-300=-100
-        //if(diff>0)diff=0; //we end up with a negative number which gets larger as we wait. If diff is >0, then we've reached our full cooldown
-        //addedspread=-diff; //adding spread based on how close/far we are away from the cooldown
-
-    //}
-    if(guns[d->gunselect].rays>1) createrays(d->gunselect, from, to, d);
+    // Use pattern-based recoil for SMG/CG, old system for others
+    if(d->gunselect == GUN_SMG || d->gunselect == GUN_CG) {
+        // Pattern already applied above, no additional spread
+    }
+    else if(guns[d->gunselect].rays>1) createrays(d->gunselect, from, to, d);
     else if(d->lastattackmillis) offsetray(from, to, d->lastattackmillis*4, guns[d->gunselect].range, to, d->quadmillis ? false : true);
 
     //d->lastattackmillis = lastmillis;
@@ -2430,9 +2609,25 @@ void shoot(fpsent *d, const vec &targ)
 
     vec gaussdest;
     vecfromyawpitch(d->yaw, d->pitch, 1, 0, gaussdest);
-    //float barrier = raycube(d->o, gaussdest, guns[GUN_ELECTRO].range, RAY_CLIPMAT|RAY_ALPHAPOLY);
+    
+    // Normal damage on first segment
     if(!guns[d->gunselect].projspeed) raydamage(from, to, d);
-    //if(d->gunselect==GUN_ELECTRO2) raydamage(from, gaussdest, d); //allow gauss gun shooting through walls ;)
+    
+    // CS 1.6-style wallbanging - SIMPLIFIED CONDITIONS
+    // Check: is this a hitscan weapon that hit a wall?
+    bool canWallbang = (d->gunselect == GUN_SMG || d->gunselect == GUN_CG || 
+                        d->gunselect == GUN_PISTOL || 
+                        (d->gunselect == GUN_MAGNUM && !(d->mods & MOD_LIGHTNINGGUN)));
+    
+    // CS 1.6-style wallbanging - shoot through walls with FULL damage
+    if(canWallbang && hitWall && !guns[d->gunselect].projspeed) {
+        float penetrationDepth = 500.0f; // Back to 500 for testing
+        
+        // Damage ray through wall (FULL DAMAGE, no reduction)
+        vec damageStart = vec(wallHitPoint).add(vec(unitv).mul(5.0f));
+        vec damageEnd = vec(damageStart).add(vec(unitv).mul(penetrationDepth));
+        raydamage(damageStart, damageEnd, d);
+    }
     if(guns[d->gunselect].projspeed)d->headshots=0;
     if(d->lastattackgun==GUN_TELEKENESIS || d->lastattackgun==GUN_TELEKENESIS2) d->headshots=0;
 
