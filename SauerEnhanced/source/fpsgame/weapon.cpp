@@ -2161,7 +2161,7 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
             vec forward, left;
             vecfromyawpitch(d->yaw, 0, 1, 0, forward);
             if(gun == GUN_CG) {
-                shellstart.add(vec(forward).mul(-3.0f));
+                shellstart.add(vec(forward).mul(-4.0f));
             } else if(gun == GUN_SMG || gun == GUN_SMG2) {
                 shellstart.add(vec(forward).mul(3.0f));
             }
@@ -2568,17 +2568,17 @@ void initRecoilPatterns() {
     weaponRecoils[GUN_SMG].pattern = defaultSprayPattern;
     weaponRecoils[GUN_SMG].patternLength = DEFAULT_PATTERN_LEN;
     weaponRecoils[GUN_SMG].multiplier = 0.8f;  // less aggressive
-    weaponRecoils[GUN_SMG].recoveryRate = 0.015f;
+    weaponRecoils[GUN_SMG].recoveryRate = 0.018f;
     weaponRecoils[GUN_SMG].resetTime = 300;
-    weaponRecoils[GUN_SMG].viewPunchScale = 0.4f;
+    weaponRecoils[GUN_SMG].viewPunchScale = 0.6f;
     
     // Pulse Rifle (CG) - more aggressive recoil
     weaponRecoils[GUN_CG].pattern = defaultSprayPattern;
     weaponRecoils[GUN_CG].patternLength = DEFAULT_PATTERN_LEN;
     weaponRecoils[GUN_CG].multiplier = 1.2f;  // more aggressive
-    weaponRecoils[GUN_CG].recoveryRate = 0.012f;
+    weaponRecoils[GUN_CG].recoveryRate = 0.0144f;
     weaponRecoils[GUN_CG].resetTime = 350;
-    weaponRecoils[GUN_CG].viewPunchScale = 0.6f;
+    weaponRecoils[GUN_CG].viewPunchScale = 0.75f;
 }
 
 #define RECOIL_COOLDOWN 200 //200ms until our recoil is reset and next shot will have 0 spread
