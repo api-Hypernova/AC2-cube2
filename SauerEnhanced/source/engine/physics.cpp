@@ -1803,8 +1803,19 @@ void modifyvelocity(physent *pl, bool local, bool water, bool floating, int curt
         {
             if(pl==player) d.mul(floatspeed/100.0f);
         }
-        if(game::player1->crouching && !((fpsent *)pl)->ai && pl==game::player1) { pl->eyeheight=9; }
-        else if(pl==game::player1)pl->eyeheight=16;
+        // Handle crouch eyeheight changes - adjust position so hitbox expands from top
+        if(pl==game::player1 && !((fpsent *)pl)->ai)
+        {
+            float oldeyeheight = pl->eyeheight;
+            if(game::player1->crouching) { pl->eyeheight=9; }
+            else { pl->eyeheight=16; }
+            // When uncrouching, move player up so feet stay at same position
+            float heightdiff = pl->eyeheight - oldeyeheight;
+            if(heightdiff > 0) // Going from crouch to standing
+            {
+                pl->o.z += heightdiff;
+            }
+        }
         if((pl->physstate==PHYS_FLOOR && !((fpsent *)pl)->ai)) d.mul(game::player1->sprinting?1.3f:.9f);
         else if(((fpsent *)pl)->ai)d.mul(1.5f);
         else if(!water && ((fpsent *)pl)->ai)d.mul(1.6f);

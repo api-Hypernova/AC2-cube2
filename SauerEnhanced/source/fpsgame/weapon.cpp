@@ -17,6 +17,15 @@ vector<hitmsg> hits;
 VARP(maxdebris, 10, 25, 1000);
 VARP(maxbarreldebris, 5, 10, 1000);
 
+// Physics lag compensation - delays explosions to give all players fair catch windows
+VARP(phys_lag_comp, 0, 1, 1);                      // Toggle feature (default: 1 = ON)
+VAR(phys_lag_comp_maxdelay, 100, 300, 1000);      // Maximum delay in milliseconds (default: 300ms)
+VAR(phys_lag_comp_range, 50, 100, 500);           // Range to check for nearby players (default: 100 units)
+
+// Test mode - simulates artificial latency for testing with bots
+VARP(phys_lag_comp_testmode, 0, 0, 1);            // Enable test mode (default: 0 = OFF)
+VAR(phys_lag_comp_testping, 0, 100, 500);         // Simulated ping in test mode (default: 100ms)
+
 ICOMMAND(getweapon, "", (), intret(player1->gunselect));
 
 
@@ -248,8 +257,15 @@ struct bouncer : physent
     int id;
     entitylight light;
 
+    // Lag compensation fields
+    bool pendingExplosion;          // True when lifetime expired but waiting for delay
+    int explosionScheduledTime;     // When to actually explode (lastmillis + delay)
+    int capturedOwnerPing;          // Snapshot of owner's ping at creation time
+    vec frozenPos;                  // Position where object should explode (frozen at lifetime=0)
 
-    bouncer() : bounces(0), roll(0), variant(0), rocketchan(-1), rocketsound(-1)
+
+    bouncer() : bounces(0), roll(0), variant(0), rocketchan(-1), rocketsound(-1),
+                pendingExplosion(false), explosionScheduledTime(0), capturedOwnerPing(0), frozenPos(0, 0, 0)
     {
         type = ENT_BOUNCE;
     }
@@ -287,6 +303,13 @@ void newbouncer(const vec &from, const vec &to, bool local, int id, fpsent *owne
     bnc.bouncetype = type;
     bnc.beepleft=20;
     bnc.flareleft=5;
+    
+    // Snapshot owner's ping for lag compensation (or use test ping in test mode)
+    if(phys_lag_comp_testmode) {
+        bnc.capturedOwnerPing = phys_lag_comp_testping;
+    } else {
+        bnc.capturedOwnerPing = owner->ping;
+    }
     //bnc.model=model;
     //strncpy(owner->propmodeldir, bnc.model, 30);
     //bnc.model=bnc.bouncetype==BNC_PROP?"xeno/box1":"dcp/barrel"; //
@@ -564,7 +587,15 @@ void updatebouncers(int time)
 
 
         vec old(bnc.o);
-        if(bnc.bouncetype==BNC_ORB) stopped = bounce(&bnc, 1.001f, 1.0001f, 0.0f) || (bnc.lifetime -= time)<0;
+        
+        // Skip physics for frozen bouncers (lag compensation active)
+        // But DON'T skip the explosion check at the end!
+        if(bnc.pendingExplosion && (bnc.bouncetype == BNC_GRENADE || bnc.bouncetype == BNC_ORB || bnc.bouncetype == BNC_PROP)) {
+            // Object is frozen, keep it at frozen position
+            bnc.o = bnc.frozenPos;
+            stopped = false; // Skip physics, but let explosion logic run
+        }
+        else if(bnc.bouncetype==BNC_ORB) stopped = bounce(&bnc, 1.001f, 1.0001f, 0.0f) || (bnc.lifetime -= time)<0;
         else if(bnc.bouncetype==BNC_GRENADE) stopped = bounce(&bnc, 0.45f, 0.5f, 0.8f) || (bnc.lifetime -= time)<0;
         else if(bnc.bouncetype==BNC_SHELL)stopped = bounce(&bnc, .6f, .8f, .8f) || (bnc.lifetime -= time)<0;
         else if(bnc.bouncetype==BNC_SMGNADE) stopped = bounce(&bnc, 0.6f, 0.5f, 0.6f) || (bnc.bounces) > 0;
@@ -703,20 +734,119 @@ void updatebouncers(int time)
                 }
             }
             if(bnc.bouncetype!=BNC_ORB && bnc.bouncetype!=BNC_PROP && bnc.bouncetype!=BNC_GRENADE) delete bouncers.remove(i--);
-            if ((bnc.bouncetype == BNC_ORB || bnc.bouncetype == BNC_PROP || bnc.bouncetype == BNC_GRENADE) && (bnc.lifetime -= time) < 0) {
-                // trigger explosion here
+            
+            // ============================================================================
+            // PHYSICS LAG COMPENSATION SYSTEM (with Test Mode)
+            // ============================================================================
+            // Problem: In clientside prediction, if player2 catches a grenade but the 
+            // message doesn't reach player1 in time, player1's grenade explodes and 
+            // damages player2 even though on player2's screen they caught it.
+            //
+            // Solution: Delay explosion by (thrower_ping + max_nearby_player_ping) to 
+            // give all nearby players a fair window to catch the object.
+            //
+            // Toggle:     phys_lag_comp (0=off, 1=on, default: 1)
+            // Max delay:  phys_lag_comp_maxdelay (default: 300ms)
+            // Check range: phys_lag_comp_range (default: 100 units)
+            //
+            // TEST MODE (for bot testing):
+            // Enable:     phys_lag_comp_testmode 1
+            // Test ping:  phys_lag_comp_testping 100 (simulates 100ms ping for all players)
+            // Example:    Test 200ms total delay = testping 100 + bot simulated 100 = 200ms delay
+            // ============================================================================
+            
+            // Handle grenade/orb/prop explosion with lag compensation
+            if (bnc.bouncetype == BNC_ORB || bnc.bouncetype == BNC_PROP || bnc.bouncetype == BNC_GRENADE) {
+                // Only decrement lifetime if not already pending explosion (frozen)
+                if (!bnc.pendingExplosion) {
+                    bnc.lifetime -= time;
+                }
+                
+                // Check if lifetime has expired but explosion hasn't been scheduled yet
+                if (bnc.lifetime <= 0 && !bnc.pendingExplosion) {
+                    // FREEZE the bouncer at this position
+                    bnc.frozenPos = bnc.o;
+                    bnc.vel = vec(0, 0, 0); // Stop all movement
+                    
+                    if (phys_lag_comp && bnc.local) {
+                        // Calculate delay based on owner's ping + max nearby player ping
+                        int maxNearbyPing = 0;
+                        
+                        if(phys_lag_comp_testmode) {
+                            // TEST MODE: Use simulated ping for all players (including bots)
+                            maxNearbyPing = phys_lag_comp_testping;
+                            conoutf(CON_GAMEINFO, "\f2[LAG COMP TEST] Object frozen at (%.1f, %.1f, %.1f), simulating %dms + %dms = %dms delay", 
+                                    bnc.frozenPos.x, bnc.frozenPos.y, bnc.frozenPos.z,
+                                    bnc.capturedOwnerPing, maxNearbyPing, bnc.capturedOwnerPing + maxNearbyPing);
+                        } else {
+                            // NORMAL MODE: Check real player pings
+                            loopv(players) {
+                                fpsent *p = players[i];
+                                if (p && p != bnc.owner && p->state == CS_ALIVE) {
+                                    float dist = p->o.dist(bnc.frozenPos);
+                                    // Only consider players within catch range
+                                    if (dist < phys_lag_comp_range) {
+                                        maxNearbyPing = max(maxNearbyPing, p->ping);
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Calculate total delay: owner's ping (at throw time) + max nearby ping
+                        int explosionDelay = bnc.capturedOwnerPing + maxNearbyPing;
+                        
+                        // Cap delay at maximum to prevent excessive lag
+                        explosionDelay = min(explosionDelay, phys_lag_comp_maxdelay);
+                        
+                        // Schedule explosion
+                        bnc.pendingExplosion = true;
+                        bnc.explosionScheduledTime = lastmillis + explosionDelay;
+                    } else {
+                        // Lag comp disabled or not local - explode immediately
+                        bnc.pendingExplosion = true;
+                        bnc.explosionScheduledTime = lastmillis;
+                    }
+                }
+                
+                // Check if it's time to actually explode
+                if (bnc.pendingExplosion && lastmillis >= bnc.explosionScheduledTime) {
+                    // Trigger explosion AT THE FROZEN POSITION
                 if (bnc.bouncetype == BNC_GRENADE) {
                     int qdam = guns[GUN_HANDGRENADE].damage * (bnc.owner->quadmillis ? 2 : 1);
                     hits.setsize(0);
-                    explode(bnc.local, bnc.owner, bnc.o, NULL, qdam, bnc.bouncetype == BNC_XBOLT ? GUN_CROSSBOW : GUN_HANDGRENADE);
-                    adddecal(DECAL_SCORCH, bnc.o, vec(0, 0, 1), guns[GUN_HANDGRENADE].splash / 2);
+                        explode(bnc.local, bnc.owner, bnc.frozenPos, NULL, qdam, GUN_HANDGRENADE);
+                        adddecal(DECAL_SCORCH, bnc.frozenPos, vec(0, 0, 1), guns[GUN_HANDGRENADE].splash / 2);
                     if (bnc.local) {
                         addmsg(N_EXPLODE, "rci3iv", bnc.owner, lastmillis - maptime, GUN_HANDGRENADE, bnc.id - maptime,
                             hits.length(), hits.length() * sizeof(hitmsg) / sizeof(int), hits.getbuf());
                     }
-                 
-                }
+                        if(phys_lag_comp_testmode) {
+                            conoutf(CON_GAMEINFO, "\f1[LAG COMP TEST] Grenade exploded at frozen position (%.1f, %.1f, %.1f)!", 
+                                    bnc.frozenPos.x, bnc.frozenPos.y, bnc.frozenPos.z);
+                        }
+                    }
+                    else if (bnc.bouncetype == BNC_ORB || bnc.bouncetype == BNC_PROP) {
+                        // Orbs and props - explode/damage at frozen position
+                        if (bnc.local) {
+                            // For orbs, we want to damage players at the frozen position
+                            int qdam = bnc.bouncetype == BNC_ORB ? guns[GUN_CG2].damage * (bnc.owner->quadmillis ? 4 : 1) : 
+                                       guns[GUN_BITE].damage * (bnc.owner->quadmillis ? 2 : 1);
+                            hits.setsize(0);
+                            explode(bnc.local, bnc.owner, bnc.frozenPos, NULL, qdam, 
+                                   bnc.bouncetype == BNC_PROP ? GUN_BITE : GUN_FIREBALL);
+                            
+                            addmsg(N_EXPLODE, "rci3iv", bnc.owner, lastmillis - maptime, 
+                                   bnc.bouncetype == BNC_PROP ? GUN_BITE : GUN_FIREBALL, bnc.id - maptime,
+                                   hits.length(), hits.length() * sizeof(hitmsg) / sizeof(int), hits.getbuf());
+                        }
+                        if(phys_lag_comp_testmode) {
+                            conoutf(CON_GAMEINFO, "\f1[LAG COMP TEST] %s exploded at frozen position!", 
+                                    bnc.bouncetype == BNC_ORB ? "Orb" : "Prop");
+                        }
+                    }
+                    // Remove the bouncer after explosion
                 delete bouncers.remove(i--);
+                }
             }
         }
         else
@@ -1634,16 +1764,31 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
         // }
         if(d==hudplayer()) { d->screenjumpheight=20; screenjump(); screenjump();}
         if(d->gunselect==GUN_SG)playsound(S_SHOTGUN, d==hudplayer()?NULL:&d->o);
+        // Eject shell casings for shotguns
         loopi(gun==GUN_SG?2:1)
         {
-            vec shelldir = hudgunorigin(GUN_SG, d->o, to, d);;
-            vec shellstart = d->o;
-            shellstart.z=hudgunorigin(GUN_SG, d->o, to, d).z-2.5f;
-            shelldir.z+=(.8f+(rnd(15)/10));
-            shelldir.y+=.16f-(rnd(32)/10);
-            shelldir.x+=.16f-(rnd(32)/10);
-            shelldir.z-=2;
-            newbouncer(shellstart, shelldir, local, id, d, BNC_SHELL, 8000, 50+rnd(20));
+            vec shellstart = hudgunorigin(gun, d->o, to, d);
+            shellstart.z -= 0.5f;
+
+            vec forward, left;
+            vecfromyawpitch(d->yaw, 0, 1, 0, forward);
+            vecfromyawpitch(d->yaw - 90, 0, 1, 0, left);
+
+            conoutf("SHELL EJECT DEBUG:");
+            conoutf("  Entity: %s, local: %d", d->name, local);
+            conoutf("  Player yaw: %f, pitch: %f", d->yaw, d->pitch);
+            conoutf("  Left vector: (%f, %f, %f)", left.x, left.y, left.z);
+
+            vec shelldir = vec(left).mul(1.5f + (rnd(11) / 10.0f));
+            shelldir.z = (1.2f + (rnd(7) / 10.0f));
+            shelldir.add(vec(forward).mul(0.2f + (rnd(11) / 10.0f)));
+
+            conoutf("  Shell direction BEFORE newbouncer: (%f, %f, %f)", shelldir.x, shelldir.y, shelldir.z);
+
+            vec shellto = vec(shellstart).add(shelldir);
+            newbouncer(shellstart, shellto, local, id, d, BNC_SHELL, 8000, 50+rnd(20));
+            
+            conoutf("  newbouncer called successfully");
         }
         break;
     }
@@ -2007,17 +2152,29 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
         if ((gun == GUN_MAGNUM || gun == GUN_ELECTRO) && d == hudplayer()) { d->screenjumpheight = 20; screenjump(); screenjump(); } //d->attacking=0; d->altattacking=0;}
         //else if(d==player1) {d->screendown=1; d->screenup=1; screenjump(); screenjump(); }
         if(gun==GUN_PISTOL)d->attacking=d->altattacking=0;
-        //if(gun!=GUN_MAGNUM)
-        //{
-            vec shelldir = hudgunorigin(GUN_SG, d->o, to, d);
-            vec shellstart = d->o;
-            shellstart.z=hudgunorigin(GUN_SG, d->o, to, d).z-2.5f;
-            shelldir.z+=(.8f+(rnd(15)/10));
-            shelldir.y+=.4f-(rnd(8)/10);
-            shelldir.x+=.4f-(rnd(8)/10);
-            shelldir.z-=2;
-            newbouncer(shellstart, shelldir, local, id, d, BNC_SHELL, 8000, 40+rnd(20));
-        //}
+        // Eject shell casings for SMG and Pulse Rifle
+        if(gun == GUN_CG || gun == GUN_SMG || gun == GUN_SMG2 || gun == GUN_MAGNUM)
+        {
+            vec shellstart = hudgunorigin(gun, d->o, to, d);
+            shellstart.z -= 0.5f;
+
+            vec forward, left;
+            vecfromyawpitch(d->yaw, 0, 1, 0, forward);
+            if(gun == GUN_CG) {
+                shellstart.add(vec(forward).mul(-3.0f));
+            } else if(gun == GUN_SMG || gun == GUN_SMG2) {
+                shellstart.add(vec(forward).mul(3.0f));
+            }
+
+            vecfromyawpitch(d->yaw - 90, 0, 1, 0, left);
+
+            vec shelldir = vec(left).mul(1.5f + (rnd(11) / 10.0f));
+            shelldir.z = (1.2f + (rnd(7) / 10.0f));
+            shelldir.add(vec(forward).mul(0.2f + (rnd(11) / 10.0f)));
+
+            vec shellto = vec(shellstart).add(shelldir);
+            newbouncer(shellstart, shellto, local, id, d, BNC_SHELL, 8000, 40 + rnd(20));
+        }
         if(gun!=GUN_CG && gun!=GUN_SMG)
         {
             if(d->roll >= 0)
@@ -2093,15 +2250,21 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
         }
         else d->roll += droll;
         if(d==hudplayer()) { d->screenjumpheight=10; screenjump(); screenjump();}
+        // Eject shell casing for double barrel shotgun
         {
-            vec shelldir = hudgunorigin(GUN_SG, d->o, to, d);;
-            vec shellstart = d->o;
-            shellstart.z=hudgunorigin(GUN_SG, d->o, to, d).z-2.5f;
-            shelldir.z+=(.8f+(rnd(15)/10));
-            shelldir.y+=.4f-(rnd(8)/10);
-            shelldir.x+=.4f-(rnd(8)/10);
-            shelldir.z-=2;
-            newbouncer(shellstart, shelldir, local, id, d, BNC_SHELL, 8000, 40+rnd(20));
+            vec shellstart = hudgunorigin(gun, d->o, to, d);
+            shellstart.z -= 0.5f;
+
+            vec forward, left;
+            vecfromyawpitch(d->yaw, 0, 1, 0, forward);
+            vecfromyawpitch(d->yaw - 90, 0, 1, 0, left);
+
+            vec shelldir = vec(left).mul(1.5f + (rnd(11) / 10.0f));
+            shelldir.z = (1.2f + (rnd(7) / 10.0f));
+            shelldir.add(vec(forward).mul(0.2f + (rnd(11) / 10.0f)));
+
+            vec shellto = vec(shellstart).add(shelldir);
+            newbouncer(shellstart, shellto, local, id, d, BNC_SHELL, 8000, 40+rnd(20));
         }
         break;
     }
@@ -2549,6 +2712,11 @@ void shoot(fpsent *d, const vec &targ)
             // Add small random horizontal component for realism
             float horizontalKick = (rnd(21) - 10) * 0.05f; // -0.5 to +0.5 degrees
             
+            // Accumulate recoil for recovery system
+            d->recoilPitchAccum += kickStrength * recoil.viewPunchScale;
+            d->recoilYawAccum += horizontalKick * recoil.viewPunchScale;
+            
+            // Apply immediately to camera
             d->pitch += kickStrength * recoil.viewPunchScale;
             d->yaw += horizontalKick * recoil.viewPunchScale;
         }
@@ -2759,16 +2927,57 @@ void renderbouncers()
             bnc.lastyaw = yaw;
             if(bnc.bouncetype==BNC_XBOLT)bnc.lastpitch = pitch;
         }
-        if(bnc.bouncetype!=BNC_XBOLT)pitch =-bnc.roll/15;
+        // Shell casings: tumble when moving, land flat when stopped
+        if(bnc.bouncetype==BNC_SHELL) {
+            if(vel.magnitude() > 10.0f) {
+                pitch = -bnc.roll / 15; // Tumbling when moving
+            } else {
+                pitch = 0; // Land flat when velocity is low
+            }
+        }
+        else if(bnc.bouncetype!=BNC_XBOLT)pitch =-bnc.roll/15;
+        
         if(bnc.bouncetype==BNC_PROP)pos.z-=1;
         //if(bnc.vel.magnitude()<(bnc.bouncetype==BNC_BARRELDEBRIS)?50.0f:200.0f)pitch=bnc.bouncetype==BNC_BARRELDEBRIS?90:0;
         if(bnc.vel.magnitude()<50&&bnc.bouncetype==BNC_BARRELDEBRIS)pitch=90;
         if(bnc.bouncetype==BNC_PROP) pitch=0;
+        
+        // Handle pending explosion objects (frozen and waiting to explode)
+        if(phys_lag_comp && bnc.pendingExplosion && (bnc.bouncetype == BNC_GRENADE || bnc.bouncetype == BNC_ORB || bnc.bouncetype == BNC_PROP)) {
+            // Use frozen position for rendering
+            pos = bnc.frozenPos;
+            pos.add(vec(bnc.offset).mul(bnc.offsetmillis/float(OFFSETMILLIS)));
+            
+            // Calculate pulsing intensity based on time until explosion
+            int timeUntilExplosion = max(0, bnc.explosionScheduledTime - lastmillis);
+            float pulseFreq = 5.0f; // Pulses per second
+            float pulse = 0.5f + 0.5f * sinf(lastmillis * pulseFreq * 2.0f * M_PI / 1000.0f);
+            
+            // Color based on type: red for grenades, blue for orbs, orange for props
+            int glowColor = bnc.bouncetype == BNC_GRENADE ? 0xFF3030 : 
+                           bnc.bouncetype == BNC_ORB ? 0x3030FF : 0xFF8030;
+            
+            // Add pulsing glow effect at frozen position
+            float glowSize = 8.0f + pulse * 4.0f;
+            particle_flare(pos, pos, 100, PART_GLOW, glowColor, glowSize);
+            
+            // Add spark particles for extra warning
+            if(lastmillis % 100 < 50) { // Intermittent sparks
+                particle_splash(PART_SPARK, 3, 50, pos, glowColor, 0.5f, 100);
+            }
+            
+            // Skip rendering the actual model (object is "invisible" during delay)
+            // The glow effect shows where it will explode
+            continue;
+        }
+        
         if(bnc.bouncetype==BNC_XBOLT)
             rendermodel(&bnc.light, "projectiles/xbolt", ANIM_MAPMODEL|ANIM_LOOP, pos, yaw, pitch, MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_LIGHT|MDL_LIGHT_FAST|MDL_DYNSHADOW);
         if(bnc.bouncetype==BNC_SHELL) {//not when too close otherwise it'll be in the gun
             pos.z-=.5f;
-            if(pos.dist(bnc.owner->o)>6)rendermodel(&bnc.light, "shells/shell1", ANIM_MAPMODEL|ANIM_LOOP, pos, yaw, pitch, MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_LIGHT|MDL_LIGHT_FAST|MDL_DYNSHADOW);
+            // Add 90 degree yaw offset to compensate for model misalignment
+            float shellYaw = yaw + 90.0f;
+            if(pos.dist(bnc.owner->o)>6)rendermodel(&bnc.light, "shells/shell1", ANIM_MAPMODEL|ANIM_LOOP, pos, shellYaw, pitch, MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_LIGHT|MDL_LIGHT_FAST|MDL_DYNSHADOW);
         }
         if(bnc.bouncetype==BNC_SMGNADE)
             rendermodel(&bnc.light, "projectiles/rocket", ANIM_MAPMODEL|ANIM_LOOP, pos, yaw, pitch, MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_LIGHT|MDL_LIGHT_FAST|MDL_DYNSHADOW);
@@ -2810,6 +3019,111 @@ void renderbouncers()
     }
 }
 
+// Helper function to record position in history buffer
+void recordholdposition(fpsent *d, const vec &pos)
+{
+    d->holdposhistory[d->holdposhistoryindex].pos = pos;
+    d->holdposhistory[d->holdposhistoryindex].timestamp = lastmillis;
+    d->holdposhistoryindex = (d->holdposhistoryindex + 1) % fpsstate::HOLDPOS_HISTORY_SIZE;
+}
+
+// Helper function to get lagged position from history
+vec getlaggedholdposition(fpsent *d, int lagms, const vec &currentpos)
+{
+    int targettime = lastmillis - lagms;
+    
+    // Find the oldest and newest entries to check how much history we have
+    int oldestidx = -1;
+    int newestidx = -1;
+    int oldesttime = 2000000000;
+    int newesttime = 0;
+    
+    loopi(fpsstate::HOLDPOS_HISTORY_SIZE)
+    {
+        if(d->holdposhistory[i].timestamp == 0) continue;
+        
+        if(d->holdposhistory[i].timestamp < oldesttime)
+        {
+            oldesttime = d->holdposhistory[i].timestamp;
+            oldestidx = i;
+        }
+        if(d->holdposhistory[i].timestamp > newesttime)
+        {
+            newesttime = d->holdposhistory[i].timestamp;
+            newestidx = i;
+        }
+    }
+    
+    // If we have no history, return current position
+    if(oldestidx == -1)
+        return currentpos;
+    
+    // Calculate how much history we actually have
+    int historyspan = newesttime - oldesttime;
+    
+    // If we don't have enough history yet, reduce the lag proportionally
+    int effectivelag = lagms;
+    if(historyspan < lagms)
+    {
+        effectivelag = historyspan;
+        if(effectivelag < 16) // Less than one frame of history
+            return currentpos;
+    }
+    
+    targettime = lastmillis - effectivelag;
+    
+    // Find the two history entries that bracket the target time
+    int bestidx = -1;
+    int nextidx = -1;
+    int besttimediff = 1000000;
+    
+    loopi(fpsstate::HOLDPOS_HISTORY_SIZE)
+    {
+        if(d->holdposhistory[i].timestamp == 0) continue;
+        
+        int timediff = d->holdposhistory[i].timestamp - targettime;
+        
+        // Find the closest entry before or at target time
+        if(timediff <= 0 && -timediff < besttimediff)
+        {
+            besttimediff = -timediff;
+            bestidx = i;
+        }
+    }
+    
+    // If we couldn't find a good match, use the oldest entry we have
+    if(bestidx == -1)
+        bestidx = oldestidx;
+    
+    // Find next entry after bestidx for interpolation
+    loopi(fpsstate::HOLDPOS_HISTORY_SIZE)
+    {
+        if(d->holdposhistory[i].timestamp > d->holdposhistory[bestidx].timestamp)
+        {
+            if(nextidx == -1 || d->holdposhistory[i].timestamp < d->holdposhistory[nextidx].timestamp)
+                nextidx = i;
+        }
+    }
+    
+    // If we have both points, interpolate
+    if(nextidx != -1 && d->holdposhistory[nextidx].timestamp > d->holdposhistory[bestidx].timestamp)
+    {
+        float t = float(targettime - d->holdposhistory[bestidx].timestamp) / 
+                  float(d->holdposhistory[nextidx].timestamp - d->holdposhistory[bestidx].timestamp);
+        t = clamp(t, 0.0f, 1.0f);
+        
+        vec result = d->holdposhistory[bestidx].pos;
+        vec diff = d->holdposhistory[nextidx].pos;
+        diff.sub(d->holdposhistory[bestidx].pos);
+        diff.mul(t);
+        result.add(diff);
+        return result;
+    }
+    
+    // Otherwise just return the best match we have
+    return d->holdposhistory[bestidx].pos;
+}
+
 void rendercaughtitems()
 {
     loopv(players)
@@ -2827,52 +3141,69 @@ void rendercaughtitems()
         v.div(steps);
         vec p = d==hudplayer()&&!thirdperson?d->muzzle:d->o;
         loopi(30)p.add(v);
+        
+        // Only record and use lag if actually holding something
+        bool isholding = d->isholdingnade || d->isholdingorb || d->isholdingprop || d->isholdingbarrel || d->isholdingshock;
+        
+        vec currentholdpos = p;
+        if(thirdperson||d!=hudplayer())currentholdpos.z-=5;
+        
+        vec renderpos = currentholdpos;  // Default to current position
+        
+        if(isholding && d->gunselect==GUN_TELEKENESIS2)
+        {
+            // Record current hold position in history
+            recordholdposition(d, currentholdpos);
+            
+            // Get lagged position (300ms ago) for rendering to simulate heavy object feel
+            renderpos = getlaggedholdposition(d, 300, currentholdpos);
+        }
+        
         //entity &e = d->holdingobj;
         //const char *mdlname=mapmodelname(e.attr2);
         //char *mdlname= { d->propmodeldir };
         //const char *mdlname = d->isholdingprop?"xeno/box1":"dcp/barrel";
         const char *mdlname = mapmodelname(d->propmodeldir);
         //particle_flare(d->muzzle, p, 2, PART_LIGHTNING, 0xFF64FF, 1.f);
-        if(thirdperson||d!=hudplayer())p.z-=5;
         if(d->isholdingnade && d->gunselect==GUN_TELEKENESIS2) {
-            rendermodel(NULL, "pickups/hand_grenade", ANIM_MAPMODEL|ANIM_LOOP, p, d->yaw, 0, MDL_LIGHT|MDL_LIGHT_FAST|MDL_DYNSHADOW);
+            rendermodel(NULL, "pickups/hand_grenade", ANIM_MAPMODEL|ANIM_LOOP, renderpos, d->yaw, 0, MDL_LIGHT|MDL_LIGHT_FAST|MDL_DYNSHADOW);
             d->flareleft-=1;
             d->beepleft-=1;
-            if(!d->beepleft) { playsound(S_NADEBEEP, &p); d->beepleft=50;} //beep delay longer because this is looped faster
-            if(p.dist(d->flarepos)>1 && d->state==CS_ALIVE) {particle_flare(d->flarepos, p, 500, PART_RAILTRAIL, nadetrailcol, .2f); d->flarepos=p; d->flareleft=2;}
-            if(d->state==CS_ALIVE)particle_flare(d == hudplayer() ? d->muzzle : d->o, p, 1, PART_LIGHTNING, 0xFF64FF, .5f);
+            if(!d->beepleft) { playsound(S_NADEBEEP, &renderpos); d->beepleft=50;} //beep delay longer because this is looped faster
+            if(renderpos.dist(d->flarepos)>1 && d->state==CS_ALIVE) {particle_flare(d->flarepos, renderpos, 500, PART_RAILTRAIL, nadetrailcol, .2f); d->flarepos=renderpos; d->flareleft=2;}
+            if(d->state==CS_ALIVE)particle_flare(d == hudplayer() ? d->muzzle : d->o, renderpos, 1, PART_LIGHTNING, 0xFF64FF, .5f);
         }
         if(d->isholdingorb && d->gunselect==GUN_TELEKENESIS2) {
-            rendermodel(NULL, "projectiles/teslaball", ANIM_MAPMODEL|ANIM_LOOP, p, d->yaw, 0, MDL_LIGHT|MDL_LIGHT_FAST|MDL_DYNSHADOW);
+            rendermodel(NULL, "projectiles/teslaball", ANIM_MAPMODEL|ANIM_LOOP, renderpos, d->yaw, 0, MDL_LIGHT|MDL_LIGHT_FAST|MDL_DYNSHADOW);
             vec occlusioncheck;
-            if(raycubelos(p, camera1->o, occlusioncheck))
+            if(raycubelos(renderpos, camera1->o, occlusioncheck))
             {
-                particle_flare(p, p, 75, PART_GLOW, 0x553322, 4.0f);
+                particle_flare(renderpos, renderpos, 75, PART_GLOW, 0x553322, 4.0f);
             }
-            if(d->state==CS_ALIVE)particle_flare(d == hudplayer() ? d->muzzle : d->o, p, 1, PART_LIGHTNING, 0xFF64FF, .5f);
+            if(d->state==CS_ALIVE)particle_flare(d == hudplayer() ? d->muzzle : d->o, renderpos, 1, PART_LIGHTNING, 0xFF64FF, .5f);
         }
 
         if (d->isholdingshock && d->gunselect==GUN_TELEKENESIS2) {
-            if (d->state == CS_ALIVE)particle_flare(d == hudplayer() ? d->muzzle : d->o, p, 1, PART_LIGHTNING, 0xFF64FF, .5f);
+            if (d->state == CS_ALIVE)particle_flare(d == hudplayer() ? d->muzzle : d->o, renderpos, 1, PART_LIGHTNING, 0xFF64FF, .5f);
             vec occlusioncheck;
-            if (raycubelos(p, camera1->o, occlusioncheck))
+            if (raycubelos(renderpos, camera1->o, occlusioncheck))
             {
-                regular_particle_splash(PART_SMOKE, 2, 300, p, 0x404040, 0.6f, 150, -20);
+                regular_particle_splash(PART_SMOKE, 2, 300, renderpos, 0x404040, 0.6f, 150, -20);
                 int color = 0xFFFFFF;
-                particle_splash(PART_FIREBALL2, 1, 1, p, color, 4.8f, 150, 20);
+                particle_splash(PART_FIREBALL2, 1, 1, renderpos, color, 4.8f, 150, 20);
             }
         }
 
         if(d->isholdingprop || d->isholdingbarrel) {
             if(!mdlname) continue;
-            if(d->state==CS_ALIVE)particle_flare(d == hudplayer() ? d->muzzle : d->o, p, 1, PART_LIGHTNING, 0xFF64FF, .5f);
-            p.z-=3;
-            if(d->state==CS_ALIVE)rendermodel(NULL, mdlname, ANIM_MAPMODEL|ANIM_LOOP, p, d->yaw, 0, MDL_LIGHT|MDL_LIGHT_FAST|MDL_DYNSHADOW);
+            if(d->state==CS_ALIVE)particle_flare(d == hudplayer() ? d->muzzle : d->o, renderpos, 1, PART_LIGHTNING, 0xFF64FF, .5f);
+            renderpos.z-=3;
+            if(d->state==CS_ALIVE)rendermodel(NULL, mdlname, ANIM_MAPMODEL|ANIM_LOOP, renderpos, d->yaw, 0, MDL_LIGHT|MDL_LIGHT_FAST|MDL_DYNSHADOW);
             if(d->isholdingbarrel==2)
             {
-                p.z+=10;
-                regular_particle_flame(PART_FLAME, p, 1, 1, 0x903020, 3, 2.0f);
-                regular_particle_flame(PART_SMOKE, p, 1, 1, 0x303020, 1, 4.0f, 100.0f, 2000.0f, -20);
+                renderpos.z+=10;
+                regular_particle_flame(PART_FLAME, renderpos, 1, 1, 0x903020, 3, 2.0f);
+                regular_particle_flame(PART_SMOKE, renderpos, 1, 1, 0x303020, 1, 4.0f, 100.0f, 2000.0f, -20);
             }
         }
 

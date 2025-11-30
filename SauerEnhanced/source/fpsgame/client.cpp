@@ -46,6 +46,7 @@ namespace game
     }
     ICOMMAND(name, "s", (char *s), switchname(s));
     ICOMMAND(getname, "", (), result(player1->name));
+    ICOMMAND(getmoney, "", (), intret(player1->money));
 
     void switchteam(const char *team)
     {
@@ -1395,8 +1396,17 @@ namespace game
                 if(!d) return;
                 int iscrouching=getint(p);
                 d->crouching=iscrouching;
-                if(d->crouching==1) { ((dynent *)d)->eyeheight=9; }
-                else if(!d->crouching) { ((dynent *)d)->eyeheight=16; }
+                if(d->crouching==1) { 
+                    ((dynent *)d)->eyeheight=9; 
+                }
+                else if(!d->crouching) { 
+                    // When uncrouching, move player up so feet stay at same position
+                    // (expanding hitbox from top, not bottom)
+                    float oldeyeheight = ((dynent *)d)->eyeheight;
+                    ((dynent *)d)->eyeheight=16;
+                    float heightdiff = ((dynent *)d)->eyeheight - oldeyeheight;
+                    ((dynent *)d)->o.z += heightdiff;
+                }
                 break;
             }
             case N_MODS:

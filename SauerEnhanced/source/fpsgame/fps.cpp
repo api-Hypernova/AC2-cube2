@@ -268,12 +268,6 @@ namespace game
         updatemovables(curtime);
         updatemonsters(curtime);
 
-        if(lastmillis-player1->uncrouchtime<10) {
-            player1->jumping = true;
-            player1->vel.z=0;
-            entinmap(player1); 
-        } 
-
         if (lastmillis - lastupdatemoney > 5000) {
             player1->money += moneyrate;
             lastupdatemoney = lastmillis;
@@ -379,14 +373,7 @@ namespace game
     {
         if(intermission) return;
         if((player1->crouching = on)) respawn();
-        //TODO: This entire uncrouching logic needs to be moved to main game loop to check for whether player has feet on floor or not
-        //Uncrouching should be allowed if: feet are on ground OR player is a certain height above ground (need to figure out how to check this)
-        if (player1->eyeheight == 9) {
-            player1->uncrouchtime = lastmillis; //avoid falling through floor when standing up
-            player1->jumping = true;
-        }
         addmsg(N_CROUCH, "rci", player1, player1->crouching);
-        //if(!player1->ai)player1->vel.z = max(player1->vel.z, 50);
     }
 
     bool canjump()

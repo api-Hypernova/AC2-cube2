@@ -511,7 +511,7 @@ guns[NUMGUNS] =
 {
     { S_SLASH,   -1, 0,  500,  150, 0,   0,   0, 0,  1, 65,  200, 0, 0,    0, 0, 0, "katana", "katana" },
     { S_SHOTGUN2,  -1, 6, 800,  9, 200, 0,   0, 20, 12,1024, 200, 0, 0,    0, 0, 2, "*",         "shotgdefault" }, // solaris_shotgun
-    { S_PULSERIFLE, -1, 30, 100,  13, 0,  0,   0, 7,  1, 1024, 150, 0, 0,    0, 0, 1,  "}",        "chaingDEF" }, //pulse_rifle
+    { S_PULSERIFLE, -1, 30, 100,  26, 0,  0,   0, 7,  1, 1024, 150, 0, 0,    0, 0, 1,  "}",        "chaingDEF" }, //pulse_rifle
     { S_RPG,    -1, 0, 1500, 120, 0,   400,  0, 10, 1, 1024, 200, 40,0,    0, 1, 1,  "Z",  "rocket"},  //rocket_solaris, rocketold
     //{ S_MAGNUM,   -1, 6, 1200, 100, 0,   0,   0, 30, 1, 2048, 200, 0, 0,    0, 0, 1, "#",           "pyccna_svd" },
     { S_RIFLE,   -1, 10, 500, 34, 0,   0,   0, 30, 1, 2048, 200, 0, 0,    0, 0, 1, "#",           "pyccna_svd"},
@@ -520,7 +520,7 @@ guns[NUMGUNS] =
     { S_LIGHTNING,  -1, 0, 400, 60,  0,  250,  PART_FIREBALL2,  5,  1,  1024,  300,  65,  0,  0,  0,  1, "<",  "pyccna_railgun"},
     { S_ORB,      -1, 0, 1000, 8000, 0,  350,  0, 30, 1, 1024, 10, 40, 5000, 0, 0, 1, ";", "chaingDEF"}, // pulse_rifle
     { S_SHOTGUNBURST,  -1, 6, 500,  9, 150, 0,   0, 10, 6, 1024, 200, 0, 0,    3, 0, 1, "*", "shotgdefault"}, // solaris_shotgun
-    { S_UZI,       -1, 30, 100,   8,  0,  0,   0, 3,  1, 1024, 150, 0, 0,    0, 0, 1, "&",  "ak74"},
+    { S_UZI,       -1, 30, 100,   16,  0,  0,   0, 3,  1, 1024, 150, 0, 0,    0, 0, 1, "&",  "ak74"},
     { S_SMGNADE,   -1, 0, 800,  120, 0,  300,  0, 10, 1, 1024, 200, 40,5000, 0, 0, 1, "@",  "ak74"}, //"pistol"
     { S_CROSSBOWFIRE, -1, 0, 1000,300,0, 800,  0, 30, 1, 1024, 50, 20,10000, 0, 1, 1, "{",       "crossbow"},
     { S_PUNT,     -1, 0, 200,   0, 0,   0,   0, 0,  1,  50, 0,  0,  0,  0,  0,  0, "$",     "electrodriver"},
@@ -549,6 +549,8 @@ struct fpsstate
     int headshots;
     int recoilPatternIndex;     // current position in spray pattern
     int lastShotTime;           // timestamp of last shot for timing-based reset
+    float recoilPitchAccum;     // accumulated pitch recoil for smooth recovery
+    float recoilYawAccum;       // accumulated yaw recoil for smooth recovery
     int detonateelectro;
     int gunselect, gunwait;
     int burstprogress;
@@ -558,7 +560,6 @@ struct fpsstate
     int diedgun;
     bool diedbyheadshot;
     int dropgun;
-    int uncrouchtime;
     int sprintleft;
     int flareleft;
     int holdingweapon;
@@ -588,10 +589,19 @@ struct fpsstate
     int propmodeldir;
     int magprogress[NUMGUNS];
     bool helicopter;
+    
+    // Position history for telekinesis lag effect
+    static const int HOLDPOS_HISTORY_SIZE = 30;  // Increased to support 500ms of history at 60fps
+    struct HoldPosHistory {
+        vec pos;
+        int timestamp;
+        HoldPosHistory() : pos(0, 0, 0), timestamp(0) {}
+    } holdposhistory[HOLDPOS_HISTORY_SIZE];
+    int holdposhistoryindex;
 
 
 
-    fpsstate() : maxhealth(100), aitype(AI_NONE), skill(0), recoilPatternIndex(0), lastShotTime(0) {}
+    fpsstate() : maxhealth(100), aitype(AI_NONE), skill(0), recoilPatternIndex(0), lastShotTime(0), recoilPitchAccum(0.0f), recoilYawAccum(0.0f), holdposhistoryindex(0) {}
 
     void baseammo(int gun, int k = 2, int scale = 1)
     {
@@ -849,6 +859,11 @@ struct fpsstate
         isholdingshock = 0;
         loopi(NUMGUNS)magprogress[i]=0;
         headshots = 0;
+        holdposhistoryindex = 0;
+        loopi(HOLDPOS_HISTORY_SIZE) {
+            holdposhistory[i].pos = vec(0, 0, 0);
+            holdposhistory[i].timestamp = 0;
+        }
     }
 
     void spawnstate(int gamemode)
