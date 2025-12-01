@@ -2547,7 +2547,7 @@ struct WeaponRecoil {
 };
 
 // Weapon-specific recoil settings
-static WeaponRecoil weaponRecoils[NUMGUNS];
+WeaponRecoil weaponRecoils[NUMGUNS];
 
 void initRecoilPatterns() {
     static bool initialized = false;
