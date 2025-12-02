@@ -734,9 +734,15 @@ void updatebouncers(int time)
                 }
             }
             if(bnc.bouncetype!=BNC_ORB && bnc.bouncetype!=BNC_PROP && bnc.bouncetype!=BNC_GRENADE) delete bouncers.remove(i--);
-            
-            // ============================================================================
-            // PHYSICS LAG COMPENSATION SYSTEM (with Test Mode)
+        }
+        else
+        {
+            bnc.roll += old.sub(bnc.o).magnitude()/(4*RAD);
+            bnc.offsetmillis = max(bnc.offsetmillis-time, 0);
+        }
+        
+        // ============================================================================
+        // PHYSICS LAG COMPENSATION SYSTEM (with Test Mode)
             // ============================================================================
             // Problem: In clientside prediction, if player2 catches a grenade but the 
             // message doesn't reach player1 in time, player1's grenade explodes and 
@@ -757,6 +763,12 @@ void updatebouncers(int time)
             
             // Handle grenade/orb/prop explosion with lag compensation
             if (bnc.bouncetype == BNC_ORB || bnc.bouncetype == BNC_PROP || bnc.bouncetype == BNC_GRENADE) {
+                // Debug: Check if we're even processing pending explosions
+                if(phys_lag_comp_testmode && bnc.pendingExplosion) {
+                    conoutf(CON_GAMEINFO, "\f6[LAG COMP DEBUG] Processing pending explosion: lastmillis=%d, scheduledTime=%d, timeLeft=%d", 
+                            lastmillis, bnc.explosionScheduledTime, bnc.explosionScheduledTime - lastmillis);
+                }
+                
                 // Only decrement lifetime if not already pending explosion (frozen)
                 if (!bnc.pendingExplosion) {
                     bnc.lifetime -= time;
@@ -801,6 +813,10 @@ void updatebouncers(int time)
                         // Schedule explosion
                         bnc.pendingExplosion = true;
                         bnc.explosionScheduledTime = lastmillis + explosionDelay;
+                        if(phys_lag_comp_testmode) {
+                            conoutf(CON_GAMEINFO, "\f3[LAG COMP DEBUG] Scheduled explosion: lastmillis=%d, explosionTime=%d, delay=%d", 
+                                    lastmillis, bnc.explosionScheduledTime, explosionDelay);
+                        }
                     } else {
                         // Lag comp disabled or not local - explode immediately
                         bnc.pendingExplosion = true;
@@ -810,6 +826,10 @@ void updatebouncers(int time)
                 
                 // Check if it's time to actually explode
                 if (bnc.pendingExplosion && lastmillis >= bnc.explosionScheduledTime) {
+                    if(phys_lag_comp_testmode) {
+                        conoutf(CON_GAMEINFO, "\f3[LAG COMP DEBUG] Explosion check TRUE! lastmillis=%d, scheduledTime=%d, diff=%d", 
+                                lastmillis, bnc.explosionScheduledTime, lastmillis - bnc.explosionScheduledTime);
+                    }
                     // Trigger explosion AT THE FROZEN POSITION
                 if (bnc.bouncetype == BNC_GRENADE) {
                     int qdam = guns[GUN_HANDGRENADE].damage * (bnc.owner->quadmillis ? 2 : 1);
@@ -845,15 +865,9 @@ void updatebouncers(int time)
                         }
                     }
                     // Remove the bouncer after explosion
-                delete bouncers.remove(i--);
+                    delete bouncers.remove(i--);
                 }
             }
-        }
-        else
-        {
-            bnc.roll += old.sub(bnc.o).magnitude()/(4*RAD);
-            bnc.offsetmillis = max(bnc.offsetmillis-time, 0);
-        }
     }
 }
 
