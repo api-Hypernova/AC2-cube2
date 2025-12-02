@@ -1762,7 +1762,12 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
         //if(o && o->type==ENT_PLAYER && blood) {
         //    loopi(3)adddecal(DECAL_BLOOD, worldpos, vec(from).sub(worldpos).normalize(), 25.f, bvec(0x99, 0xFF, 0xFF));
         // }
-        if(d==hudplayer()) { d->screenjumpheight=20; screenjump(); screenjump();}
+        // Different screenjump for each shotgun - GUN_SG (double-shot) stronger than SHOTGUN2 (single-shot)
+        if(d==hudplayer()) { 
+            d->screenjumpheight = (gun==GUN_SG) ? 40 : 30; // GUN_SG=40 (doubled from 20), SHOTGUN2=30 (weaker but still strong)
+            screenjump(); 
+            screenjump();
+        }
         if(d->gunselect==GUN_SG)playsound(S_SHOTGUN, d==hudplayer()?NULL:&d->o);
         // Eject shell casings for shotguns
         loopi(gun==GUN_SG?2:1)

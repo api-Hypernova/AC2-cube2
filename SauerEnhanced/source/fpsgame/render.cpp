@@ -695,7 +695,7 @@ namespace game
         // SMG - subtle upward jump with backward slide
         // CG - 2X upward jump (no backward slide)
         // Shotguns - SAME HEIGHT but slower animation
-        if(jump && (d->gunselect==GUN_MAGNUM || d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2 || d->gunselect==GUN_CG || d->gunselect==GUN_SG || d->gunselect==GUN_SHOTGUN2 || d->gunselect==GUN_ELECTRO))hudgunpitch+=(d->gunselect==GUN_SMG||d->gunselect==GUN_SMG2)?0.5:(d->gunselect==GUN_CG?1.0:(d->gunselect==GUN_SHOTGUN2?10:(d->gunselect==GUN_SG?8:1)));
+        if(jump && (d->gunselect==GUN_MAGNUM || d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2 || d->gunselect==GUN_CG || d->gunselect==GUN_SG || d->gunselect==GUN_SHOTGUN2 || d->gunselect==GUN_ELECTRO))hudgunpitch+=(d->gunselect==GUN_SMG||d->gunselect==GUN_SMG2)?0.5:(d->gunselect==GUN_CG?1.0:(d->gunselect==GUN_SHOTGUN2?10:(d->gunselect==GUN_SG?12:1)));
         if((d->gunselect==GUN_MAGNUM || d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2 || d->gunselect==GUN_CG || d->gunselect==GUN_SG || d->gunselect==GUN_SHOTGUN2 || d->gunselect==GUN_ELECTRO) && jump && hudgunpitch>d->pitch+((d->gunselect==GUN_SMG||d->gunselect==GUN_SMG2)?2.5:(d->gunselect==GUN_CG?5.0:(d->gunselect==GUN_SHOTGUN2?36:(d->gunselect==GUN_SG?32:20)))))jump=0;
         // During backward recoil animation, always snap pitch instantly to camera
         if(hudgunoffset < 0.0f && (d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2)) {
@@ -703,7 +703,7 @@ namespace game
             hudgunpitch = d->pitch;
         }
         else if(hudgunpitch<d->pitch-2 && !jump)hudgunpitch+=2; //raise hudgun to normal pos in case player looked up during firing
-        else if(hudgunpitch>d->pitch+2 && !jump)hudgunpitch-=(d->gunselect==GUN_SMG||d->gunselect==GUN_SMG2)?1.5:(d->gunselect==GUN_CG?3.0:(d->gunselect==GUN_SG||d->gunselect==GUN_SHOTGUN2?0.1875:2));
+        else if(hudgunpitch>d->pitch+2 && !jump)hudgunpitch-=(d->gunselect==GUN_SMG||d->gunselect==GUN_SMG2)?1.5:(d->gunselect==GUN_CG?3.0:(d->gunselect==GUN_SG||d->gunselect==GUN_SHOTGUN2?0.09375:2));
         // Constantly track towards current pitch during sustained fire to fix model position bug
         if(lastmillis-d->lastaction<100&&lastmillis-d->lastswitch>200&&(d->gunselect==GUN_MAGNUM || d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2 || d->gunselect==GUN_CG || d->gunselect==GUN_SG || d->gunselect==GUN_SHOTGUN2 || d->gunselect==GUN_ELECTRO)) {
             if(hudgunpitch < d->pitch - 2) hudgunpitch += 1;
