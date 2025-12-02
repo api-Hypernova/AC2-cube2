@@ -2901,7 +2901,27 @@ static const char * const debrisnames[4] = { "debris/debris01", "debris/debris02
 static const char * const barreldebrisnames[4] = { "barreldebris/debris01", "barreldebris/debris02", "barreldebris/debris03", "barreldebris/debris04" };
 static const char * const weaponmodelnames[NUMGUNS] =
 { "", "items/cartridges", "items/bullets", "items/rockets", "items/rrounds" "pickups/hand_grenade", "pickups/electro", "pickups/electro", "items/bullets", "items/cartridges", "Hypercubehudguns/pyccna_m4a1", "Hypercubehudguns/pyccna_m4a1", "", "", "Hypercubehudguns/pyccna_fn57" };
-//enum { GUN_FIST = 0, GUN_SG, GUN_CG, GUN_RL, GUN_MAGNUM, GUN_HANDGRENADE, GUN_ELECTRO, GUN_ELECTRO2, GUN_CG2, GUN_SHOTGUN2, GUN_SMG, GUN_SMG2, GUN_TELEKENESIS, GUN_TELEKENESIS2, GUN_PISTOL, GUN_FIREBALL, GUN_ICEBALL, GUN_SLIMEBALL, GUN_BITE, GUN_BARREL, NUMGUNS };
+// Weapon pickup models for dropped weapons (matches weapon pickup entities)
+//enum { GUN_FIST = 0, GUN_SG, GUN_CG, GUN_RL, GUN_MAGNUM, GUN_HANDGRENADE, GUN_ELECTRO, GUN_ELECTRO2, GUN_CG2, GUN_SHOTGUN2, GUN_SMG, GUN_SMG2, GUN_CROSSBOW, GUN_TELEKENESIS, GUN_TELEKENESIS2, GUN_PISTOL, GUN_FIREBALL, GUN_ICEBALL, GUN_SLIMEBALL, GUN_BITE, GUN_BARREL, NUMGUNS };
+static const char * const weaponpickupmodels[NUMGUNS] =
+{ 
+    "",                         // GUN_FIST
+    "items/shotgun",           // GUN_SG
+    "items/bullets",           // GUN_CG (minigun)
+    "items/rockets",           // GUN_RL
+    "items/rrounds",           // GUN_MAGNUM
+    "pickups/hand_grenade",    // GUN_HANDGRENADE
+    "pickups/electro",         // GUN_ELECTRO
+    "pickups/electro",         // GUN_ELECTRO2
+    "items/bullets",           // GUN_CG2
+    "items/shotgun",           // GUN_SHOTGUN2
+    "pickups/smg_ammo",        // GUN_SMG
+    "pickups/smg_grenade",     // GUN_SMG2
+    "pickups/crossbow",        // GUN_CROSSBOW
+    "",                         // GUN_TELEKENESIS
+    "",                         // GUN_TELEKENESIS2
+    "pickups/pistol_ammo"      // GUN_PISTOL
+};
 
 void preloadbouncers()
 {
@@ -2909,6 +2929,8 @@ void preloadbouncers()
     loopi(sizeof(gibnames)/sizeof(gibnames[0])) preloadmodel(gibnames[i]);
     loopi(sizeof(debrisnames)/sizeof(debrisnames[0])) preloadmodel(debrisnames[i]);
     loopi(sizeof(barreldebrisnames)/sizeof(barreldebrisnames[0])) preloadmodel(barreldebrisnames[i]);
+    // Preload weapon pickup models for dropped weapons
+    loopi(NUMGUNS) if(weaponpickupmodels[i] && weaponpickupmodels[i][0]) preloadmodel(weaponpickupmodels[i]);
 }
 
 void renderbouncers()
@@ -2994,8 +3016,11 @@ void renderbouncers()
         if(bnc.bouncetype==BNC_ORB)
             rendermodel(&bnc.light, "projectiles/teslaball", ANIM_MAPMODEL|ANIM_LOOP, pos, yaw, pitch, MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_LIGHT|MDL_LIGHT_FAST|MDL_DYNSHADOW);
         if(bnc.bouncetype==BNC_WEAPON) {
-            pos.z-=2.f;
-            rendermodel(&bnc.light, "items/supplies", ANIM_MAPMODEL|ANIM_LOOP, pos, yaw, 0, MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_LIGHT|MDL_LIGHT_FAST|MDL_DYNSHADOW);
+            pos.z+=2.f;  // Add 2 units to z position so weapon isn't underground
+            // Get the correct pickup model for this weapon type
+            const char *pickupmodel = (bnc.gun >= 0 && bnc.gun < NUMGUNS) ? weaponpickupmodels[bnc.gun] : "";
+            if(pickupmodel && pickupmodel[0])  // Only render if valid model exists
+                rendermodel(&bnc.light, pickupmodel, ANIM_MAPMODEL|ANIM_LOOP, pos, 0, 0, MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_LIGHT|MDL_LIGHT_FAST|MDL_DYNSHADOW);
         }
         if(bnc.bouncetype==BNC_PROP || bnc.bouncetype==BNC_BARREL) {
 
