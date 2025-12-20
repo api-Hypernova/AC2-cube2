@@ -263,6 +263,11 @@ struct bouncer : physent
     int capturedOwnerPing;          // Snapshot of owner's ping at creation time
     vec frozenPos;                  // Position where object should explode (frozen at lifetime=0)
     
+    // Captured damage state (calculated at explosion time, sent after delay)
+    vector<hitmsg> capturedHits;    // Store hits calculated at freeze time
+    int capturedDamage;             // Damage amount
+    int capturedGun;                // Gun type for explosion
+    
     // Hit tracking for velocity-based explosions (prevent multi-hit)
     static const int MAX_HIT_TARGETS = 8;
     struct HitTarget {
@@ -275,7 +280,7 @@ struct bouncer : physent
 
     bouncer() : bounces(0), roll(0), variant(0), rocketchan(-1), rocketsound(-1),
                 pendingExplosion(false), explosionScheduledTime(0), capturedOwnerPing(0), frozenPos(0, 0, 0),
-                hitTargetCount(0)
+                capturedDamage(0), capturedGun(0), hitTargetCount(0)
     {
         type = ENT_BOUNCE;
         loopi(MAX_HIT_TARGETS) hitTargets[i] = HitTarget();
@@ -545,6 +550,24 @@ void updatebouncers(int time)
                         // FREEZE and schedule lag-compensated explosion instead of instant
                         bnc.frozenPos = bnc.o;
                         bnc.vel = vec(0, 0, 0); // Stop movement
+                        
+                        // IMMEDIATELY calculate damage at current player positions
+                        if(bnc.local) {
+                            int qdam = guns[bnc.bouncetype==BNC_ORB?GUN_CG2:GUN_BITE].damage * (bnc.owner->quadmillis ? (bnc.bouncetype==BNC_ORB?4:2) : 1);
+                            hits.setsize(0);
+                            explode(bnc.local, bnc.owner, bnc.frozenPos, NULL, qdam, bnc.bouncetype==BNC_ORB?GUN_CG2:GUN_BITE);
+                            
+                            // CAPTURE the hits calculated right now
+                            bnc.capturedHits.shrink(0);
+                            loopv(hits) bnc.capturedHits.add(hits[i]);
+                            bnc.capturedDamage = qdam;
+                            bnc.capturedGun = bnc.bouncetype==BNC_ORB?GUN_CG2:GUN_BITE;
+                            
+                            if(phys_lag_comp_testmode) {
+                                conoutf(CON_GAMEINFO, "\f5[LAG COMP] %s captured %d hits at impact time", 
+                                        bnc.bouncetype==BNC_ORB?"Orb":"Prop", hits.length());
+                            }
+                        }
                         
                         if(phys_lag_comp && bnc.local) {
                             // Calculate delay
@@ -845,16 +868,42 @@ void updatebouncers(int time)
                             lastmillis, bnc.explosionScheduledTime, bnc.explosionScheduledTime - lastmillis);
                 }
                 
-                // Only decrement lifetime if not already pending explosion (frozen)
-                if (!bnc.pendingExplosion) {
+                // Always decrement lifetime for orbs (they have a fixed TTL regardless of hits)
+                // For grenades/props, only decrement if not frozen
+                if (bnc.bouncetype == BNC_ORB || !bnc.pendingExplosion) {
                     bnc.lifetime -= time;
                 }
                 
-                // Check if lifetime has expired but explosion hasn't been scheduled yet
-                if (bnc.lifetime <= 0 && !bnc.pendingExplosion) {
+                // Check if lifetime has expired
+                // For GRENADES/PROPS: lifetime expiring triggers explosion
+                // For ORBS: handled separately below (they just delete when TTL expires)
+                if (bnc.lifetime <= 0 && !bnc.pendingExplosion && (bnc.bouncetype == BNC_GRENADE || bnc.bouncetype == BNC_PROP)) {
                     // FREEZE the bouncer at this position
                     bnc.frozenPos = bnc.o;
                     bnc.vel = vec(0, 0, 0); // Stop all movement
+                    
+                    // IMMEDIATELY calculate explosion damage at current player positions
+                    if(bnc.local) {
+                        // Determine gun type and damage based on bouncer type
+                        int gunType = bnc.bouncetype == BNC_GRENADE ? GUN_HANDGRENADE : GUN_BITE; // PROP
+                        
+                        int quadMult = 2;
+                        int qdam = guns[gunType].damage * (bnc.owner->quadmillis ? quadMult : 1);
+                        
+                        hits.setsize(0);
+                        explode(bnc.local, bnc.owner, bnc.frozenPos, NULL, qdam, gunType);
+                        
+                        // CAPTURE the hits calculated right now (at explosion time)
+                        bnc.capturedHits.shrink(0);
+                        loopv(hits) bnc.capturedHits.add(hits[i]);
+                        bnc.capturedDamage = qdam;
+                        bnc.capturedGun = gunType;
+                        
+                        if(phys_lag_comp_testmode) {
+                            const char *typeName = bnc.bouncetype == BNC_GRENADE ? "Grenade" : "Prop";
+                            conoutf(CON_GAMEINFO, "\f5[LAG COMP] %s captured %d hits at explosion time (T=0)", typeName, hits.length());
+                        }
+                    }
                     
                     if (phys_lag_comp && bnc.local) {
                         // Calculate delay based on owner's ping + max nearby player ping
@@ -900,48 +949,107 @@ void updatebouncers(int time)
                     }
                 }
                 
+                // Handle ORBS and PROPS when lifetime expires (not when hitting players)
+                if (bnc.lifetime <= 0 && (bnc.bouncetype == BNC_ORB || bnc.bouncetype == BNC_PROP)) {
+                    // Don't delete if there's a pending explosion to deliver!
+                    if (!bnc.pendingExplosion) {
+                        // Orbs just disappear when TTL expires (they've been damaging all along)
+                        if(phys_lag_comp_testmode && bnc.bouncetype == BNC_ORB) {
+                            conoutf(CON_GAMEINFO, "\f6[LAG COMP DEBUG] Orb TTL expired, removing");
+                        }
+                        delete bouncers.remove(i--);
+                        continue; // Skip to next bouncer
+                    }
+                    // If pendingExplosion is true, let the explosion delivery code below handle it
+                }
+                
                 // Check if it's time to actually explode
                 if (bnc.pendingExplosion && lastmillis >= bnc.explosionScheduledTime) {
                     if(phys_lag_comp_testmode) {
                         conoutf(CON_GAMEINFO, "\f3[LAG COMP DEBUG] Explosion check TRUE! lastmillis=%d, scheduledTime=%d, diff=%d", 
                                 lastmillis, bnc.explosionScheduledTime, lastmillis - bnc.explosionScheduledTime);
                     }
-                    // Trigger explosion AT THE FROZEN POSITION
+                    // Trigger explosion AT THE FROZEN POSITION WITH CAPTURED HITS
                 if (bnc.bouncetype == BNC_GRENADE) {
-                    int qdam = guns[GUN_HANDGRENADE].damage * (bnc.owner->quadmillis ? 2 : 1);
-                    hits.setsize(0);
-                        explode(bnc.local, bnc.owner, bnc.frozenPos, NULL, qdam, GUN_HANDGRENADE);
-                        adddecal(DECAL_SCORCH, bnc.frozenPos, vec(0, 0, 1), guns[GUN_HANDGRENADE].splash / 2);
+                    // Visual effects at frozen position
+                    adddecal(DECAL_SCORCH, bnc.frozenPos, vec(0, 0, 1), guns[GUN_HANDGRENADE].splash / 2);
+                    
                     if (bnc.local) {
+                        // Send the CAPTURED hits from explosion time (not current positions!)
+                        hits.shrink(0);
+                        loopv(bnc.capturedHits) hits.add(bnc.capturedHits[i]);
+                        
                         addmsg(N_EXPLODE, "rci3iv", bnc.owner, lastmillis - maptime, GUN_HANDGRENADE, bnc.id - maptime,
                             hits.length(), hits.length() * sizeof(hitmsg) / sizeof(int), hits.getbuf());
-                    }
+                        
                         if(phys_lag_comp_testmode) {
-                            conoutf(CON_GAMEINFO, "\f1[LAG COMP TEST] Grenade exploded at frozen position (%.1f, %.1f, %.1f)!", 
-                                    bnc.frozenPos.x, bnc.frozenPos.y, bnc.frozenPos.z);
+                            conoutf(CON_GAMEINFO, "\f1[LAG COMP TEST] Grenade exploded! Sending %d CAPTURED hits from T=0", hits.length());
                         }
                     }
-                    else if (bnc.bouncetype == BNC_ORB || bnc.bouncetype == BNC_PROP) {
-                        // Orbs and props - explode/damage at frozen position
+                    // Grenades are single-use - remove after explosion
+                    delete bouncers.remove(i--);
+                    }
+                    else if (bnc.bouncetype == BNC_ORB) {
+                        // Orbs - send CAPTURED hits
                         if (bnc.local) {
-                            // For orbs, we want to damage players at the frozen position
-                            int qdam = bnc.bouncetype == BNC_ORB ? guns[GUN_CG2].damage * (bnc.owner->quadmillis ? 4 : 1) : 
-                                       guns[GUN_BITE].damage * (bnc.owner->quadmillis ? 2 : 1);
-                            hits.setsize(0);
-                            explode(bnc.local, bnc.owner, bnc.frozenPos, NULL, qdam, 
-                                   bnc.bouncetype == BNC_PROP ? GUN_BITE : GUN_FIREBALL);
+                            hits.shrink(0);
+                            loopv(bnc.capturedHits) hits.add(bnc.capturedHits[i]);
                             
                             addmsg(N_EXPLODE, "rci3iv", bnc.owner, lastmillis - maptime, 
-                                   bnc.bouncetype == BNC_PROP ? GUN_BITE : GUN_FIREBALL, bnc.id - maptime,
+                                   bnc.capturedGun, bnc.id - maptime,
+                                   hits.length(), hits.length() * sizeof(hitmsg) / sizeof(int), hits.getbuf());
+                        }
+                        
+                        // Visual effect at impact point
+                        particle_splash(PART_SPARK, 100, 300, bnc.frozenPos, 0x0000FF, 0.1f, 250);
+                        adddynlight(bnc.frozenPos, 50, vec(0, 0, 1.0f));
+                        
+                        if(phys_lag_comp_testmode) {
+                            conoutf(CON_GAMEINFO, "\f1[LAG COMP TEST] Orb hit delivered! Sending %d CAPTURED hits", 
+                                    bnc.capturedHits.length());
+                        }
+                        
+                        // Check if orb's TTL has expired
+                        if (bnc.lifetime <= 0) {
+                            // TTL expired - orb disappears after delivering this hit
+                            if(phys_lag_comp_testmode) {
+                                conoutf(CON_GAMEINFO, "\f6[LAG COMP DEBUG] Orb TTL expired after hit delivery, removing");
+                            }
+                            delete bouncers.remove(i--);
+                        } else {
+                            // TTL still active - UNFREEZE the orb and let it continue bouncing
+                            // Give it a bounce velocity based on the impact direction
+                            vec bounceDir = vec(bnc.frozenPos).sub(bnc.lastpos).normalize();
+                            if(bounceDir.iszero()) bounceDir = vec(rnd(100)-50, rnd(100)-50, 50).normalize();
+                            bnc.vel = vec(bounceDir).mul(450.0f); // Resume at high speed
+                            bnc.vel.z = fabs(bnc.vel.z) + 100.0f; // Ensure upward bounce
+                            
+                            bnc.pendingExplosion = false;
+                            bnc.capturedHits.shrink(0);
+                            
+                            if(phys_lag_comp_testmode) {
+                                conoutf(CON_GAMEINFO, "\f1[LAG COMP TEST] Orb continuing bounce with %dms TTL remaining", bnc.lifetime);
+                            }
+                            // Orb continues bouncing - DON'T delete, DON'T decrement i
+                        }
+                    }
+                    else if (bnc.bouncetype == BNC_PROP) {
+                        // Props - send CAPTURED hits from impact time
+                        if (bnc.local) {
+                            hits.shrink(0);
+                            loopv(bnc.capturedHits) hits.add(bnc.capturedHits[i]);
+                            
+                            addmsg(N_EXPLODE, "rci3iv", bnc.owner, lastmillis - maptime, 
+                                   bnc.capturedGun, bnc.id - maptime,
                                    hits.length(), hits.length() * sizeof(hitmsg) / sizeof(int), hits.getbuf());
                         }
                         if(phys_lag_comp_testmode) {
-                            conoutf(CON_GAMEINFO, "\f1[LAG COMP TEST] %s exploded at frozen position!", 
-                                    bnc.bouncetype == BNC_ORB ? "Orb" : "Prop");
+                            conoutf(CON_GAMEINFO, "\f1[LAG COMP TEST] Prop exploded! Sending %d CAPTURED hits from T=0", 
+                                    bnc.capturedHits.length());
                         }
+                        // Props are removed after impact
+                        delete bouncers.remove(i--);
                     }
-                    // Remove the bouncer after explosion
-                    delete bouncers.remove(i--);
                 }
             }
     }
@@ -3089,9 +3197,8 @@ void renderbouncers()
                 particle_splash(PART_SPARK, 3, 50, pos, glowColor, 0.5f, 100);
             }
             
-            // Skip rendering the actual model (object is "invisible" during delay)
-            // The glow effect shows where it will explode
-            continue;
+            // Continue to render the actual grenade model (don't skip it!)
+            // Fall through to render the model below with the glow effect
         }
         
         if(bnc.bouncetype==BNC_XBOLT)
