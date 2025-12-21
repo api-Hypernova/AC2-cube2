@@ -480,7 +480,7 @@ void updatebouncers(int time)
             regular_particle_splash(PART_SPARK, 5, 250, pos, 0x0789FC, 0.4f, 5, 0);
             //particle_flare(old, pos, 500, PART_STREAK, 0x0789FC, 1.f);
         }
-        if(bnc.bouncetype==BNC_ORB||bnc.bouncetype==BNC_PROP) // this logic is responsible for making the proj blow up when it's close to you
+        if(bnc.bouncetype==BNC_ORB||bnc.bouncetype==BNC_PROP||bnc.bouncetype==BNC_BARREL) // this logic is responsible for making the proj blow up when it's close to you
         {
             vec pos(bnc.o);
             pos.add(vec(bnc.offset).mul(bnc.offsetmillis/float(OFFSETMILLIS)));
@@ -516,7 +516,9 @@ void updatebouncers(int time)
                 if(bnc.owner==o || o->state!=CS_ALIVE || o->type==ENT_INANIMATE)continue;
                 
                 // Check if moving fast enough to trigger velocity-based hit
-                if(dist<(bnc.bouncetype==BNC_PROP?16:14) && bnc.vel.magnitude()>250.f) {
+                // Barrels need larger detection radius and lower velocity threshold
+                float velThreshold = bnc.bouncetype==BNC_BARREL ? 100.f : 250.f;
+                if(dist<(bnc.bouncetype==BNC_PROP?16:(bnc.bouncetype==BNC_BARREL?20:14)) && bnc.vel.magnitude()>velThreshold) {
                     // Check cooldown - can only hit same target once per second
                     bool canHit = true;
                     loopj(bnc.hitTargetCount) {
@@ -553,19 +555,19 @@ void updatebouncers(int time)
                         
                         // IMMEDIATELY calculate damage at current player positions
                         if(bnc.local) {
-                            int qdam = guns[bnc.bouncetype==BNC_ORB?GUN_CG2:GUN_BITE].damage * (bnc.owner->quadmillis ? (bnc.bouncetype==BNC_ORB?4:2) : 1);
+                            int qdam = guns[bnc.bouncetype==BNC_ORB?GUN_CG2:(bnc.bouncetype==BNC_BARREL?GUN_BARREL:GUN_BITE)].damage * (bnc.owner->quadmillis ? (bnc.bouncetype==BNC_ORB?4:2) : 1);
                             hits.setsize(0);
-                            explode(bnc.local, bnc.owner, bnc.frozenPos, NULL, qdam, bnc.bouncetype==BNC_ORB?GUN_CG2:GUN_BITE);
+                            explode(bnc.local, bnc.owner, bnc.frozenPos, NULL, qdam, bnc.bouncetype==BNC_ORB?GUN_CG2:(bnc.bouncetype==BNC_BARREL?GUN_BARREL:GUN_BITE));
                             
                             // CAPTURE the hits calculated right now
                             bnc.capturedHits.shrink(0);
                             loopv(hits) bnc.capturedHits.add(hits[i]);
                             bnc.capturedDamage = qdam;
-                            bnc.capturedGun = bnc.bouncetype==BNC_ORB?GUN_CG2:GUN_BITE;
+                            bnc.capturedGun = bnc.bouncetype==BNC_ORB?GUN_CG2:(bnc.bouncetype==BNC_BARREL?GUN_BARREL:GUN_BITE);
                             
                             if(phys_lag_comp_testmode) {
                                 conoutf(CON_GAMEINFO, "\f5[LAG COMP] %s captured %d hits at impact time", 
-                                        bnc.bouncetype==BNC_ORB?"Orb":"Prop", hits.length());
+                                        bnc.bouncetype==BNC_ORB?"Orb":(bnc.bouncetype==BNC_BARREL?"Barrel":"Prop"), hits.length());
                             }
                         }
                         
@@ -575,7 +577,7 @@ void updatebouncers(int time)
                             if(phys_lag_comp_testmode) {
                                 maxNearbyPing = phys_lag_comp_testping;
                                 conoutf(CON_GAMEINFO, "\f2[LAG COMP TEST] %s hit detected! Freezing at (%.1f, %.1f, %.1f), delay=%dms", 
-                                        bnc.bouncetype == BNC_ORB ? "Orb" : "Prop",
+                                        bnc.bouncetype == BNC_ORB ? "Orb" : (bnc.bouncetype == BNC_BARREL ? "Barrel" : "Prop"),
                                         bnc.frozenPos.x, bnc.frozenPos.y, bnc.frozenPos.z,
                                         bnc.capturedOwnerPing + maxNearbyPing);
                             } else {
@@ -595,9 +597,9 @@ void updatebouncers(int time)
                             bnc.explosionScheduledTime = lastmillis + explosionDelay;
                         } else {
                             // Lag comp disabled - explode immediately (old behavior)
-                            explode(bnc.local, bnc.owner, bnc.o, NULL, guns[bnc.bouncetype==BNC_ORB?GUN_CG2:GUN_BITE].damage, bnc.bouncetype==BNC_ORB?GUN_CG2:GUN_BITE);
+                            explode(bnc.local, bnc.owner, bnc.o, NULL, guns[bnc.bouncetype==BNC_ORB?GUN_CG2:(bnc.bouncetype==BNC_BARREL?GUN_BARREL:GUN_BITE)].damage, bnc.bouncetype==BNC_ORB?GUN_CG2:(bnc.bouncetype==BNC_BARREL?GUN_BARREL:GUN_BITE));
                             if(bnc.local)
-                                addmsg(N_EXPLODE, "rci3iv", bnc.owner, lastmillis-maptime, bnc.bouncetype==BNC_ORB?GUN_CG2:GUN_BITE, bnc.id-maptime,
+                                addmsg(N_EXPLODE, "rci3iv", bnc.owner, lastmillis-maptime, bnc.bouncetype==BNC_ORB?GUN_CG2:(bnc.bouncetype==BNC_BARREL?GUN_BARREL:GUN_BITE), bnc.id-maptime,
                                        hits.length(), hits.length()*sizeof(hitmsg)/sizeof(int), hits.getbuf());
                         }
                     }
@@ -688,7 +690,7 @@ void updatebouncers(int time)
         
         // Skip physics for frozen bouncers (lag compensation active)
         // But DON'T skip the explosion check at the end!
-        if(bnc.pendingExplosion && (bnc.bouncetype == BNC_GRENADE || bnc.bouncetype == BNC_ORB || bnc.bouncetype == BNC_PROP)) {
+        if(bnc.pendingExplosion && (bnc.bouncetype == BNC_GRENADE || bnc.bouncetype == BNC_ORB || bnc.bouncetype == BNC_PROP || bnc.bouncetype == BNC_BARREL)) {
             // Object is frozen, keep it at frozen position
             bnc.o = bnc.frozenPos;
             stopped = false; // Skip physics, but let explosion logic run
@@ -699,7 +701,16 @@ void updatebouncers(int time)
         else if(bnc.bouncetype==BNC_SHELL)stopped = bounce(&bnc, .6f, .8f, .8f) || (bnc.lifetime -= time)<0;
         else if(bnc.bouncetype==BNC_SMGNADE) stopped = bounce(&bnc, 0.6f, 0.5f, 0.6f) || (bnc.bounces) > 0;
         else if(bnc.bouncetype==BNC_PROP) stopped = bounce(&bnc, 0.4f, 0.5f, 1.f); // Lifetime handled in lag comp code
-        else if(bnc.bouncetype==BNC_BARREL) stopped = bounce(&bnc, 0.6f, 0.5f, 0.99f) || (bnc.bounces) > 0;
+        else if(bnc.bouncetype==BNC_BARREL) {
+            stopped = bounce(&bnc, 0.6f, 0.5f, 0.99f);
+            // Check if barrel bounced (hit something) - trigger explosion like lifetime expiry
+            if(bnc.bounces > 0 && !bnc.pendingExplosion) {
+                // Trigger lag compensation by setting lifetime to 0
+                // This will be caught by the lag comp code below
+                bnc.lifetime = 0;
+                // Don't set stopped = true here, let the lag comp system handle it
+            }
+        }
         else if(bnc.bouncetype==BNC_XBOLT) stopped = bounce(&bnc, 1.f, 0.5f, 0.8f) || bnc.o.dist(bnc.owner->o)<lastdist || (bnc.lifetime -= time)<0;
         else if(bnc.bouncetype==BNC_ELECTROBOLT) stopped = bounce(&bnc, 0.6f, 0.5f, 0.8f) || (bnc.lifetime -= time)<0 || bnc.owner->detonateelectro;
         else if(bnc.bouncetype==BNC_MISSILE) stopped = bounce(&bnc, 0.6f, 0.5f, 0.0f) || (bnc.lifetime -= time)<0;
@@ -746,14 +757,14 @@ void updatebouncers(int time)
                 }
             }
 
-            else if(bnc.bouncetype==BNC_ELECTROBOLT || bnc.bouncetype==BNC_BARREL)
+            else if(bnc.bouncetype==BNC_ELECTROBOLT)
             {
-                int qdam = guns[bnc.bouncetype==BNC_BARREL?GUN_BARREL:GUN_ELECTRO2].damage*(bnc.owner->quadmillis ? 2 : 1);
+                int qdam = guns[GUN_ELECTRO2].damage*(bnc.owner->quadmillis ? 2 : 1);
                 hits.setsize(0);
-                explode(bnc.local, bnc.owner, bnc.o, NULL, qdam, bnc.bouncetype==BNC_BARREL?GUN_BARREL:GUN_ELECTRO2);
-                if(bnc.bouncetype==BNC_ELECTROBOLT)adddecal(DECAL_SCORCH, bnc.o, vec(0, 0, 1), guns[GUN_ELECTRO2].splash/2);
+                explode(bnc.local, bnc.owner, bnc.o, NULL, qdam, GUN_ELECTRO2);
+                adddecal(DECAL_SCORCH, bnc.o, vec(0, 0, 1), guns[GUN_ELECTRO2].splash/2);
                 if(bnc.local)
-                    addmsg(N_EXPLODE, "rci3iv", bnc.owner, lastmillis-maptime, bnc.bouncetype==BNC_BARREL?GUN_BARREL:GUN_ELECTRO2, bnc.id-maptime,
+                    addmsg(N_EXPLODE, "rci3iv", bnc.owner, lastmillis-maptime, GUN_ELECTRO2, bnc.id-maptime,
                            hits.length(), hits.length()*sizeof(hitmsg)/sizeof(int), hits.getbuf());
             }
             else if(bnc.bouncetype == BNC_GRENADE || bnc.bouncetype==BNC_ORB)
@@ -832,7 +843,7 @@ void updatebouncers(int time)
                     conoutf(CON_TEAMCHAT, "You picked up a %s", guns[bnc.gun].name);
                 }
             }
-            if(bnc.bouncetype!=BNC_ORB && bnc.bouncetype!=BNC_PROP && bnc.bouncetype!=BNC_GRENADE) delete bouncers.remove(i--);
+            if(bnc.bouncetype!=BNC_ORB && bnc.bouncetype!=BNC_PROP && bnc.bouncetype!=BNC_GRENADE && bnc.bouncetype!=BNC_BARREL) delete bouncers.remove(i--);
         }
         else
         {
@@ -843,8 +854,8 @@ void updatebouncers(int time)
         // ============================================================================
         // PHYSICS LAG COMPENSATION SYSTEM (with Test Mode)
             // ============================================================================
-            // Problem: In clientside prediction, if player2 catches a grenade but the 
-            // message doesn't reach player1 in time, player1's grenade explodes and 
+            // Problem: In clientside prediction, if player2 catches a grenade/barrel but the 
+            // message doesn't reach player1 in time, player1's grenade/barrel explodes and 
             // damages player2 even though on player2's screen they caught it.
             //
             // Solution: Delay explosion by (thrower_ping + max_nearby_player_ping) to 
@@ -860,8 +871,8 @@ void updatebouncers(int time)
             // Example:    Test 200ms total delay = testping 100 + bot simulated 100 = 200ms delay
             // ============================================================================
             
-            // Handle grenade/orb/prop explosion with lag compensation
-            if (bnc.bouncetype == BNC_ORB || bnc.bouncetype == BNC_PROP || bnc.bouncetype == BNC_GRENADE) {
+            // Handle grenade/orb/prop/barrel explosion with lag compensation
+            if (bnc.bouncetype == BNC_ORB || bnc.bouncetype == BNC_PROP || bnc.bouncetype == BNC_GRENADE || bnc.bouncetype == BNC_BARREL) {
                 // Debug: Check if we're even processing pending explosions
                 if(phys_lag_comp_testmode && bnc.pendingExplosion) {
                     conoutf(CON_GAMEINFO, "\f6[LAG COMP DEBUG] Processing pending explosion: lastmillis=%d, scheduledTime=%d, timeLeft=%d", 
@@ -869,15 +880,15 @@ void updatebouncers(int time)
                 }
                 
                 // Always decrement lifetime for orbs (they have a fixed TTL regardless of hits)
-                // For grenades/props, only decrement if not frozen
+                // For grenades/props/barrels, only decrement if not frozen
                 if (bnc.bouncetype == BNC_ORB || !bnc.pendingExplosion) {
                     bnc.lifetime -= time;
                 }
                 
                 // Check if lifetime has expired
-                // For GRENADES/PROPS: lifetime expiring triggers explosion
+                // For GRENADES/PROPS/BARRELS: lifetime expiring triggers explosion
                 // For ORBS: handled separately below (they just delete when TTL expires)
-                if (bnc.lifetime <= 0 && !bnc.pendingExplosion && (bnc.bouncetype == BNC_GRENADE || bnc.bouncetype == BNC_PROP)) {
+                if (bnc.lifetime <= 0 && !bnc.pendingExplosion && (bnc.bouncetype == BNC_GRENADE || bnc.bouncetype == BNC_PROP || bnc.bouncetype == BNC_BARREL)) {
                     // FREEZE the bouncer at this position
                     bnc.frozenPos = bnc.o;
                     bnc.vel = vec(0, 0, 0); // Stop all movement
@@ -885,7 +896,7 @@ void updatebouncers(int time)
                     // IMMEDIATELY calculate explosion damage at current player positions
                     if(bnc.local) {
                         // Determine gun type and damage based on bouncer type
-                        int gunType = bnc.bouncetype == BNC_GRENADE ? GUN_HANDGRENADE : GUN_BITE; // PROP
+                        int gunType = bnc.bouncetype == BNC_GRENADE ? GUN_HANDGRENADE : (bnc.bouncetype == BNC_BARREL ? GUN_BARREL : GUN_BITE); // GRENADE, BARREL, or PROP
                         
                         int quadMult = 2;
                         int qdam = guns[gunType].damage * (bnc.owner->quadmillis ? quadMult : 1);
@@ -900,7 +911,7 @@ void updatebouncers(int time)
                         bnc.capturedGun = gunType;
                         
                         if(phys_lag_comp_testmode) {
-                            const char *typeName = bnc.bouncetype == BNC_GRENADE ? "Grenade" : "Prop";
+                            const char *typeName = bnc.bouncetype == BNC_GRENADE ? "Grenade" : (bnc.bouncetype == BNC_BARREL ? "Barrel" : "Prop");
                             conoutf(CON_GAMEINFO, "\f5[LAG COMP] %s captured %d hits at explosion time (T=0)", typeName, hits.length());
                         }
                     }
@@ -1048,6 +1059,26 @@ void updatebouncers(int time)
                                     bnc.capturedHits.length());
                         }
                         // Props are removed after impact
+                        delete bouncers.remove(i--);
+                    }
+                    else if (bnc.bouncetype == BNC_BARREL) {
+                        // Barrels - send CAPTURED hits from impact time
+                        // Visual effects at frozen position
+                        adddecal(DECAL_SCORCH, bnc.frozenPos, vec(0, 0, 1), guns[GUN_BARREL].splash / 2);
+                        
+                        if (bnc.local) {
+                            hits.shrink(0);
+                            loopv(bnc.capturedHits) hits.add(bnc.capturedHits[i]);
+                            
+                            addmsg(N_EXPLODE, "rci3iv", bnc.owner, lastmillis - maptime, 
+                                   GUN_BARREL, bnc.id - maptime,
+                                   hits.length(), hits.length() * sizeof(hitmsg) / sizeof(int), hits.getbuf());
+                        }
+                        if(phys_lag_comp_testmode) {
+                            conoutf(CON_GAMEINFO, "\f1[LAG COMP TEST] Barrel exploded! Sending %d CAPTURED hits from T=0", 
+                                    bnc.capturedHits.length());
+                        }
+                        // Barrels are removed after impact
                         delete bouncers.remove(i--);
                     }
                 }
@@ -2120,6 +2151,9 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
             loopv(bouncers){ // Try catching bouncers
                 bouncer &bnc = *bouncers[i];
                 vec pos = bnc.o;
+                // Don't allow catching if explosion is pending (lag compensation active)
+                if(bnc.pendingExplosion) continue;
+                
                 if(pos.dist(p) <= 15 && !d->isholdingprop && !d->isholdingnade && !d->isholdingorb && !d->isholdingshock && !d->isholdingbarrel &&(bnc.bouncetype==BNC_GRENADE || bnc.bouncetype==BNC_ORB || bnc.bouncetype==BNC_PROP || bnc.bouncetype==BNC_BARREL || bnc.bouncetype==BNC_WEAPON))
                 {
                     if(bnc.bouncetype==BNC_WEAPON && d==player1)
