@@ -34,10 +34,11 @@ int sdir=1;
 int iters=0;
 int shakestarttime=0;
 float shakeprogress=0.0f;
+float shakepitchoffset=0.0f;  // New: pitch component for screen shake
 
 void updatescreenshake() {
-    // Clock-based system: twice as fast as the slow version
-    int shakeinterval = 30; // 30ms interval (twice as fast as 60ms)
+    // Enhanced clock-based system with pitch component
+    int shakeinterval = 25; // Faster, snappier shake (was 30ms)
     int totalduration = startyaw * shakeinterval * 2;
     
     if(lastmillis-player1->lastshake < shakeinterval) return;
@@ -48,6 +49,7 @@ void updatescreenshake() {
         shakeprogress = 0.0f;
         sdir = 1; // Reset direction
         iters = 0;
+        shakepitchoffset = startyaw * 0.3f; // Pitch starts at 30% of yaw intensity
     }
     
     int elapsed = lastmillis - shakestarttime;
@@ -56,6 +58,7 @@ void updatescreenshake() {
         player1->doshake = 0;
         shakestarttime = 0;
         shakeprogress = 0.0f;
+        shakepitchoffset = 0.0f;
         iters = 0;
         sdir = 1;
         return;
@@ -65,7 +68,13 @@ void updatescreenshake() {
     shakeprogress = (float)elapsed / (float)totalduration;
     float intensity = (1.0f - shakeprogress) * startyaw; // decreases over time
     
+    // Yaw shake (horizontal)
     player1->yaw += intensity * sdir;
+    
+    // Pitch shake (vertical) - oscillates at different frequency for more chaotic feel
+    float pitchIntensity = (1.0f - shakeprogress) * shakepitchoffset;
+    player1->pitch += pitchIntensity * (iters % 3 == 0 ? 1 : -1); // Different pattern than yaw
+    
     sdir *= -1;
     iters++;
     player1->lastshake = lastmillis;
@@ -1106,8 +1115,14 @@ struct projectile
     int rocketchan, rocketsound;
     bool lastposs;
     vec lastpos;
-
-    projectile() : rocketchan(-1), rocketsound(-1)
+    
+    // Cold launch system for rocket launcher
+    bool coldlaunch;           // True if rocket hasn't ignited yet
+    vec coldlaunchstart;       // Starting position for cold launch
+    float coldlaunchdist;      // Distance traveled during cold launch
+    int coldlaunchtime;        // Time when cold launch started
+    
+    projectile() : rocketchan(-1), rocketsound(-1), coldlaunch(false), coldlaunchdist(0), coldlaunchtime(0)
     {
     }
     ~projectile()
@@ -1133,6 +1148,15 @@ void newprojectile(const vec &from, const vec &to, float speed, bool local, int 
     p.gun = gun;
     p.offsetmillis = OFFSETMILLIS;
     p.id = local ? lastmillis : id;
+    
+    // Initialize cold launch system for rocket launcher
+    if(gun == GUN_RL)
+    {
+        p.coldlaunch = true;
+        p.coldlaunchstart = from;
+        p.coldlaunchdist = 0;
+        p.coldlaunchtime = lastmillis;
+    }
 }
 
 void removeprojectiles(fpsent *owner)
@@ -1361,36 +1385,94 @@ void explode(bool local, fpsent *owner, const vec &v, dynent *safe, int damage, 
     }
     if((gun==GUN_HANDGRENADE ||gun==GUN_RL||gun==GUN_SMG2||gun==GUN_BARREL))
     {
-        if(v.dist(player1->o)<100)player1->doshake=1;
-        particle_splash(PART_SMOKE, 5, 1250, v, 0x222222, 12.0f, 50, 250, NULL, 1, false, 3);
-        particle_splash(PART_SMOKE, 5, 200, v, 0x222222, 12.0f, 50, 250, NULL, 1, false, 4);
-
-        //if(gun==GUN_RL)
+        // ====== DISTANCE-BASED SCREEN SHAKE ======
+        float distance = v.dist(player1->o);
+        float maxShakeDistance = 200.0f;
+        
+        if(distance < maxShakeDistance)
         {
-            particle_splash(PART_FLAME1, 15, 70, v, 0xFFFFFF, 3.2f, 150, NULL, NULL, NULL, true);
-            particle_splash(PART_FLAME2, 15, 70, v, 0xFFFFFF, 3.2f, 150, NULL, NULL, NULL, true);
-            particle_splash(PART_FLAME2, 15, 70, v, 0xFFFFFF, 3.2f, 150, NULL, NULL, NULL, true);
-            //particle_splash(PART_EXPLODE, 1, 100, v, 0xFFFFFF, 10.0f, 300, 500, true, NULL, NULL, 4);
-            particle_flare(v, v, 150, PART_MUZZLE_FLASH2, 0xFFFFFF, guns[gun].splash);
-            particle_splash(PART_SPARK, 160, 30, v, 0xFFC864, 1.4f, 300, NULL, NULL, NULL, true);
-            particle_fireball(v, guns[gun].splash, PART_EXPLOSION, 300, 0x333333, guns[gun].splash/2);
-            //loopi(10)particle_explodesplash(v, 200, PART_BULLET, 0xFFFFFF, 0.6f, 10, 10);
-
-            //particle_fireball(v, guns[gun].splash, PART_EXPLOSION, 100, 0xFFFFFF, 4.0f);
+            // Calculate shake intensity based on distance (closer = stronger)
+            float distanceFactor = 1.0f - (distance / maxShakeDistance);
+            distanceFactor = distanceFactor * distanceFactor; // Square for exponential falloff
+            
+            // Different shake intensities per weapon
+            float baseIntensity = 1.0f;
+            if(gun == GUN_RL) baseIntensity = 2.5f;
+            else if(gun == GUN_HANDGRENADE) baseIntensity = 2.0f;
+            else if(gun == GUN_BARREL) baseIntensity = 1.8f;
+            else if(gun == GUN_SMG2) baseIntensity = 1.5f;
+            
+            // Apply shake with calculated intensity
+            float shakeAmount = baseIntensity * distanceFactor * 3.0f;
+            if(shakeAmount > 0.3f) {
+                player1->doshake = 1;
+                startyaw = shakeAmount;
+            }
         }
+        
+        // ====== OPTIMIZED ARENA-FPS EXPLOSION EFFECTS ======
+        
+        // Layer 1: INITIAL FLASH (bright, instant) - KEEP THIS
+        particle_flare(v, v, 100, PART_MUZZLE_FLASH2, 0xFFFFFF, guns[gun].splash * 1.3f);
+        
+        // Layer 2: CORE FIREBALL (bright orange-yellow center) - SCALED DOWN
+        particle_fireball(v, guns[gun].splash * 0.9f, PART_EXPLOSION, 350, 0xFFAA33, guns[gun].splash * 0.7f);
+        
+        // Layer 3: FLAME BURST (quick, punchy - reduced count for arena FPS)
+        particle_splash(PART_FLAME1, 12, 80, v, 0xFFCC44, 3.5f, 150, NULL, NULL, NULL, true); // Bright core
+        particle_splash(PART_FLAME2, 10, 70, v, 0xFF8833, 3.0f, 140, NULL, NULL, NULL, true); // Orange middle
+        particle_splash(PART_FLAME3, 8, 60, v, 0xFF5522, 2.5f, 130, NULL, NULL, NULL, true);  // Red outer
+        
+        // Layer 4: SPARKS (reduced for performance, still impactful)
+        particle_splash(PART_SPARK, 80, 40, v, 0xFFDD88, 1.5f, 350, NULL, NULL, NULL, true);  // Hot sparks
+        particle_splash(PART_SPARK, 60, 60, v, 0xFFAA44, 1.0f, 300, NULL, NULL, NULL, true);  // Medium sparks
+        
+        // Layer 5: MINIMAL SMOKE (small puffs, short duration - arena FPS optimized)
+        particle_splash(PART_SMOKE, 3, 600, v, 0x444444, 6.0f, 40, 200, NULL, 1, false, 2);  // Quick small puffs
+        particle_splash(PART_SMOKE, 2, 400, v, 0x555555, 4.5f, 35, 180, NULL, 1, false, 1);  // Fast-dissipating
+        
+        // Layer 6: SHOCKWAVE RING - KEEP THIS (fast and cool)
+        particle_splash(PART_SPARK, 60, 50, v, 0xFFFFFF, 0.3f, 450, 1, NULL, NULL, true); // Fast ring
+        
+        // Layer 7: BRIEF GLOW - KEEP THIS
+        particle_flare(v, v, 250, PART_GLOW, 0xFF6633, 6.0f + rndscale(2));
+        
+        // ====== NEW: DEBRIS WITH FIRE TRAILS ======
+        // Spawn flaming debris chunks (like Quake/UT)
+        int debrisCount = gun == GUN_RL ? 8 : 6; // More debris for rockets
+        loopi(debrisCount)
+        {
+            // Random direction for debris
+            vec debrisDir(rnd(200)-100, rnd(200)-100, rnd(150)+50); // Upward bias
+            debrisDir.normalize();
+            float debrisSpeed = 100.0f + rnd(150);
+            debrisDir.mul(debrisSpeed);
+            
+            vec debrisStart = v;
+            debrisStart.z += 2; // Slightly above explosion center
+            
+            // Create a debris particle with fire trail
+            // Using smoke particles as "debris" with fire color and short trail
+            vec debrisEnd = vec(debrisStart).add(vec(debrisDir).mul(0.4f));
+            
+            // Fire trail behind debris
+            particle_trail(PART_SMOKE, 200, debrisStart, debrisEnd, 0xFF6622, 0.8f, -5); // Fire trail
+            
+            // Spark trail for hot debris
+            if(i % 2 == 0) {
+                particle_trail(PART_SPARK, 150, debrisStart, debrisEnd, 0xFFAA44, 0.4f, -3);
+            }
+        }
+        
+        // ====== ENHANCED DYNAMIC LIGHTING (kept strong) ======
+        adddynlight(v, 3.5f*guns[gun].splash, vec(3.0f, 1.8f, 0.8f), 150, 150, DL_FLASH, guns[gun].splash * 1.5f, vec(1.2f, 0.6f, 0.3f));
 
-        //            else if(gun==GUN_HANDGRENADE)
-        //            {
-        //                particle_fireball(v, RL_DAMRAD, PART_EXPLOSION_BLUE, 200, 0xFFFFFF, 4.0f);
-        //                particle_fireball(v, 32, PART_EXPLOSION_PLASMA, 500, 0xFFFFFF, 4.0f);
-        //            }
         if(lookupmaterial(camera1->o)==MAT_WATER || lookupmaterial(v)==MAT_WATER)
         {
             playsound(S_UWEN, &v);
         }
         else
         {
-            //playsound(gun==GUN_RL?S_RLHIT1+rnd(3):S_RLEX1+rnd(3), &v);
             playsound(S_RLHIT, &v);
         }
 
@@ -1400,27 +1482,20 @@ void explode(bool local, fpsent *owner, const vec &v, dynent *safe, int damage, 
     {
         playsound(S_NEXIMPACT, &v);
         particle_flare(v, v, 150, PART_MUZZLE_FLASH2, 0x0789FC, guns[gun].splash/2);
-        //particle_splash(PART_SPARK, 1000, 550, v, 0xFFC864, 0.10f, guns[gun].splash/2);
         particle_splash(PART_SPARK, 2, 200, v, 0x0789FC, 8.f, 2, 50);
-        //particle_splash(PART_SPARK, 500, 500, v, 0x0789FC, 0.5f, guns[gun].splash*4);
         particle_fireball(v, 8.f, PART_EXPLOSION, 200, 0x0789FC, guns[gun].splash/2);
-
     }
 
     if (gun == GUN_ELECTRO2) {
         playsound(S_COMBO, &v);
-        //void particle_fireball(const vec &dest, float maxsize, int type, int fade, int color, float size)
         particle_fireball(v, guns[gun].splash/2, PART_EXPLOSION, 1000, 0x0789FC, guns[gun].splash/2);
-
     }
 
     if(gun==GUN_ELECTRO||gun==GUN_ELECTRO2)adddynlight(v, 1.15f*guns[gun].splash, vec(0, 0, 1), 100, 100, 0, guns[gun].splash/2, vec(0, 0, 1));
     else if(gun!=GUN_CROSSBOW&&gun!=GUN_BITE)adddynlight(v, 2.15f*guns[gun].splash, vec(2, 1.5f, 1), 100, 100, 0, guns[gun].splash, vec(1, 0.75f, 0.5f));
-    //else if(gun==GUN_HANDGRENADE) adddynlight(v, 1.15f*RL_DAMRAD, vec(2, 1.5f, 1), 100, 100, 0, 8, vec(0.25f, 1, 1));
-    //else adddynlight(v, 1.15f*guns[gun].splash, vec(2, 1.5f, 1), 100, 100);
+    
     int numdebris = gun==GUN_BARREL ? rnd(max(maxbarreldebris-5, 1))+5 : rnd(maxdebris-5)+5;
     vec debrisvel = owner->o==v ? vec(0, 0, 0) : vec(owner->o).sub(v).normalize(), debrisorigin(v);
-    //if(gun==GUN_RL)
     debrisorigin.add(vec(debrisvel).mul(8));
     if(numdebris/2)
     {
@@ -1430,7 +1505,7 @@ void explode(bool local, fpsent *owner, const vec &v, dynent *safe, int damage, 
         loopi(numdebris)
                 if(gun==GUN_RL||gun==GUN_HANDGRENADE || gun==GUN_SMG2 || gun==GUN_BARREL)spawnbouncer(debrisorigin, debrisvel, owner, gun==GUN_BARREL ? BNC_BARRELDEBRIS : BNC_DEBRIS, 20, &light);
     }
-    //if(!local) return;
+    
     loopi(numdynents())
     {
         dynent *o = iterdynents(i);
@@ -1568,15 +1643,60 @@ void updateprojectiles(int time)
         p.offsetmillis = max(p.offsetmillis-time, 0);
         int qdam = guns[p.gun].damage*(p.owner->quadmillis ? 4 : 1);
         if(p.owner->type==ENT_AI) qdam /= MONSTERDAMAGEFACTOR;
+        
+        // ====== COLD LAUNCH SYSTEM FOR ROCKET LAUNCHER ======
+        float currentSpeed = p.speed;
+        if(p.gun == GUN_RL && p.coldlaunch)
+        {
+            // Calculate distance traveled
+            float distFromStart = p.o.dist(p.coldlaunchstart);
+            
+            // Check if rocket should ignite (after traveling 20 units)
+            const float COLD_LAUNCH_DISTANCE = 20.0f;
+            if(distFromStart >= COLD_LAUNCH_DISTANCE)
+            {
+                // IGNITION! Quadruple the speed (2x the original multiplier) and disable cold launch
+                p.coldlaunch = false;
+                p.speed *= 4.0f;  // Changed from 2.0f to 4.0f for double acceleration
+                currentSpeed = p.speed;
+            }
+            else
+            {
+                // Still in cold launch phase - use half speed
+                currentSpeed = p.speed * 0.5f;
+            }
+        }
+        
         vec v;
         float dist = p.to.dist(p.o, v);
-        float dtime = dist*1000/p.speed;
+        float dtime = dist*1000/currentSpeed;  // Use current speed (cold or ignited)
         if(time > dtime) dtime = time;
         v.mul(time/dtime);
         v.add(p.o);
         bool exploded = false;
         hits.setsize(0);
-        if(p.local)
+        
+        // ====== IMPROVED COLLISION DETECTION FOR ROCKET LAUNCHER ======
+        // Check for wall/geometry collision along the rocket's path
+        if(p.gun == GUN_RL)
+        {
+            vec travelDir = vec(v).sub(p.o);
+            float travelDist = travelDir.magnitude();
+            if(travelDist > 0.01f)
+            {
+                travelDir.normalize();
+                float barrier = raycube(p.o, travelDir, travelDist, RAY_CLIPMAT|RAY_ALPHAPOLY);
+                if(barrier > 0 && barrier < travelDist)
+                {
+                    // Hit a wall! Explode at the impact point
+                    v = vec(travelDir).mul(barrier).add(p.o);
+                    projsplash(p, v, NULL, qdam);
+                    exploded = true;
+                }
+            }
+        }
+        
+        if(p.local && !exploded)
         {
             loopj(numdynents())
             {
@@ -1624,7 +1744,11 @@ void updateprojectiles(int time)
                     particle_splash(guns[p.gun].part, 1, 1, pos, color, 4.8f, 150, 20);
                 }
                 else if(lookupmaterial(pos)!=MAT_WATER && p.gun==GUN_RL)
-                    regular_particle_splash(PART_SMOKE, 2, 300, pos, 0x555555, 2.4f, 12, 502);
+                {
+                    // Only show smoke trail if NOT in cold launch mode
+                    if(!p.coldlaunch)
+                        regular_particle_splash(PART_SMOKE, 2, 300, pos, 0x555555, 2.4f, 12, 502);
+                }
                 /*if (p.gun == GUN_ELECTRO2 && pos.dist(p.owner->o)>50) {
                     vec occcheck;
                     if(raycubelos(pos, camera1->o, occcheck) && p.gun==GUN_ELECTRO2)
@@ -1637,47 +1761,51 @@ void updateprojectiles(int time)
 
                 if(seimprovedprojectiles && p.gun==GUN_RL)
                 {
-                    if(lookupmaterial(camera1->o)!=MAT_WATER && lookupmaterial(pos)!=MAT_WATER)
+                    // Only show ignited rocket effects if NOT in cold launch
+                    if(!p.coldlaunch)
                     {
-                        stopsound(S_ROCKETUW, p.rocketchan);
-                        p.rocketsound = S_ROCKET;
-                    }
-                    if(lookupmaterial(camera1->o)==MAT_WATER || lookupmaterial(pos)==MAT_WATER)
-                    {
-                        stopsound(S_ROCKET, p.rocketchan);
-                        p.rocketsound = S_ROCKETUW;
-                    }
-                    if(lookupmaterial(pos)!=MAT_WATER)
-                    {
-                        vec check;
-                        //regular_particle_splash(PART_SMOKE, 16, 300, pos, 0x444444, 2.4f, 12, 502);
-                        regular_particle_splash(PART_SMOKE, 8, 500, pos, 0x444444, 1.2f, 12, 500, NULL, NULL, 2);
-                        if(raycubelos(pos, camera1->o, check))
+                        if(lookupmaterial(camera1->o)!=MAT_WATER && lookupmaterial(pos)!=MAT_WATER)
                         {
-                            //particle_flare(pos, pos, 1, PART_MUZZLE_FLASH5, 0xFFFFFF, 10.0f+rndscale(5), NULL);
-                            particle_flare(pos, pos, 1, PART_GLOW, 0xFFC864, 5.0f+rndscale(5), NULL);
+                            stopsound(S_ROCKETUW, p.rocketchan);
+                            p.rocketsound = S_ROCKET;
                         }
-                        particle_fireball(pos, 2.0f, PART_EXPLOSION, -1, 0xA0C080, 2.0f);
-                        regular_particle_splash(PART_FLAME1, 2, 50, pos, 0xFFFFFF, 1.2f, 25, 500);
-                        regular_particle_splash(PART_FLAME2, 2, 25, pos, 0xFFFFFF, 1.2f, 25, 500);
-                        regular_particle_splash(PART_SPARK, 8, 100, pos, 0xFFC864, 0.4f, 50, 500);
-                        regular_particle_splash(PART_FLAME3, 1, 100, pos, 0xFFFFFF, 0.8f, 50, 500);
-                        regular_particle_splash(PART_FLAME4, 1, 100, pos, 0xFFFFFF, 0.8f, 50, 500);
-                        //                            if(p.owner->quadmillis)
-                        //                            {
-                        //                                regular_particle_splash(PART_FLAME1, 2, 200, pos, 0xFF0000, 2.4f, 25, 777);
-                        //                                regular_particle_splash(PART_FLAME2, 2, 100, pos, 0xFF0000, 2.4f, 25, 777);
-                        //                                regular_particle_splash(PART_SPARK, 8, 400, pos, 0xFF0000, 0.4f, 50, 777);
-                        //                                regular_particle_splash(PART_FLAME3, 1, 400, pos, 0xFF0000, 0.8f, 50, 777);
-                        //                                regular_particle_splash(PART_FLAME4, 1, 400, pos, 0xFF0000, 0.8f, 50, 777);
-                        //                            }
-                    }
-                    else
-                    {
-                        regular_particle_splash(PART_BUBBLE, 4, 500, pos, 0xFFFFFF, 0.5f, 25, 500);
-                    }
+                        if(lookupmaterial(camera1->o)==MAT_WATER || lookupmaterial(pos)==MAT_WATER)
+                        {
+                            stopsound(S_ROCKET, p.rocketchan);
+                            p.rocketsound = S_ROCKETUW;
+                        }
+                        if(lookupmaterial(pos)!=MAT_WATER)
+                        {
+                            vec check;
+                            //regular_particle_splash(PART_SMOKE, 16, 300, pos, 0x444444, 2.4f, 12, 502);
+                            regular_particle_splash(PART_SMOKE, 8, 500, pos, 0x444444, 1.2f, 12, 500, NULL, NULL, 2);
+                            if(raycubelos(pos, camera1->o, check))
+                            {
+                                //particle_flare(pos, pos, 1, PART_MUZZLE_FLASH5, 0xFFFFFF, 10.0f+rndscale(5), NULL);
+                                particle_flare(pos, pos, 1, PART_GLOW, 0xFFC864, 5.0f+rndscale(5), NULL);
+                            }
+                            particle_fireball(pos, 2.0f, PART_EXPLOSION, -1, 0xA0C080, 2.0f);
+                            regular_particle_splash(PART_FLAME1, 2, 50, pos, 0xFFFFFF, 1.2f, 25, 500);
+                            regular_particle_splash(PART_FLAME2, 2, 25, pos, 0xFFFFFF, 1.2f, 25, 500);
+                            regular_particle_splash(PART_SPARK, 8, 100, pos, 0xFFC864, 0.4f, 50, 500);
+                            regular_particle_splash(PART_FLAME3, 1, 100, pos, 0xFFFFFF, 0.8f, 50, 500);
+                            regular_particle_splash(PART_FLAME4, 1, 100, pos, 0xFFFFFF, 0.8f, 50, 500);
+                            //                            if(p.owner->quadmillis)
+                            //                            {
+                            //                                regular_particle_splash(PART_FLAME1, 2, 200, pos, 0xFF0000, 2.4f, 25, 777);
+                            //                                regular_particle_splash(PART_FLAME2, 2, 100, pos, 0xFF0000, 2.4f, 25, 777);
+                            //                                regular_particle_splash(PART_SPARK, 8, 400, pos, 0xFF0000, 0.4f, 50, 777);
+                            //                                regular_particle_splash(PART_FLAME3, 1, 400, pos, 0xFF0000, 0.8f, 50, 777);
+                            //                                regular_particle_splash(PART_FLAME4, 1, 400, pos, 0xFF0000, 0.8f, 50, 777);
+                            //                            }
+                        }
+                        else
+                        {
+                            regular_particle_splash(PART_BUBBLE, 4, 500, pos, 0xFFFFFF, 0.5f, 25, 500);
+                        }
 
-                    p.rocketchan = playsound(p.rocketsound, &pos, NULL, -1, 128, p.rocketchan);
+                        p.rocketchan = playsound(p.rocketsound, &pos, NULL, -1, 128, p.rocketchan);
+                    }
                 }
             }
         }
@@ -2470,6 +2598,14 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
             d->roll -= droll;
         }
         else d->roll += droll;
+        
+        // Add screen kick and weapon jump for rocket launcher
+        if(gun == GUN_RL && d == hudplayer()) 
+        { 
+            d->screenjumpheight = 35; // Strong recoil kick
+            screenjump(); 
+            screenjump();
+        }
         break;
 
     case GUN_SMG2: //case GUN_CG2:

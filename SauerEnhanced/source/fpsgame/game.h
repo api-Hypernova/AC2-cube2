@@ -512,7 +512,7 @@ guns[NUMGUNS] =
     { S_SLASH,   -1, 0,  500,  150, 0,   0,   0, 0,  1, 65,  200, 0, 0,    0, 0, 0, "katana", "katana" },
     { S_SHOTGUN2,  -1, 6, 800,  9, 200, 0,   0, 20, 12,1024, 200, 0, 0,    0, 0, 2, "*",         "shotgdefault" }, // solaris_shotgun
     { S_PULSERIFLE, -1, 30, 100,  26, 0,  0,   0, 7,  1, 1024, 150, 0, 0,    0, 0, 1,  "}",        "chaingDEF" }, //pulse_rifle
-    { S_RPG,    -1, 0, 1500, 120, 0,   400,  0, 10, 1, 1024, 200, 40,0,    0, 1, 1,  "Z",  "rocket"},  //rocket_solaris, rocketold
+    { S_RPG,    -1, 0, 1500, 120, 0,   133,  0, 10, 1, 1024, 200, 40,0,    0, 1, 1,  "Z",  "rocket"},  //rocket_solaris, rocketold (speed reduced by 3x: 400->133)
     //{ S_MAGNUM,   -1, 6, 1200, 100, 0,   0,   0, 30, 1, 2048, 200, 0, 0,    0, 0, 1, "#",           "pyccna_svd" },
     { S_RIFLE,   -1, 10, 500, 34, 0,   0,   0, 30, 1, 2048, 200, 0, 0,    0, 0, 1, "#",           "pyccna_svd"},
     { S_HANDNADE,  -1, 0, 1000, 150, 0,  300,  0,  5, 1, 1024, 200, 55, 1500, 0, 0, 1,  "@", "gl"},

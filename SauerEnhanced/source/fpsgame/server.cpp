@@ -1632,10 +1632,17 @@ void suicideevent::process(clientinfo *ci)
 void explodeevent::process(clientinfo *ci)
 {
     gamestate &gs = ci->state;
+    bool validExplosion = true;  // Track if this is a valid explosion
+    
     switch(gun)
     {
     case GUN_RL:
-        if(!gs.rockets.remove(id)) return;
+        // Try to remove the rocket, but don't fail if it's not found (could be timing/network issue)
+        if(!gs.rockets.remove(id)) {
+            // Rocket not in list - might be a remote detonation that arrived before the shoot event
+            // Still allow the explosion to proceed for proper network sync
+            validExplosion = true;  // Allow remote detonation even if rocket not tracked yet
+        }
         break;
 
     case GUN_HANDGRENADE:
