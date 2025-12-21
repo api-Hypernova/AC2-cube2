@@ -568,7 +568,8 @@ namespace game
 
         //if(d==player1) game::stats[4]++;
         if(actor==player1 && player1->headshots && d!=player1)playsound(S_HEADSHOT2);
-        if(d->diedgun==GUN_CROSSBOW)playsound(S_SKEWER, &d->o);
+        // Only play skewer sound if victim was on the ground (not in air)
+        if(d->diedgun==GUN_CROSSBOW && d->physstate >= PHYS_SLOPE)playsound(S_SKEWER, &d->o);
         if(actor==player1 && d->vel.magnitude2()>500)playsound(S_AWESOME);
         if(actor==player1&&d!=player1&& !isteam(player1->team, d->team))player1->spreelength++;
         if(player1->spreelength==3 && actor==player1)playsound(S_SPREE1);

@@ -437,7 +437,9 @@ void ragdolldata::move(dynent *pl, float ts)
     {
         vert &v = verts[i];
         vec dpos = vec(v.pos).sub(v.oldpos);
-        dpos.z -= ((fpsent*)pl)->health<-3000?(-GRAVITY*.1f*ts*ts):((fpsent*)pl)->diedgun==GUN_CROSSBOW?(GRAVITY*ts*ts*8.f):(GRAVITY*ts*ts*1.5f);
+        // Crossbow skewer effect ONLY if player was on ground (not in air)
+        bool wasOnGround = ((fpsent*)pl)->physstate >= PHYS_SLOPE;
+        dpos.z -= ((fpsent*)pl)->health<-3000?(-GRAVITY*.1f*ts*ts):((fpsent*)pl)->diedgun==GUN_CROSSBOW && wasOnGround?(GRAVITY*ts*ts*8.f):(GRAVITY*ts*ts*1.5f);
         if(((fpsent*)pl)->health<-3000){
             //particles for vaporized ragdolls
             particle_splash(PART_SNOW, 1, 100, v.pos, 0xFFFFFF, 1.5f, 1, -1);

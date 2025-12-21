@@ -354,7 +354,7 @@ namespace game
             // Determine recovery rate based on current weapon
             float recoveryRate = 0.01f; // default
             if(d->gunselect == GUN_SMG) recoveryRate = 0.027f;
-            else if(d->gunselect == GUN_CG) recoveryRate = 0.0216f;
+            else if(d->gunselect == GUN_CG) recoveryRate = 0.0432f;  // DOUBLED from 0.0216f for faster recovery
             
             // Calculate recovery amount (degrees per frame)
             float recoveryAmount = recoveryRate * curtime;

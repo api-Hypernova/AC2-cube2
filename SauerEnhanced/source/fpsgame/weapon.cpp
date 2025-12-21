@@ -34,11 +34,11 @@ int sdir=1;
 int iters=0;
 int shakestarttime=0;
 float shakeprogress=0.0f;
-float shakepitchoffset=0.0f;  // New: pitch component for screen shake
+float shakepitchoffset=0.0f;  // Pitch component for screen shake
 
 void updatescreenshake() {
-    // Enhanced clock-based system with pitch component
-    int shakeinterval = 25; // Faster, snappier shake (was 30ms)
+    // Enhanced CINEMATIC shake system with stronger camera motion
+    int shakeinterval = 20; // Even faster for more violent shake (was 25ms, now 20ms)
     int totalduration = startyaw * shakeinterval * 2;
     
     if(lastmillis-player1->lastshake < shakeinterval) return;
@@ -49,7 +49,7 @@ void updatescreenshake() {
         shakeprogress = 0.0f;
         sdir = 1; // Reset direction
         iters = 0;
-        shakepitchoffset = startyaw * 0.3f; // Pitch starts at 30% of yaw intensity
+        shakepitchoffset = startyaw * 0.5f; // INCREASED pitch to 50% of yaw (was 30%)
     }
     
     int elapsed = lastmillis - shakestarttime;
@@ -66,14 +66,23 @@ void updatescreenshake() {
     
     // Calculate current shake position based on time
     shakeprogress = (float)elapsed / (float)totalduration;
-    float intensity = (1.0f - shakeprogress) * startyaw; // decreases over time
+    float decayFactor = (1.0f - shakeprogress);
     
-    // Yaw shake (horizontal)
+    // YAW SHAKE (horizontal) - More dramatic oscillation
+    float intensity = decayFactor * startyaw * 1.2f; // 20% MORE intense than before
     player1->yaw += intensity * sdir;
     
-    // Pitch shake (vertical) - oscillates at different frequency for more chaotic feel
-    float pitchIntensity = (1.0f - shakeprogress) * shakepitchoffset;
-    player1->pitch += pitchIntensity * (iters % 3 == 0 ? 1 : -1); // Different pattern than yaw
+    // PITCH SHAKE (vertical) - MUCH stronger vertical motion
+    float pitchIntensity = decayFactor * shakepitchoffset * 1.3f; // 30% MORE intense
+    
+    // Vary the pitch pattern for more chaotic, realistic shake
+    int pitchPattern = iters % 4;
+    float pitchDir = (pitchPattern == 0 || pitchPattern == 3) ? 1.0f : -1.0f;
+    
+    // Add slight random variation to pitch for organic feel
+    pitchIntensity *= 0.95f + (rnd(10) / 100.0f);
+    
+    player1->pitch += pitchIntensity * pitchDir;
     
     sdir *= -1;
     iters++;
@@ -1115,7 +1124,7 @@ struct projectile
     int rocketchan, rocketsound;
     bool lastposs;
     vec lastpos;
-    
+
     // Cold launch system for rocket launcher
     bool coldlaunch;           // True if rocket hasn't ignited yet
     vec coldlaunchstart;       // Starting position for cold launch
@@ -1385,25 +1394,29 @@ void explode(bool local, fpsent *owner, const vec &v, dynent *safe, int damage, 
     }
     if((gun==GUN_HANDGRENADE ||gun==GUN_RL||gun==GUN_SMG2||gun==GUN_BARREL))
     {
-        // ====== DISTANCE-BASED SCREEN SHAKE ======
+        // ====== CINEMATIC DISTANCE-BASED SCREEN SHAKE ======
         float distance = v.dist(player1->o);
-        float maxShakeDistance = 200.0f;
+        float maxShakeDistance = 250.0f; // Increased range to feel distant explosions
         
         if(distance < maxShakeDistance)
         {
-            // Calculate shake intensity based on distance (closer = stronger)
+            // Calculate shake intensity based on distance (closer = MUCH stronger)
             float distanceFactor = 1.0f - (distance / maxShakeDistance);
             distanceFactor = distanceFactor * distanceFactor; // Square for exponential falloff
             
-            // Different shake intensities per weapon
+            // DRAMATICALLY INCREASED shake intensities per weapon
             float baseIntensity = 1.0f;
-            if(gun == GUN_RL) baseIntensity = 2.5f;
-            else if(gun == GUN_HANDGRENADE) baseIntensity = 2.0f;
-            else if(gun == GUN_BARREL) baseIntensity = 1.8f;
-            else if(gun == GUN_SMG2) baseIntensity = 1.5f;
+            if(gun == GUN_RL) baseIntensity = 5.0f;          // Rocket: MASSIVE shake (was 2.5x, now 5.0x)
+            else if(gun == GUN_HANDGRENADE) baseIntensity = 4.0f; // Grenade: HUGE shake (was 2.0x, now 4.0x)
+            else if(gun == GUN_BARREL) baseIntensity = 3.5f; // Barrel: STRONG shake (was 1.8x, now 3.5x)
+            else if(gun == GUN_SMG2) baseIntensity = 3.0f;   // SMG grenade: STRONG shake (was 1.5x, now 3.0x)
             
-            // Apply shake with calculated intensity
-            float shakeAmount = baseIntensity * distanceFactor * 3.0f;
+            // DOUBLED multiplier for truly cinematic impact
+            float shakeAmount = baseIntensity * distanceFactor * 6.0f; // Was 3.0f, now 6.0f!
+            
+            // Add slight random variation for more organic feel (±10%)
+            shakeAmount *= 0.9f + (rnd(20) / 100.0f);
+            
             if(shakeAmount > 0.3f) {
                 player1->doshake = 1;
                 startyaw = shakeAmount;
@@ -1417,7 +1430,7 @@ void explode(bool local, fpsent *owner, const vec &v, dynent *safe, int damage, 
         
         // Layer 2: CORE FIREBALL (bright orange-yellow center) - SCALED DOWN
         particle_fireball(v, guns[gun].splash * 0.9f, PART_EXPLOSION, 350, 0xFFAA33, guns[gun].splash * 0.7f);
-        
+
         // Layer 3: FLAME BURST (quick, punchy - reduced count for arena FPS)
         particle_splash(PART_FLAME1, 12, 80, v, 0xFFCC44, 3.5f, 150, NULL, NULL, NULL, true); // Bright core
         particle_splash(PART_FLAME2, 10, 70, v, 0xFF8833, 3.0f, 140, NULL, NULL, NULL, true); // Orange middle
@@ -1437,31 +1450,30 @@ void explode(bool local, fpsent *owner, const vec &v, dynent *safe, int damage, 
         // Layer 7: BRIEF GLOW - KEEP THIS
         particle_flare(v, v, 250, PART_GLOW, 0xFF6633, 6.0f + rndscale(2));
         
-        // ====== NEW: DEBRIS WITH FIRE TRAILS ======
+        // ====== DEBRIS WITH FIRE & SPARK TRAILS ======
         // Spawn flaming debris chunks (like Quake/UT)
         int debrisCount = gun == GUN_RL ? 8 : 6; // More debris for rockets
         loopi(debrisCount)
         {
-            // Random direction for debris
-            vec debrisDir(rnd(200)-100, rnd(200)-100, rnd(150)+50); // Upward bias
+            // Random direction for debris - NO upward bias, truly omnidirectional
+            vec debrisDir(rnd(200)-100, rnd(200)-100, rnd(200)-100);
             debrisDir.normalize();
-            float debrisSpeed = 100.0f + rnd(150);
+            
+            // Reduced velocity by 30%: was (100-250), now (70-175)
+            float debrisSpeed = 70.0f + rnd(105);
             debrisDir.mul(debrisSpeed);
             
             vec debrisStart = v;
             debrisStart.z += 2; // Slightly above explosion center
             
-            // Create a debris particle with fire trail
-            // Using smoke particles as "debris" with fire color and short trail
+            // Create debris particle with trails
             vec debrisEnd = vec(debrisStart).add(vec(debrisDir).mul(0.4f));
             
-            // Fire trail behind debris
-            particle_trail(PART_SMOKE, 200, debrisStart, debrisEnd, 0xFF6622, 0.8f, -5); // Fire trail
+            // Fire trail behind debris (always)
+            particle_trail(PART_SMOKE, 200, debrisStart, debrisEnd, 0xFF6622, 0.8f, -5);
             
-            // Spark trail for hot debris
-            if(i % 2 == 0) {
-                particle_trail(PART_SPARK, 150, debrisStart, debrisEnd, 0xFFAA44, 0.4f, -3);
-            }
+            // Spark trail for ALL debris (was 50%, now 100%)
+            particle_trail(PART_SPARK, 150, debrisStart, debrisEnd, 0xFFAA44, 0.4f, -3);
         }
         
         // ====== ENHANCED DYNAMIC LIGHTING (kept strong) ======
@@ -1747,7 +1759,7 @@ void updateprojectiles(int time)
                 {
                     // Only show smoke trail if NOT in cold launch mode
                     if(!p.coldlaunch)
-                        regular_particle_splash(PART_SMOKE, 2, 300, pos, 0x555555, 2.4f, 12, 502);
+                    regular_particle_splash(PART_SMOKE, 2, 300, pos, 0x555555, 2.4f, 12, 502);
                 }
                 /*if (p.gun == GUN_ELECTRO2 && pos.dist(p.owner->o)>50) {
                     vec occcheck;
@@ -1763,48 +1775,48 @@ void updateprojectiles(int time)
                 {
                     // Only show ignited rocket effects if NOT in cold launch
                     if(!p.coldlaunch)
+                {
+                    if(lookupmaterial(camera1->o)!=MAT_WATER && lookupmaterial(pos)!=MAT_WATER)
                     {
-                        if(lookupmaterial(camera1->o)!=MAT_WATER && lookupmaterial(pos)!=MAT_WATER)
+                        stopsound(S_ROCKETUW, p.rocketchan);
+                        p.rocketsound = S_ROCKET;
+                    }
+                    if(lookupmaterial(camera1->o)==MAT_WATER || lookupmaterial(pos)==MAT_WATER)
+                    {
+                        stopsound(S_ROCKET, p.rocketchan);
+                        p.rocketsound = S_ROCKETUW;
+                    }
+                    if(lookupmaterial(pos)!=MAT_WATER)
+                    {
+                        vec check;
+                        //regular_particle_splash(PART_SMOKE, 16, 300, pos, 0x444444, 2.4f, 12, 502);
+                        regular_particle_splash(PART_SMOKE, 8, 500, pos, 0x444444, 1.2f, 12, 500, NULL, NULL, 2);
+                        if(raycubelos(pos, camera1->o, check))
                         {
-                            stopsound(S_ROCKETUW, p.rocketchan);
-                            p.rocketsound = S_ROCKET;
+                            //particle_flare(pos, pos, 1, PART_MUZZLE_FLASH5, 0xFFFFFF, 10.0f+rndscale(5), NULL);
+                            particle_flare(pos, pos, 1, PART_GLOW, 0xFFC864, 5.0f+rndscale(5), NULL);
                         }
-                        if(lookupmaterial(camera1->o)==MAT_WATER || lookupmaterial(pos)==MAT_WATER)
-                        {
-                            stopsound(S_ROCKET, p.rocketchan);
-                            p.rocketsound = S_ROCKETUW;
-                        }
-                        if(lookupmaterial(pos)!=MAT_WATER)
-                        {
-                            vec check;
-                            //regular_particle_splash(PART_SMOKE, 16, 300, pos, 0x444444, 2.4f, 12, 502);
-                            regular_particle_splash(PART_SMOKE, 8, 500, pos, 0x444444, 1.2f, 12, 500, NULL, NULL, 2);
-                            if(raycubelos(pos, camera1->o, check))
-                            {
-                                //particle_flare(pos, pos, 1, PART_MUZZLE_FLASH5, 0xFFFFFF, 10.0f+rndscale(5), NULL);
-                                particle_flare(pos, pos, 1, PART_GLOW, 0xFFC864, 5.0f+rndscale(5), NULL);
-                            }
-                            particle_fireball(pos, 2.0f, PART_EXPLOSION, -1, 0xA0C080, 2.0f);
-                            regular_particle_splash(PART_FLAME1, 2, 50, pos, 0xFFFFFF, 1.2f, 25, 500);
-                            regular_particle_splash(PART_FLAME2, 2, 25, pos, 0xFFFFFF, 1.2f, 25, 500);
-                            regular_particle_splash(PART_SPARK, 8, 100, pos, 0xFFC864, 0.4f, 50, 500);
-                            regular_particle_splash(PART_FLAME3, 1, 100, pos, 0xFFFFFF, 0.8f, 50, 500);
-                            regular_particle_splash(PART_FLAME4, 1, 100, pos, 0xFFFFFF, 0.8f, 50, 500);
-                            //                            if(p.owner->quadmillis)
-                            //                            {
-                            //                                regular_particle_splash(PART_FLAME1, 2, 200, pos, 0xFF0000, 2.4f, 25, 777);
-                            //                                regular_particle_splash(PART_FLAME2, 2, 100, pos, 0xFF0000, 2.4f, 25, 777);
-                            //                                regular_particle_splash(PART_SPARK, 8, 400, pos, 0xFF0000, 0.4f, 50, 777);
-                            //                                regular_particle_splash(PART_FLAME3, 1, 400, pos, 0xFF0000, 0.8f, 50, 777);
-                            //                                regular_particle_splash(PART_FLAME4, 1, 400, pos, 0xFF0000, 0.8f, 50, 777);
-                            //                            }
-                        }
-                        else
-                        {
-                            regular_particle_splash(PART_BUBBLE, 4, 500, pos, 0xFFFFFF, 0.5f, 25, 500);
-                        }
+                        particle_fireball(pos, 2.0f, PART_EXPLOSION, -1, 0xA0C080, 2.0f);
+                        regular_particle_splash(PART_FLAME1, 2, 50, pos, 0xFFFFFF, 1.2f, 25, 500);
+                        regular_particle_splash(PART_FLAME2, 2, 25, pos, 0xFFFFFF, 1.2f, 25, 500);
+                        regular_particle_splash(PART_SPARK, 8, 100, pos, 0xFFC864, 0.4f, 50, 500);
+                        regular_particle_splash(PART_FLAME3, 1, 100, pos, 0xFFFFFF, 0.8f, 50, 500);
+                        regular_particle_splash(PART_FLAME4, 1, 100, pos, 0xFFFFFF, 0.8f, 50, 500);
+                        //                            if(p.owner->quadmillis)
+                        //                            {
+                        //                                regular_particle_splash(PART_FLAME1, 2, 200, pos, 0xFF0000, 2.4f, 25, 777);
+                        //                                regular_particle_splash(PART_FLAME2, 2, 100, pos, 0xFF0000, 2.4f, 25, 777);
+                        //                                regular_particle_splash(PART_SPARK, 8, 400, pos, 0xFF0000, 0.4f, 50, 777);
+                        //                                regular_particle_splash(PART_FLAME3, 1, 400, pos, 0xFF0000, 0.8f, 50, 777);
+                        //                                regular_particle_splash(PART_FLAME4, 1, 400, pos, 0xFF0000, 0.8f, 50, 777);
+                        //                            }
+                    }
+                    else
+                    {
+                        regular_particle_splash(PART_BUBBLE, 4, 500, pos, 0xFFFFFF, 0.5f, 25, 500);
+                    }
 
-                        p.rocketchan = playsound(p.rocketsound, &pos, NULL, -1, 128, p.rocketchan);
+                    p.rocketchan = playsound(p.rocketsound, &pos, NULL, -1, 128, p.rocketchan);
                     }
                 }
             }
@@ -2962,6 +2974,20 @@ void shoot(fpsent *d, const vec &targ)
     // Initialize recoil patterns on first use
     initRecoilPatterns();
     
+    // Check if there's a queued shot ready to fire
+    if(d->queuedShotTime > 0 && lastmillis >= d->queuedShotTime + d->queuedShotDelay) {
+        // Queued shot is ready! Fire it automatically
+        bool wasAlt = d->queuedShotAlt;
+        d->queuedShotTime = 0; // Clear queue
+        d->queuedShotDelay = 0;
+        
+        // Force the attacking state for this frame
+        d->altattacking = wasAlt;
+        d->attacking = !wasAlt;
+        
+        // Continue with normal firing logic below
+    }
+    
     if (d->gunselect == GUN_MAGNUM && d->altattacking && !d->attacking) return;
     int prevaction = d->lastaction, attacktime = lastmillis-prevaction;
     
@@ -2987,6 +3013,26 @@ void shoot(fpsent *d, const vec &targ)
     if(!d->attacking && !d->altattacking) return;
     if(d->gunselect==GUN_HANDGRENADE && d->altattacking) return;
     if(d->gunselect==GUN_RL && d->altattacking) return;
+    
+    // Queue delayed shots for photon orb and double shotgun (only if not already queued)
+    if(d->queuedShotTime == 0) {
+        if(d->gunselect==GUN_CG2 && d->altattacking && (lastmillis - d->lastswitch < 500)) {
+            // Queue the photon orb shot for 500ms from now
+            d->queuedShotTime = lastmillis;
+            d->queuedShotDelay = 500;
+            d->queuedShotAlt = true;
+            return; // Don't fire yet, queued for later
+        }
+        
+        if(d->gunselect==GUN_SG && d->altattacking && (lastmillis - d->lastswitch < 100)) {
+            // Queue the double shotgun shot for 100ms from now
+            d->queuedShotTime = lastmillis;
+            d->queuedShotDelay = 100;
+            d->queuedShotAlt = true;
+            return; // Don't fire yet, queued for later
+        }
+    }
+    
     //if(d->gunselect==GUN_TELEKENESIS && d->altattacking) d->tkisbusy=1; //make sure to set this because multiple tk functions should not apply at once (pickup item, catch bnc, throw bnc)
     if(d->attacking && !d->ai)
     {
@@ -3011,6 +3057,7 @@ void shoot(fpsent *d, const vec &targ)
         //if(d->gunselect==GUN_RL){d->gunselect=GUN_RL2; addmsg(N_GUNSELECT, "rci", d, GUN_RL2); }
         if(d->gunselect==GUN_SMG){d->gunselect=GUN_SMG2; addmsg(N_GUNSELECT, "rci", d, GUN_SMG2); }
     }
+
 
 
     if((d->lastattackgun==GUN_SHOTGUN2 || d->lastattackgun==GUN_SG) && d->gunselect==GUN_SHOTGUN2 || d->gunselect==GUN_SG)d->lastattackgun=d->gunselect; //no hax switching from sg1 to sg2 :)

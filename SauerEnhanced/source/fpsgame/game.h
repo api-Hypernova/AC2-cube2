@@ -554,6 +554,12 @@ struct fpsstate
     int detonateelectro;
     int gunselect, gunwait;
     int burstprogress;
+    
+    // Delayed firing queue system
+    int queuedShotTime;         // timestamp when shot was queued (0 = not queued)
+    int queuedShotDelay;        // how long to wait before firing (ms)
+    bool queuedShotAlt;         // was it altattacking?
+    
     int ammo[NUMGUNS];
     int hasgun[NUMGUNS];
     int mods;
@@ -601,7 +607,7 @@ struct fpsstate
 
 
 
-    fpsstate() : maxhealth(100), aitype(AI_NONE), skill(0), recoilPatternIndex(0), lastShotTime(0), recoilPitchAccum(0.0f), recoilYawAccum(0.0f), holdposhistoryindex(0) {}
+    fpsstate() : maxhealth(100), aitype(AI_NONE), skill(0), recoilPatternIndex(0), lastShotTime(0), recoilPitchAccum(0.0f), recoilYawAccum(0.0f), holdposhistoryindex(0), queuedShotTime(0), queuedShotDelay(0), queuedShotAlt(false) {}
 
     void baseammo(int gun, int k = 2, int scale = 1)
     {
