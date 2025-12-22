@@ -2975,17 +2975,21 @@ void shoot(fpsent *d, const vec &targ)
     initRecoilPatterns();
     
     // Check if there's a queued shot ready to fire
-    if(d->queuedShotTime > 0 && lastmillis >= d->queuedShotTime + d->queuedShotDelay) {
-        // Queued shot is ready! Fire it automatically
-        bool wasAlt = d->queuedShotAlt;
-        d->queuedShotTime = 0; // Clear queue
-        d->queuedShotDelay = 0;
-        
-        // Force the attacking state for this frame
-        d->altattacking = wasAlt;
-        d->attacking = !wasAlt;
-        
-        // Continue with normal firing logic below
+    if(d->queuedShotTime > 0) {
+        int timeElapsed = lastmillis - d->queuedShotTime;
+        if(timeElapsed >= d->queuedShotDelay) {
+            // Queued shot is ready! Fire it automatically
+            conoutf("FIRING QUEUED SHOT after %dms (delay was %dms)", timeElapsed, d->queuedShotDelay);
+            bool wasAlt = d->queuedShotAlt;
+            d->queuedShotTime = 0; // Clear queue
+            d->queuedShotDelay = 0;
+            
+            // Force the attacking state for this frame
+            d->altattacking = wasAlt;
+            d->attacking = !wasAlt;
+            
+            // Continue with normal firing logic below
+        }
     }
     
     if (d->gunselect == GUN_MAGNUM && d->altattacking && !d->attacking) return;
@@ -3016,16 +3020,18 @@ void shoot(fpsent *d, const vec &targ)
     
     // Queue delayed shots for photon orb and double shotgun (only if not already queued)
     if(d->queuedShotTime == 0) {
-        if(d->gunselect==GUN_CG2 && d->altattacking && (lastmillis - d->lastswitch < 500)) {
-            // Queue the photon orb shot for 500ms from now
+        // Photon orb delay: 500ms - queue ANY click
+        if(d->gunselect==GUN_CG2 && d->altattacking) {
+            conoutf("QUEUING PHOTON ORB SHOT - will fire in 500ms");
             d->queuedShotTime = lastmillis;
             d->queuedShotDelay = 500;
             d->queuedShotAlt = true;
             return; // Don't fire yet, queued for later
         }
         
-        if(d->gunselect==GUN_SG && d->altattacking && (lastmillis - d->lastswitch < 100)) {
-            // Queue the double shotgun shot for 100ms from now
+        // Double shotgun delay: 100ms - queue ANY click
+        if(d->gunselect==GUN_SG && d->altattacking) {
+            conoutf("QUEUING DOUBLE SHOTGUN SHOT - will fire in 100ms");
             d->queuedShotTime = lastmillis;
             d->queuedShotDelay = 100;
             d->queuedShotAlt = true;
