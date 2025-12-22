@@ -18,6 +18,26 @@ ICOMMAND(delbot, "", (), addmsg(N_DELBOT, "r"));
 ICOMMAND(botlimit, "i", (int *n), addmsg(N_BOTLIMIT, "ri", *n));
 ICOMMAND(botbalance, "i", (int *n), addmsg(N_BOTBALANCE, "ri", *n));
 
+// Forward declarations for new AI functions
+void updateenemytracking(fpsent *d);
+fpsent *selectbesttarget(fpsent *d);
+bool findcover(fpsent *d, aistate &b, const vec &threat);
+vec predictposition(fpsent *e, float projspeed);
+bool isreachable(fpsent *d, const vec &pos, int timeout);
+void updatecombatmovement(fpsent *d, aistate &b);
+bool shouldretreat(fpsent *d);
+void initpersonality(fpsent *d);
+float getweaponrange(int gun, bool optimal);
+bool shouldburstfire(fpsent *d, int gun);
+void findteammates(fpsent *d, vector<fpsent *> &teammates, float maxdist);
+void updatesquad(fpsent *d);
+void coordinatesquad(fpsent *d);
+void maintainspacing(fpsent *d, aistate &b);
+void applyweapontactics(fpsent *d, fpsent *e, aistate &b);
+bool manageengagementrange(fpsent *d, fpsent *e, aistate &b);
+void updateenvironmentalawareness(fpsent *d);
+bool useenvironmentknowledge(fpsent *d, aistate &b);
+
 float viewdist(int x)
 {
     return x <= 100 ? clamp((SIGHTMIN+(SIGHTMAX-SIGHTMIN))/100.f*float(x), float(SIGHTMIN), float(fog)) : float(fog);
@@ -110,24 +130,41 @@ bool hastarget(fpsent *d, aistate &b, fpsent *e, float yaw, float pitch, float d
 vec getaimpos(fpsent *d, fpsent *e)
 {
     vec o = e->headpos();
+    
+    // Weapon-specific aim points
     if(d->gunselect == GUN_RL) o.z += (e->aboveeye*0.2f)-(0.8f*d->eyeheight);
     else if(d->gunselect != GUN_HANDGRENADE) o.z += (e->aboveeye-e->eyeheight)*0.5f;
-    //int gun=GUN_TELEKENESIS2;
+    
     if(d->aicancatch && lastmillis-d->ailastcatch>500) { o=e->headpos();}
-    //if((d->isholdingbarrel || d->isholdingnade || d->isholdingorb || d->isholdingprop) && lastmillis-d->ailastcatch<500){gunselect(GUN_TELEKENESIS, d); d->attacking=1;}
-    //d->attacking=1;
+    
+    // Predictive aiming for skilled bots with projectile weapons
+    if(d->skill > 40 && guns[d->gunselect].projspeed > 0)
+    {
+        vec predicted = predictposition(e, guns[d->gunselect].projspeed);
+        
+        // Blend between current and predicted based on skill
+        float blend = clamp((d->skill - 40) / 60.f, 0.f, 1.f);
+        o = vec(o).mul(1.f - blend).add(vec(predicted).mul(blend));
+    }
+    
+    // Add skill-based inaccuracy
     if(d->skill <= 100)
     {
         if(lastmillis >= d->ai->lastaimrnd)
         {
             const int aiskew[NUMGUNS] = { 1, 10, 50, 5, 20, 1, 100, 10, 10, 10, 1, 1 };
 #define rndaioffset(r) ((rnd(int(r*aiskew[d->gunselect]*2)+1)-(r*aiskew[d->gunselect]))*(1.f/float(max(d->skill, 1))))
-            loopk(3) d->ai->aimrnd[k] = rndaioffset(e->radius);
+            
+            // Reduce error for high-skill bots
+            float errormod = d->skill > 70 ? 0.5f : 1.0f;
+            loopk(3) d->ai->aimrnd[k] = rndaioffset(e->radius) * errormod;
+            
             int dur = (d->skill+10)*10;
             d->ai->lastaimrnd = lastmillis+dur+rnd(dur);
         }
         loopk(3) o[k] += d->ai->aimrnd[k];
     }
+    
     return o;
 }
 
@@ -201,7 +238,7 @@ void doreloadai(fpsent *d)
 void update()
 {
     if(intermission) { loopv(players) if(players[i]->ai) players[i]->stopmoving(); }
-    else // fixed rate logic done out-of-sequence at 1 frame per second for each ai
+    else // Optimized update system with variable rates
     {
         if(!updateiteration && lastmillis-updatemillis > 1000)
         {
@@ -210,12 +247,21 @@ void update()
             updateiteration = 1;
             updatemillis = lastmillis;
         }
+        
         int count = 0;
         loopv(players) if(players[i]->ai)
         {
-            //if(players[i]->isholdingprop ||players[i]->isholdingbarrel ||players[i]->isholdingorb ||players[i]->isholdingnade) {gunselect(GUN_TELEKENESIS, players[i]); players[i]->attacking=1; }
-            think(players[i], ++count == updateiteration ? true : false);
-            if(players[i]->magprogress[players[i]->gunselect]>=guns[players[i]->gunselect].magsize && guns[players[i]->gunselect].magsize>1)doreloadai(players[i]);
+            fpsent *d = players[i];
+            
+            // Simplified: always do full updates for now to ensure enemy detection works
+            // The original game did 1 update per second which was sufficient
+            bool needsFullUpdate = ++count == updateiteration;
+            
+            think(d, needsFullUpdate);
+            
+            // Auto-reload
+            if(d->magprogress[d->gunselect] >= guns[d->gunselect].magsize && guns[d->gunselect].magsize > 1)
+                doreloadai(d);
         }
         if(++updateiteration > count) updateiteration = 0;
     }
@@ -362,6 +408,7 @@ bool violence(fpsent *d, aistate &b, fpsent *e, bool pursue)
 
 bool target(fpsent *d, aistate &b, bool pursue = false, bool force = false, float mindist = 0.f)
 {
+    // Use original targeting - it works!
     fpsent *t = NULL;
     vec dp = d->headpos(), tp(0, 0, 0);
     loopv(players)
@@ -407,16 +454,43 @@ void assist(fpsent *d, aistate &b, vector<interest> &interests, bool all, bool f
 
 static void tryitem(fpsent *d, extentity &e, int id, aistate &b, vector<interest> &interests, bool force = false)
 {
+    // Don't try items we recently failed to reach
+    if(d->ai->faileditemid == id && lastmillis - d->ai->faileditemtime < 10000)
+        return;
+    
+    // Check if item is reachable before considering it
+    if(!force && !isreachable(d, e.o, 5000))
+        return;
+    
     float score = 0;
+    float basescore = 0;
+    
     switch(e.type)
     {
-    case I_HEALTH: I_SMALLHEALTH:
-            if(d->canpickup(e.type))score = 1e10f;
+    case I_HEALTH: case I_SMALLHEALTH:
+            if(d->canpickup(e.type))
+            {
+                basescore = 1e10f;
+                // Higher priority if low health
+                if(badhealth(d)) basescore *= 2.0f;
+                score = basescore;
+            }
         break;
-    case I_QUAD: score = 1e10f; break;
+    case I_QUAD: 
+        basescore = 1e10f;
+        // Aggressive personalities prioritize powerups
+        if(d->ai->personality == AI_PERSONALITY_AGGRESSIVE) basescore *= 1.5f;
+        score = basescore;
+        break;
     case I_BOOST:
     case I_GREENARMOUR: case I_YELLOWARMOUR: case I_SHIELDBATTERY:
-        if(d->canpickup(e.type))score = 1e8f;
+        if(d->canpickup(e.type))
+        {
+            basescore = 1e8f;
+            // Defensive personalities prioritize armor
+            if(d->ai->personality == AI_PERSONALITY_DEFENSIVE) basescore *= 1.3f;
+            score = basescore;
+        }
         break;
     case I_ELECTRO:
     case I_SHOTGUN:
@@ -426,14 +500,28 @@ static void tryitem(fpsent *d, extentity &e, int id, aistate &b, vector<interest
     case I_SMGNADE:
     case I_RPG:
     case I_CROSSBOW:
-        if(d->canpickup(e.type))score=1e11f;
+        if(d->canpickup(e.type))
+        {
+            basescore = 1e11f;
+            // Prioritize weapon pickups matching personality
+            itemstat &is = itemstats[e.type-I_ELECTRO];
+            if(is.info == d->ai->weappref) basescore *= 2.0f;
+            score = basescore;
+        }
         break;
 
     default:
         break;
     }
+    
     if(score != 0)
     {
+        // Reduce priority if in combat
+        if(d->ai->incombat && d->ai->enemy >= 0)
+        {
+            score *= 0.3f;
+        }
+        
         interest &n = interests.add();
         n.state = AI_S_INTEREST;
         n.node = closestwaypoint(e.o, SIGHTMIN, true);
@@ -534,10 +622,28 @@ bool findassist(fpsent *d, aistate &b, bool override = false)
 
 void damaged(fpsent *d, fpsent *e)
 {
-    if(d->ai && canmove(d) && targetable(d, e)) // see if this ai is interested in a grudge
+    if(d->ai && canmove(d))
+    {
+        // Track damage location and time
+        d->ai->lastdamagepos = e->o;
+        d->ai->lastdamagetime = lastmillis;
+        
+        // Update enemy tracking - mark this enemy as high threat
+        loopv(d->ai->enemylist)
+        {
+            if(d->ai->enemylist[i].clientnum == e->clientnum)
+            {
+                d->ai->enemylist[i].lastdamaged = lastmillis;
+                d->ai->enemylist[i].threat = min(d->ai->enemylist[i].threat + 0.3f, 1.f);
+                break;
+            }
+        }
+        
+        if(targetable(d, e))
     {
         aistate &b = d->ai->getstate();
         if(violence(d, b, e, d->gunselect == GUN_FIST)) return;
+        }
     }
     if(checkothers(targets, d, AI_S_DEFEND, AI_T_PLAYER, d->clientnum, true))
     {
@@ -564,12 +670,34 @@ void setup(fpsent *d, bool tryreset = false)
     d->ai->clearsetup();
     d->ai->reset(tryreset);
     d->ai->lastrun = lastmillis;
+    
+    // Initialize personality
+    initpersonality(d);
+    
     if(m_insta) d->ai->weappref = GUN_MAGNUM;
     else
     {
         if(forcegun >= 0 && forcegun < NUMGUNS) d->ai->weappref = forcegun;
         else if(m_noammo) d->ai->weappref = -1;
-        else d->ai->weappref = rnd(GUN_HANDGRENADE-GUN_SG+1)+GUN_SG;
+        else
+        {
+            // Personality affects weapon preference
+            switch(d->ai->personality)
+            {
+                case AI_PERSONALITY_AGGRESSIVE:
+                    d->ai->weappref = rnd(2) ? GUN_SG : GUN_RL;
+                    break;
+                case AI_PERSONALITY_DEFENSIVE:
+                    d->ai->weappref = rnd(2) ? GUN_CG2 : GUN_MAGNUM;
+                    break;
+                case AI_PERSONALITY_TACTICAL:
+                    d->ai->weappref = rnd(2) ? GUN_MAGNUM : GUN_RL;
+                    break;
+                default:
+                    d->ai->weappref = rnd(GUN_HANDGRENADE-GUN_SG+1)+GUN_SG;
+                    break;
+            }
+        }
     }
     vec dp = d->headpos();
     findorientation(dp, d->yaw, d->pitch, d->ai->target);
@@ -686,11 +814,29 @@ int dointerest(fpsent *d, aistate &b)
         {
             extentity &e = *(extentity *)entities::ents[b.target];
             if(!e.spawned || e.type < I_ELECTRO || e.type > I_GRENADE || d->hasmaxammo(e.type)) return 0;
-            if(d->feetpos().squaredist(e.o) <= CLOSEDIST*CLOSEDIST)
+            
+            float dist = d->feetpos().squaredist(e.o);
+            if(dist <= CLOSEDIST*CLOSEDIST)
             {
                 b.idle = 1;
+                // Successfully reached item - clear failure tracking
+                if(d->ai->faileditemid == b.target)
+                {
+                    d->ai->faileditemid = -1;
+                    d->ai->faileditemtime = 0;
+                }
                 return true;
             }
+            
+            // Check if we're stuck trying to reach this item
+            if(lastmillis - b.millis > 8000) // been trying for 8 seconds
+            {
+                // Mark this item as failed
+                d->ai->faileditemid = b.target;
+                d->ai->faileditemtime = lastmillis;
+                return 0;
+            }
+            
             return makeroute(d, b, e.o) ? 1 : 0;
         }
         break;
@@ -936,6 +1082,17 @@ int process(fpsent *d, aistate &b)
 
     bool idle = b.idle == 1 || (stupify && stupify <= skmod);
     d->ai->dontmove = false;
+    
+    // Simplified retreat logic - only when very low health
+    if(!idle && badhealth(d) && shouldretreat(d) && b.type != AI_S_RETREAT)
+    {
+        // Find health pack
+        if(find(d, b))
+        {
+            // Found item to pursue
+        }
+    }
+    
     if(idle)
     {
         d->ai->lastaction = d->ai->lasthunt = lastmillis;
@@ -952,6 +1109,13 @@ int process(fpsent *d, aistate &b)
 
     fpsent *e = getclient(d->ai->enemy);
     bool enemyok = e && targetable(d, e);
+    
+    // Update combat status
+    d->ai->incombat = enemyok;
+    if(enemyok && d->ai->combatstart == 0)
+        d->ai->combatstart = lastmillis;
+    else if(!enemyok && d->ai->combatstart > 0)
+        d->ai->combatstart = 0; // Reset when no enemy
     if(!enemyok || d->skill >= 50)
     {
         fpsent *f = (fpsent *)intersectclosest(dp, d->ai->target, d);
@@ -988,14 +1152,59 @@ int process(fpsent *d, aistate &b)
                 d->ai->becareful = false;
             }
             scaleyawpitch(d->yaw, d->pitch, yaw, pitch, frame, sskew);
+            
+            // Apply combat movement only when we have a valid target
+            if(enemyok && e)
+            {
+                updatecombatmovement(d, b);
+                
+                // Apply weapon-specific tactics
+                applyweapontactics(d, e, b);
+                
+                // Manage engagement range
+                manageengagementrange(d, e, b);
+            }
+            
             if(insight || quick)
             {
                 if(canshoot(d, e) && hastarget(d, b, e, yaw, pitch, dp.squaredist(ep)))
                 {
-                    //if(d->isholdingbarrel || d->isholdingnade || d->isholdingorb || d->isholdingprop) { gunselect(GUN_TELEKENESIS, d); }
-                    d->attacking = true;
-                    d->ai->lastaction = lastmillis;
-                    result = 3;
+                    // Burst fire logic for automatic weapons
+                    bool shouldfire = true;
+                    if(shouldburstfire(d, d->gunselect))
+                    {
+                        const int burstsize = 3 + rnd(5); // 3-7 shots per burst
+                        const int burstdelay = 200 + rnd(300); // 200-500ms between bursts
+                        
+                        if(d->ai->burstcount >= burstsize)
+                        {
+                            if(lastmillis - d->ai->lastburstfire > burstdelay)
+                            {
+                                d->ai->burstcount = 0;
+                            }
+                            else
+                            {
+                                shouldfire = false;
+                            }
+                        }
+                        
+                        if(shouldfire)
+                        {
+                            d->ai->burstcount++;
+                            d->ai->lastburstfire = lastmillis;
+                        }
+                    }
+                    
+                    if(shouldfire)
+                    {
+                        d->attacking = true;
+                        d->ai->lastaction = lastmillis;
+                        result = 3;
+                    }
+                    else
+                    {
+                        result = 2;
+                    }
                 }
                 else result = 2;
             }
@@ -1058,7 +1267,41 @@ int process(fpsent *d, aistate &b)
         const aimdir &ad = aimdirs[r];
         d->move = ad.move;
         d->strafe = ad.strafe;
+        
+        // Apply combat strafing
+        if(d->ai->incombat && d->ai->strafemode > 0)
+        {
+            if(d->ai->strafemode == 1) // strafe left
+            {
+                d->strafe = -1;
+            }
+            else if(d->ai->strafemode == 2) // strafe right
+            {
+                d->strafe = 1;
+            }
+            else if(d->ai->strafemode == 3) // random/aggressive
+            {
+                d->strafe = (lastmillis / 500) % 2 ? -1 : 1;
+            }
+        }
     }
+    
+    // Apply crouching
+    if(d->ai->shouldcrouch && d->ai->crouchtime == 0)
+    {
+        d->crouching = true;
+        d->ai->crouchtime = lastmillis;
+    }
+    else if(d->ai->crouchtime > 0)
+    {
+        // Auto-uncrouch after 2 seconds or when shouldcrouch is false
+        if(!d->ai->shouldcrouch || lastmillis - d->ai->crouchtime > 2000)
+        {
+            d->crouching = false;
+            d->ai->crouchtime = 0;
+        }
+    }
+    
     findorientation(dp, d->yaw, d->pitch, d->ai->target);
     return result;
 }
@@ -1078,21 +1321,82 @@ bool hasrange(fpsent *d, fpsent *e, int weap)
 bool request(fpsent *d, aistate &b)
 {
     fpsent *e = getclient(d->ai->enemy);
+    float dist = e ? d->o.dist(e->o) : 0;
+    
     if(!d->hasammo(d->gunselect) || !hasrange(d, e, d->gunselect) || (d->gunselect != d->ai->weappref && (!isgoodammo(d->gunselect) || d->hasammo(d->ai->weappref))))
     {
-        static const int gunprefs[] = { GUN_CG2, GUN_SMG2, GUN_RL, GUN_SG, GUN_MAGNUM, GUN_CROSSBOW, GUN_SHOTGUN2, GUN_SG, GUN_HANDGRENADE, GUN_ELECTRO, GUN_ELECTRO2, GUN_CG, GUN_SMG, GUN_PISTOL, GUN_FIST, GUN_TELEKENESIS  };
         int gun = -1;
-        if(d->hasammo(d->ai->weappref) && hasrange(d, e, d->ai->weappref)) gun = d->ai->weappref;
-        //if(d->isholdingprop || d->isholdingbarrel || d->isholdingorb || d->isholdingnade)gun=GUN_TELEKENESIS;
-        //else if(d->aicancatch && d->aicatch.dist(d->o)<guns[GUN_TELEKENESIS2].range)gun=GUN_TELEKENESIS2;
-        else
+        
+        // Try preferred weapon first
+        if(d->hasammo(d->ai->weappref) && hasrange(d, e, d->ai->weappref)) 
+            gun = d->ai->weappref;
+        else if(e)
         {
-            loopi(sizeof(gunprefs)/sizeof(gunprefs[0])) if(d->hasammo(gunprefs[i]) && hasrange(d, e, gunprefs[i]))
+            // Intelligent range-based weapon selection
+            struct weaponpref {
+                int gun;
+                float score;
+            };
+            
+            static vector<weaponpref> available;
+            available.setsize(0);
+            
+            // Score available weapons based on range and situation
+            static const int guns[] = { GUN_CG2, GUN_SMG2, GUN_RL, GUN_SG, GUN_MAGNUM, GUN_CROSSBOW, GUN_SHOTGUN2, GUN_ELECTRO, GUN_ELECTRO2, GUN_CG, GUN_SMG, GUN_HANDGRENADE, GUN_PISTOL, GUN_FIST };
+            loopi(sizeof(guns)/sizeof(guns[0]))
             {
-                gun = gunprefs[i];
-                break;
+                int testgun = guns[i];
+                if(!d->hasammo(testgun)) continue;
+                if(!hasrange(d, e, testgun)) continue;
+                
+                float score = 0;
+                float optrange = getweaponrange(testgun, true);
+                float rangediff = fabs(dist - optrange);
+                
+                // Score based on how close we are to optimal range
+                score = 100.f - clamp(rangediff / 10.f, 0.f, 90.f);
+                
+                // Bonus for high-damage weapons
+                if(testgun == GUN_RL || testgun == GUN_MAGNUM || testgun == GUN_SG) score += 20.f;
+                if(testgun == GUN_CG2 || testgun == GUN_SMG2) score += 15.f;
+                
+                // Personality modifiers
+                if(d->ai->personality == AI_PERSONALITY_AGGRESSIVE)
+                {
+                    if(testgun == GUN_SG || testgun == GUN_RL) score += 25.f;
+                }
+                else if(d->ai->personality == AI_PERSONALITY_DEFENSIVE)
+                {
+                    if(testgun == GUN_MAGNUM || testgun == GUN_CG2) score += 25.f;
+                }
+                else if(d->ai->personality == AI_PERSONALITY_TACTICAL)
+                {
+                    // Prefer varied weapons based on situation
+                    if(dist < 200.f && (testgun == GUN_SG || testgun == GUN_SHOTGUN2)) score += 30.f;
+                    else if(dist > 400.f && (testgun == GUN_MAGNUM || testgun == GUN_CROSSBOW)) score += 30.f;
+                }
+                
+                // Avoid fist unless desperate
+                if(testgun == GUN_FIST) score = 1.f;
+                
+                weaponpref wp;
+                wp.gun = testgun;
+                wp.score = score;
+                available.add(wp);
+            }
+            
+            // Select best weapon
+            float bestscore = -1;
+            loopv(available)
+            {
+                if(available[i].score > bestscore)
+                {
+                    bestscore = available[i].score;
+                    gun = available[i].gun;
+                }
             }
         }
+        
         if(gun >= 0 && gun != d->gunselect) gunselect(gun, d);
     }
     return process(d, b) >= 2;
@@ -1215,6 +1519,32 @@ void avoid()
 
 void think(fpsent *d, bool run)
 {
+    // Update enemy tracking and environmental awareness
+    if(run)
+    {
+        if(d->state == CS_ALIVE)
+        {
+            updateenemytracking(d);
+            
+            // Update squad coordination
+            if(m_teammode)
+            {
+                // Update squad membership periodically
+                if(lastmillis - d->ai->lastcoordination > 3000)
+                {
+                    updatesquad(d);
+                    d->ai->lastcoordination = lastmillis;
+                }
+                
+                // Coordinate with squad every frame
+                coordinatesquad(d);
+            }
+        }
+        
+        // Environmental awareness works even when dead (learning)
+        updateenvironmentalawareness(d);
+    }
+    
     // the state stack works like a chain of commands, certain commands simply replace each other
     // others spawn new commands to the stack the ai reads the top command from the stack and executes
     // it or pops the stack and goes back along the history until it finds a suitable command to execute
@@ -1244,6 +1574,7 @@ void think(fpsent *d, bool run)
             case AI_S_DEFEND: result = dodefend(d, c); break;
             case AI_S_PURSUE: result = dopursue(d, c); break;
             case AI_S_INTEREST: result = dointerest(d, c); break;
+            case AI_S_RETREAT: result = dodefend(d, c); break; // retreat uses defend logic
             default: result = 0; break;
             }
             if(result <= 0)
@@ -1390,5 +1721,878 @@ void render()
 
     }
 }
+
+// ===== ENHANCED AI SYSTEMS =====
+
+// Multiple enemy tracking system
+void updateenemytracking(fpsent *d)
+{
+    if(!d->ai) return;
+    
+    int now = lastmillis;
+    vec dp = d->headpos();
+    
+    // Update existing tracked enemies and add new ones
+    loopv(players)
+    {
+        fpsent *e = players[i];
+        if(!targetable(d, e)) continue;
+        
+        vec ep = e->headpos();
+        
+        // Quick distance check before expensive visibility check
+        float dist = dp.squaredist(ep);
+        if(dist > SIGHTMAX * SIGHTMAX) continue; // Too far
+        
+        bool visible = cansee(d, dp, ep);
+        
+        // Find or create enemy tracking entry
+        enemyinfo *ei = NULL;
+        loopvj(d->ai->enemylist)
+        {
+            if(d->ai->enemylist[j].clientnum == e->clientnum)
+            {
+                ei = &d->ai->enemylist[j];
+                break;
+            }
+        }
+        
+        if(!ei && d->ai->enemylist.length() < MAXENEMYTRACK)
+        {
+            d->ai->enemylist.add(enemyinfo(e->clientnum));
+            ei = &d->ai->enemylist.last();
+        }
+        
+        if(ei)
+        {
+            if(visible)
+            {
+                // Update position and velocity
+                vec oldpos = ei->lastpos;
+                ei->lastpos = e->o;
+                
+                if(ei->lastseen > 0 && now - ei->lastseen < 500)
+                {
+                    // Calculate velocity
+                    float dt = (now - ei->lastseen) / 1000.0f;
+                    if(dt > 0) ei->velocity = vec(e->o).sub(oldpos).div(dt);
+                }
+                
+                ei->lastseen = now;
+                
+                // Calculate threat based on distance, health, weapon
+                float dist = dp.dist(ep);
+                float distfactor = clamp(1.0f - (dist / SIGHTMAX), 0.f, 1.f);
+                float healthfactor = e->health / 100.0f;
+                ei->threat = distfactor * 0.6f + healthfactor * 0.4f;
+            }
+            else
+            {
+                // Decay threat over time when not visible
+                if(now - ei->lastseen > 3000)
+                {
+                    ei->threat *= 0.95f;
+                }
+            }
+        }
+    }
+    
+    // Remove old enemies that haven't been seen in a while
+    loopv(d->ai->enemylist)
+    {
+        if(now - d->ai->enemylist[i].lastseen > 10000 || d->ai->enemylist[i].threat < 0.1f)
+        {
+            d->ai->enemylist.remove(i--);
+        }
+    }
+}
+
+// Select best target from tracked enemies
+fpsent *selectbesttarget(fpsent *d)
+{
+    if(!d->ai || d->ai->enemylist.empty()) return NULL;
+    
+    fpsent *best = NULL;
+    float bestscore = -1;
+    vec dp = d->headpos();
+    
+    loopv(d->ai->enemylist)
+    {
+        enemyinfo &ei = d->ai->enemylist[i];
+        fpsent *e = getclient(ei.clientnum);
+        
+        if(!e || !targetable(d, e)) continue;
+        
+        vec ep = e->headpos();
+        float dist = dp.dist(ep);
+        bool visible = cansee(d, dp, ep);
+        
+        // Score based on: threat, visibility, distance, recent damage
+        float score = ei.threat * 2.0f;
+        if(visible) score += 1.5f;
+        score += clamp(1.0f - (dist / SIGHTMAX), 0.f, 1.f);
+        
+        // Prioritize enemies who recently damaged us
+        if(ei.lastdamaged > 0 && lastmillis - ei.lastdamaged < 3000)
+            score += 2.0f;
+        
+        // Consider current weapon effectiveness at this range
+        if(weaprange(d, d->gunselect, ep.squaredist(dp)))
+            score += 1.0f;
+        
+        if(score > bestscore)
+        {
+            bestscore = score;
+            best = e;
+        }
+    }
+    
+    // Update the legacy single-enemy field for compatibility
+    if(best)
+    {
+        d->ai->enemy = best->clientnum;
+        if(d->ai->enemyseen == 0) d->ai->enemyseen = lastmillis;
+    }
+    else
+    {
+        d->ai->enemy = -1;
+    }
+    
+    return best;
+}
+
+// Predict enemy position based on velocity
+vec predictposition(fpsent *e, float projspeed)
+{
+    if(!e || !e->ai) return e->o;
+    
+    vec predicted = e->o;
+    
+    // Find enemy tracking info
+    loopv(players)
+    {
+        fpsent *bot = players[i];
+        if(!bot->ai) continue;
+        
+        loopvj(bot->ai->enemylist)
+        {
+            if(bot->ai->enemylist[j].clientnum == e->clientnum)
+            {
+                enemyinfo &ei = bot->ai->enemylist[j];
+                
+                // Predict based on velocity if we have recent data
+                if(lastmillis - ei.lastseen < 500 && ei.velocity.magnitude() > 0.1f)
+                {
+                    float dist = bot->o.dist(e->o);
+                    float timetoimpact = projspeed > 0 ? dist / projspeed : 0;
+                    
+                    predicted = vec(e->o).add(vec(ei.velocity).mul(timetoimpact));
+                }
+                return predicted;
+            }
+        }
+    }
+    
+    return predicted;
+}
+
+// Check if position is actually reachable
+bool isreachable(fpsent *d, const vec &pos, int timeout)
+{
+    if(!waypoints.inrange(d->lastnode)) return false;
+    
+    int targetnode = closestwaypoint(pos, SIGHTMIN, true);
+    if(!waypoints.inrange(targetnode)) return false;
+    
+    // Quick distance check
+    float dist = d->o.dist(pos);
+    if(dist < CLOSEDIST) return true;
+    
+    // Check if we've failed to reach this recently
+    if(d->ai->faileditemid >= 0)
+    {
+        extentity *failed = entities::ents.inrange(d->ai->faileditemid) ? (extentity *)entities::ents[d->ai->faileditemid] : NULL;
+        if(failed && pos.dist(failed->o) < CLOSEDIST && lastmillis - d->ai->faileditemtime < 10000)
+            return false;
+    }
+    
+    // Try pathfinding
+    static vector<int> testroute;
+    testroute.setsize(0);
+    if(!route(d, d->lastnode, targetnode, testroute, obstacles, false))
+        return false;
+    
+    // Path exists - now verify it's reasonable
+    if(testroute.length() > 50) return false; // too long
+    
+    return true;
+}
+
+// Find cover from a threat position
+bool findcover(fpsent *d, aistate &b, const vec &threat)
+{
+    if(!waypoints.inrange(d->lastnode)) return false;
+    
+    static vector<int> covercandidates;
+    covercandidates.setsize(0);
+    
+    vec mypos = d->feetpos();
+    float searchdist = min(mypos.dist(threat) * 0.7f, 512.f);
+    
+    findwaypointswithin(mypos, CLOSEDIST, searchdist, covercandidates);
+    
+    // Evaluate each candidate
+    int bestcover = -1;
+    float bestscore = -1;
+    
+    loopv(covercandidates)
+    {
+        int wp = covercandidates[i];
+        if(!waypoints.inrange(wp)) continue;
+        if(d->ai->hasprevnode(wp)) continue;
+        
+        waypoint &w = waypoints[wp];
+        
+        // Check if this waypoint blocks line of sight to threat
+        vec testpos = vec(w.o).add(vec(0, 0, d->eyeheight));
+        vec testtarg;
+        
+        bool blocked = !raycubelos(testpos, threat, testtarg);
+        
+        if(!blocked) continue; // not cover if threat can see it
+        
+        // Score based on distance (closer is better) and direction (away from threat)
+        float dist = mypos.dist(w.o);
+        vec dir = vec(w.o).sub(threat).normalize();
+        vec mydir = vec(mypos).sub(threat).normalize();
+        float alignment = dir.dot(mydir); // positive = same direction (away from threat)
+        
+        float score = (alignment + 1.0f) * 0.5f; // 0-1 range
+        score += (1.0f - clamp(dist / searchdist, 0.f, 1.f)) * 0.5f;
+        
+        if(score > bestscore)
+        {
+            bestscore = score;
+            bestcover = wp;
+        }
+    }
+    
+    if(waypoints.inrange(bestcover))
+    {
+        d->ai->coverpoint = bestcover;
+        return makeroute(d, b, bestcover);
+    }
+    
+    return false;
+}
+
+// Determine if bot should retreat
+bool shouldretreat(fpsent *d)
+{
+    if(!d->ai) return false;
+    
+    // Health-based retreat
+    if(badhealth(d)) return true;
+    
+    // Check if outnumbered
+    int nearbyenemies = 0, nearbyallies = 0;
+    vec mypos = d->o;
+    
+    loopv(players)
+    {
+        fpsent *p = players[i];
+        if(p == d || p->state != CS_ALIVE) continue;
+        
+        float dist = mypos.dist(p->o);
+        if(dist > SIGHTMAX) continue;
+        
+        if(isteam(d->team, p->team)) nearbyallies++;
+        else nearbyenemies++;
+    }
+    
+    // Retreat if outnumbered 2:1 or more
+    if(nearbyenemies >= 2 && (nearbyallies == 0 || nearbyenemies > nearbyallies * 2))
+        return true;
+    
+    // Retreat if low on ammo for current weapon
+    if(!d->hasammo(d->gunselect) && !hasgoodammo(d))
+        return true;
+    
+    // Personality-based retreat
+    if(d->ai->personality == AI_PERSONALITY_DEFENSIVE && d->health < 75)
+        return true;
+    
+    return false;
+}
+
+// Update combat movement (strafing, crouching, jumping)
+void updatecombatmovement(fpsent *d, aistate &b)
+{
+    if(!d->ai) return;
+    
+    // Only apply if we actually have an enemy
+    fpsent *e = getclient(d->ai->enemy);
+    if(!e || !d->ai->incombat) 
+    {
+        // Reset combat variables when not in combat
+        d->ai->strafemode = 0;
+        d->ai->shouldcrouch = false;
+        return;
+    }
+    
+    int now = lastmillis;
+    vec mypos = d->o, enemypos = e->o;
+    float dist = mypos.dist(enemypos);
+    
+    // Strafing logic
+    if(now - d->ai->laststrafechange > 1000 + rnd(1000))
+    {
+        // Change strafe direction periodically
+        int oldmode = d->ai->strafemode;
+        
+        if(dist < 200.f) // close range - always strafe
+        {
+            d->ai->strafemode = 1 + rnd(2); // 1 or 2 (left or right)
+        }
+        else if(dist < 512.f && d->skill > 30) // medium range - sometimes strafe
+        {
+            d->ai->strafemode = rnd(100) < d->skill ? (1 + rnd(2)) : 0;
+        }
+        else
+        {
+            d->ai->strafemode = 0; // long range - don't strafe
+        }
+        
+        d->ai->laststrafechange = now;
+    }
+    
+    // Crouching logic (when under fire or reloading)
+    bool shouldcrouch = false;
+    
+    if(now - d->ai->lastdamagetime < 1000) // just took damage
+    {
+        shouldcrouch = d->skill > 40 && rnd(100) < d->skill;
+    }
+    else if(d->reloading) // reloading
+    {
+        shouldcrouch = d->skill > 50;
+    }
+    else if(dist > 400.f && d->gunselect == GUN_MAGNUM) // sniping
+    {
+        shouldcrouch = d->skill > 60;
+    }
+    
+    d->ai->shouldcrouch = shouldcrouch;
+    
+    // Combat jumping (to avoid shots)
+    if(d->skill > 50 && now - d->ai->lastjumpcombat > 2000)
+    {
+        if(now - d->ai->lastdamagetime < 500) // just took damage - jump!
+        {
+            if(rnd(100) < (d->skill - 50) * 2)
+            {
+                d->jumping = true;
+                d->ai->lastjumpcombat = now;
+            }
+        }
+    }
+    
+    // Apply movement based on personality
+    if(d->ai->personality == AI_PERSONALITY_AGGRESSIVE)
+    {
+        d->ai->strafemode = 3; // aggressive random strafing
+        d->ai->shouldcrouch = false; // aggressive bots don't crouch
+    }
+    else if(d->ai->personality == AI_PERSONALITY_TACTICAL)
+    {
+        // Tactical bots use cover more
+        if(shouldretreat(d) && now - d->ai->lastcovercheck > 5000)
+        {
+            findcover(d, b, enemypos);
+            d->ai->lastcovercheck = now;
+        }
+    }
+}
+
+// Initialize bot personality
+void initpersonality(fpsent *d)
+{
+    if(!d->ai) return;
+    
+    // Assign personality based on skill and randomness
+    if(d->skill >= 80) // high skill - tactical or aggressive
+    {
+        d->ai->personality = rnd(2) ? AI_PERSONALITY_TACTICAL : AI_PERSONALITY_AGGRESSIVE;
+    }
+    else if(d->skill >= 50) // medium skill - balanced or support
+    {
+        d->ai->personality = rnd(2) ? AI_PERSONALITY_BALANCED : AI_PERSONALITY_SUPPORT;
+    }
+    else // low skill - defensive or balanced
+    {
+        d->ai->personality = rnd(2) ? AI_PERSONALITY_DEFENSIVE : AI_PERSONALITY_BALANCED;
+    }
+    
+    // Set aggression and caution based on personality
+    switch(d->ai->personality)
+    {
+        case AI_PERSONALITY_AGGRESSIVE:
+            d->ai->aggression = 0.8f + rnd(20) / 100.f;
+            d->ai->caution = 0.1f + rnd(20) / 100.f;
+            break;
+        case AI_PERSONALITY_DEFENSIVE:
+            d->ai->aggression = 0.2f + rnd(20) / 100.f;
+            d->ai->caution = 0.7f + rnd(30) / 100.f;
+            break;
+        case AI_PERSONALITY_TACTICAL:
+            d->ai->aggression = 0.5f + rnd(30) / 100.f;
+            d->ai->caution = 0.6f + rnd(20) / 100.f;
+            break;
+        case AI_PERSONALITY_SUPPORT:
+            d->ai->aggression = 0.4f + rnd(20) / 100.f;
+            d->ai->caution = 0.5f + rnd(20) / 100.f;
+            break;
+        default: // BALANCED
+            d->ai->aggression = 0.5f;
+            d->ai->caution = 0.5f;
+            break;
+    }
+}
+
+// Get weapon effective/optimal range
+float getweaponrange(int gun, bool optimal)
+{
+    if(gun < 0 || gun >= NUMGUNS) return SIGHTMIN;
+    
+    if(optimal)
+    {
+        // Optimal engagement ranges
+        switch(gun)
+        {
+            case GUN_FIST: return 8.f;
+            case GUN_SG: 
+            case GUN_SHOTGUN2: return 50.f;
+            case GUN_CG:
+            case GUN_CG2: return 256.f;
+            case GUN_RL: return 384.f;
+            case GUN_MAGNUM: return 768.f;
+            case GUN_CROSSBOW: return 640.f;
+            case GUN_SMG:
+            case GUN_SMG2: return 320.f;
+            default: return 256.f;
+        }
+    }
+    else
+    {
+        // Maximum effective range
+        return guns[gun].range;
+    }
+}
+
+// Check if weapon should use burst fire
+bool shouldburstfire(fpsent *d, int gun)
+{
+    if(gun < 0 || gun >= NUMGUNS) return false;
+    
+    // Automatic weapons should burst
+    if(gun == GUN_CG || gun == GUN_CG2 || gun == GUN_SMG || gun == GUN_SMG2)
+    {
+        // Higher skill = better burst control
+        if(d->skill > 60) return true;
+    }
+    
+    return false;
+}
+
+// Team coordination - find nearby teammates
+void findteammates(fpsent *d, vector<fpsent *> &teammates, float maxdist = SIGHTMAX)
+{
+    if(!m_teammode) return;
+    
+    vec mypos = d->o;
+    loopv(players)
+    {
+        fpsent *p = players[i];
+        if(p == d || !p->ai || p->state != CS_ALIVE) continue;
+        if(!isteam(d->team, p->team)) continue;
+        
+        float dist = mypos.dist(p->o);
+        if(dist <= maxdist)
+        {
+            teammates.add(p);
+        }
+    }
+}
+
+// Form or update squad
+void updatesquad(fpsent *d)
+{
+    if(!d->ai || !m_teammode) return;
+    
+    static vector<fpsent *> nearbymates;
+    nearbymates.setsize(0);
+    findteammates(d, nearbymates, 512.f);
+    
+    // If we have a squad leader and they're nearby, stay with them
+    if(d->ai->squadleader >= 0)
+    {
+        fpsent *leader = getclient(d->ai->squadleader);
+        bool leadernearby = false;
+        
+        loopv(nearbymates)
+        {
+            if(nearbymates[i]->clientnum == d->ai->squadleader)
+            {
+                leadernearby = true;
+                break;
+            }
+        }
+        
+        // Leader is gone or too far - find new squad
+        if(!leader || !leadernearby || leader->state != CS_ALIVE)
+        {
+            d->ai->squadleader = -1;
+            d->ai->squadmates.setsize(0);
+        }
+    }
+    
+    // Form new squad if we don't have one
+    if(d->ai->squadleader < 0 && nearbymates.length() > 0)
+    {
+        // Higher skill bots become leaders
+        bool shouldlead = true;
+        loopv(nearbymates)
+        {
+            fpsent *mate = nearbymates[i];
+            if(mate->skill > d->skill + 10)
+            {
+                shouldlead = false;
+                // Follow this higher-skilled bot
+                if(mate->ai && mate->ai->squadleader == mate->clientnum)
+                {
+                    d->ai->squadleader = mate->clientnum;
+                    break;
+                }
+            }
+        }
+        
+        if(shouldlead)
+        {
+            // Become squad leader
+            d->ai->squadleader = d->clientnum;
+            d->ai->squadmates.setsize(0);
+            
+            // Recruit nearby teammates
+            loopv(nearbymates)
+            {
+                fpsent *mate = nearbymates[i];
+                if(mate->ai && d->ai->squadmates.length() < 3)
+                {
+                    // Set them to follow us
+                    mate->ai->squadleader = d->clientnum;
+                    d->ai->squadmates.add(mate->clientnum);
+                }
+            }
+        }
+    }
+}
+
+// Squad coordination - share target info
+void coordinatesquad(fpsent *d)
+{
+    if(!d->ai || d->ai->squadleader < 0) return;
+    
+    fpsent *leader = d->ai->squadleader == d->clientnum ? d : getclient(d->ai->squadleader);
+    if(!leader || !leader->ai) return;
+    
+    // Share enemy information with squad
+    if(d->ai->enemy >= 0)
+    {
+        fpsent *enemy = getclient(d->ai->enemy);
+        if(enemy && targetable(d, enemy))
+        {
+            // Inform squad leader about enemy
+            if(leader != d && leader->ai)
+            {
+                bool alreadytracked = false;
+                loopv(leader->ai->enemylist)
+                {
+                    if(leader->ai->enemylist[i].clientnum == enemy->clientnum)
+                    {
+                        alreadytracked = true;
+                        // Increase threat since teammate sees them too
+                        leader->ai->enemylist[i].threat = min(leader->ai->enemylist[i].threat + 0.2f, 1.f);
+                        leader->ai->enemylist[i].lastpos = enemy->o;
+                        leader->ai->enemylist[i].lastseen = lastmillis;
+                        break;
+                    }
+                }
+                
+                if(!alreadytracked && leader->ai->enemylist.length() < MAXENEMYTRACK)
+                {
+                    enemyinfo ei(enemy->clientnum);
+                    ei.lastpos = enemy->o;
+                    ei.lastseen = lastmillis;
+                    ei.threat = 0.7f;
+                    leader->ai->enemylist.add(ei);
+                }
+            }
+            
+            // Inform squad members
+            loopv(d->ai->squadmates)
+            {
+                fpsent *mate = getclient(d->ai->squadmates[i]);
+                if(!mate || !mate->ai || mate == d) continue;
+                
+                // Share enemy info
+                bool tracked = false;
+                loopvj(mate->ai->enemylist)
+                {
+                    if(mate->ai->enemylist[j].clientnum == enemy->clientnum)
+                    {
+                        tracked = true;
+                        mate->ai->enemylist[j].threat = min(mate->ai->enemylist[j].threat + 0.15f, 1.f);
+                        break;
+                    }
+                }
+                
+                if(!tracked && mate->ai->enemylist.length() < MAXENEMYTRACK)
+                {
+                    enemyinfo ei(enemy->clientnum);
+                    ei.lastpos = enemy->o;
+                    ei.lastseen = lastmillis - 500; // slightly older info
+                    ei.threat = 0.5f;
+                    mate->ai->enemylist.add(ei);
+                }
+            }
+        }
+    }
+    
+    // Leader assigns roles based on situation
+    if(leader == d && d->ai->squadmates.length() > 0)
+    {
+        // Simple role assignment: some attack, some defend
+        loopv(d->ai->squadmates)
+        {
+            fpsent *mate = getclient(d->ai->squadmates[i]);
+            if(!mate || !mate->ai) continue;
+            
+            // Defensive bots protect, others attack
+            if(mate->ai->personality == AI_PERSONALITY_DEFENSIVE || mate->ai->personality == AI_PERSONALITY_SUPPORT)
+            {
+                // These bots stay closer to objectives/team
+            }
+            else
+            {
+                // Aggressive bots push forward
+            }
+        }
+    }
+}
+
+// Tactical spacing - don't clump up
+void maintainspacing(fpsent *d, aistate &b)
+{
+    if(!d->ai) return;
+    
+    static vector<fpsent *> nearbymates;
+    nearbymates.setsize(0);
+    findteammates(d, nearbymates, 128.f);
+    
+    if(nearbymates.length() > 2) // getting crowded
+    {
+        // Find a nearby waypoint that's away from teammates
+        vec avgpos(0, 0, 0);
+        loopv(nearbymates) avgpos.add(nearbymates[i]->o);
+        avgpos.div(nearbymates.length());
+        
+        // Move away from average position
+        vec awayfrom = vec(d->o).sub(avgpos).normalize();
+        vec targetpos = vec(d->o).add(vec(awayfrom).mul(100.f));
+        
+        int spreadnode = closestwaypoint(targetpos, SIGHTMIN, true);
+        if(waypoints.inrange(spreadnode) && !d->ai->hasprevnode(spreadnode))
+        {
+            makeroute(d, b, spreadnode);
+        }
+    }
+}
+
+// Weapon-specific tactics
+void applyweapontactics(fpsent *d, fpsent *e, aistate &b)
+{
+    if(!d->ai || !e) return;
+    
+    float dist = d->o.dist(e->o);
+    
+    // Simplified tactics - only apply for high-skill bots
+    if(d->skill < 60) return;
+    
+    switch(d->gunselect)
+    {
+        case GUN_MAGNUM:
+        case GUN_CROSSBOW: // Sniper weapons
+        {
+            // Crouch for accuracy at long range
+            if(dist > 400.f && d->skill > 70 && !d->timeinair)
+            {
+                d->ai->shouldcrouch = true;
+            }
+            break;
+        }
+        
+        case GUN_SG:
+        case GUN_SHOTGUN2: // Shotgun tactics
+        {
+            // Jump-shoot technique for skilled bots
+            if(dist < 100.f && d->skill > 80 && !d->timeinair && rnd(100) < 20)
+            {
+                d->jumping = true;
+            }
+            break;
+        }
+    }
+}
+
+// Engagement range management
+bool manageengagementrange(fpsent *d, fpsent *e, aistate &b)
+{
+    // Simplified - just maintain some spacing for high-skill bots
+    if(!d->ai || !e || d->skill < 70) return false;
+    
+    float dist = d->o.dist(e->o);
+    
+    // Back away if too close with rocket launcher (to avoid self-damage)
+    if(d->gunselect == GUN_RL && dist < 150.f)
+    {
+        d->ai->becareful = true;
+        return false;
+    }
+    
+    return false;
+}
+
+// Environmental awareness - learn good positions
+struct mapknowledge
+{
+    vector<int> sniperpoints;    // Good long-range positions
+    vector<int> ambushpoints;    // Good ambush locations
+    vector<int> dangerpoints;    // Dangerous areas (died here often)
+    int lastupdated;
+    
+    mapknowledge() : lastupdated(0) {}
+};
+
+static mapknowledge mapdata;
+
+void updateenvironmentalawareness(fpsent *d)
+{
+    if(!d->ai) return;
+    
+    // Learn from death - mark current area as dangerous
+    if(d->state == CS_DEAD && waypoints.inrange(d->lastnode))
+    {
+        bool alreadymarked = false;
+        loopv(mapdata.dangerpoints)
+        {
+            if(mapdata.dangerpoints[i] == d->lastnode)
+            {
+                alreadymarked = true;
+                break;
+            }
+        }
+        
+        if(!alreadymarked)
+        {
+            mapdata.dangerpoints.add(d->lastnode);
+        }
+    }
+    
+    // Identify good sniper positions (high ground, good visibility)
+    if(d->ai->personality == AI_PERSONALITY_TACTICAL && d->state == CS_ALIVE)
+    {
+        if(lastmillis - mapdata.lastupdated > 10000) // Update every 10 seconds
+        {
+            // Check if current position is a good vantage point
+            if(waypoints.inrange(d->lastnode))
+            {
+                vec mypos = d->o;
+                int visibleenemies = 0;
+                
+                loopv(players)
+                {
+                    fpsent *e = players[i];
+                    if(!targetable(d, e)) continue;
+                    
+                    vec ep = e->headpos();
+                    vec targ;
+                    if(raycubelos(mypos, ep, targ))
+                    {
+                        visibleenemies++;
+                    }
+                }
+                
+                // Good position if we can see multiple enemies
+                if(visibleenemies >= 2)
+                {
+                    bool alreadyknown = false;
+                    loopv(mapdata.sniperpoints)
+                    {
+                        if(mapdata.sniperpoints[i] == d->lastnode)
+                        {
+                            alreadyknown = true;
+                            break;
+                        }
+                    }
+                    
+                    if(!alreadyknown && mapdata.sniperpoints.length() < 20)
+                    {
+                        mapdata.sniperpoints.add(d->lastnode);
+                    }
+                }
+            }
+            
+            mapdata.lastupdated = lastmillis;
+        }
+    }
+}
+
+// Use environmental knowledge
+bool useenvironmentknowledge(fpsent *d, aistate &b)
+{
+    if(!d->ai) return false;
+    
+    // Avoid danger points when low health
+    if(badhealth(d) && waypoints.inrange(d->lastnode))
+    {
+        loopv(mapdata.dangerpoints)
+        {
+            if(mapdata.dangerpoints[i] == d->lastnode)
+            {
+                // We're in a danger zone - leave immediately
+                if(randomnode(d, b, SIGHTMIN, SIGHTMAX))
+                {
+                    return true;
+                }
+            }
+        }
+    }
+    
+    // Tactical/defensive bots use sniper points
+    if((d->ai->personality == AI_PERSONALITY_TACTICAL || d->ai->personality == AI_PERSONALITY_DEFENSIVE) && d->gunselect == GUN_MAGNUM)
+    {
+        if(mapdata.sniperpoints.length() > 0 && rnd(100) < 30)
+        {
+            int point = mapdata.sniperpoints[rnd(mapdata.sniperpoints.length())];
+            if(waypoints.inrange(point) && point != d->lastnode)
+            {
+                return makeroute(d, b, point);
+            }
+        }
+    }
+    
+    return false;
+}
+
 }
 

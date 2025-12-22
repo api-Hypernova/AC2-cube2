@@ -132,6 +132,11 @@ namespace ai
         AI_S_DEFEND,        // defend goal target
         AI_S_PURSUE,        // pursue goal target
         AI_S_INTEREST,      // interest in goal entity
+        AI_S_RETREAT,       // tactical retreat when low health
+        AI_S_FLANK,         // flank around enemy
+        AI_S_COVER,         // take cover position
+        AI_S_SUPPRESS,      // suppress enemy with fire
+        AI_S_INVESTIGATE,   // investigate sound/location
         AI_S_MAX
     };
 
@@ -144,12 +149,50 @@ namespace ai
         AI_T_MAX
     };
 
+    // Bot personality types
+    enum
+    {
+        AI_PERSONALITY_BALANCED = 0,  // balanced playstyle
+        AI_PERSONALITY_AGGRESSIVE,    // pushes forward, takes risks
+        AI_PERSONALITY_DEFENSIVE,     // holds positions, conservative
+        AI_PERSONALITY_TACTICAL,      // uses cover, flanks
+        AI_PERSONALITY_SUPPORT,       // sticks with team
+        AI_PERSONALITY_MAX
+    };
+
     struct interest
     {
         int state, node, target, targtype;
         float score;
         interest() : state(-1), node(-1), target(-1), targtype(-1), score(0.f) {}
         ~interest() {}
+    };
+
+    // Enemy tracking info for multiple targets
+    struct enemyinfo
+    {
+        int clientnum;           // enemy client number
+        vec lastpos;             // last known position
+        vec velocity;            // estimated velocity
+        int lastseen;            // last time seen (millis)
+        int lastdamaged;         // last time we were damaged by them
+        float threat;            // threat level (0-1)
+        int predictednode;       // predicted waypoint they're heading to
+        
+        enemyinfo() : clientnum(-1), lastpos(0, 0, 0), velocity(0, 0, 0), lastseen(0), lastdamaged(0), threat(0.f), predictednode(-1) {}
+        enemyinfo(int cn) : clientnum(cn), lastpos(0, 0, 0), velocity(0, 0, 0), lastseen(0), lastdamaged(0), threat(0.f), predictednode(-1) {}
+    };
+
+    // Cover point information
+    struct coverinfo
+    {
+        vec pos;                 // cover position
+        int waypoint;            // associated waypoint
+        int lastupdated;         // last time checked
+        float quality;           // cover quality (0-1)
+        bool occupied;           // is someone using it?
+        
+        coverinfo() : pos(0, 0, 0), waypoint(-1), lastupdated(0), quality(0.f), occupied(false) {}
     };
 
     struct aistate
@@ -171,6 +214,7 @@ namespace ai
     };
 
     const int NUMPREVNODES = 6;
+    const int MAXENEMYTRACK = 8;  // track up to 8 enemies
 
     struct aiinfo
     {
@@ -182,11 +226,46 @@ namespace ai
         float targyaw, targpitch, views[3], aimrnd[3];
         bool dontmove, becareful, tryreset, trywipe;
 
+        // Enhanced AI features
+        vector<enemyinfo> enemylist;      // multiple enemy tracking
+        int personality;                  // bot personality type
+        int lastcovercheck;               // last time we looked for cover
+        int coverpoint;                   // current cover waypoint
+        bool incombat;                    // currently in combat
+        int combatstart;                  // when combat started
+        vec lastdamagepos;                // where we last took damage
+        int lastdamagetime;               // when we last took damage
+        int strafemode;                   // current strafe pattern (0=none, 1=left, 2=right, 3=random)
+        int laststrafechange;             // last strafe direction change
+        int burstcount;                   // shots in current burst
+        int lastburstfire;                // last burst fire time
+        bool shouldcrouch;                // should crouch now
+        int crouchtime;                   // how long been crouching
+        int lastjumpcombat;               // last combat jump
+        int faileditemid;                 // item we failed to reach
+        int faileditemtime;               // when we failed to reach it
+        float aggression;                 // aggression level (0-1)
+        float caution;                    // caution level (0-1)
+        int squadleader;                  // squad leader client number (-1 if none)
+        vector<int> squadmates;           // squad member client numbers
+        int lastcoordination;             // last team coordination check
+
         aiinfo()
         {
             clearsetup();
             reset();
             loopk(3) views[k] = 0.f;
+            personality = AI_PERSONALITY_BALANCED;
+            lastcovercheck = coverpoint = combatstart = lastdamagetime = 0;
+            lastdamagepos = vec(0, 0, 0);
+            incombat = shouldcrouch = false;
+            strafemode = 0;
+            laststrafechange = lastburstfire = burstcount = lastjumpcombat = 0;
+            faileditemid = -1;
+            faileditemtime = 0;
+            aggression = caution = 0.5f;
+            squadleader = -1;
+            lastcoordination = 0;
         }
         ~aiinfo() {}
 
@@ -198,6 +277,14 @@ namespace ai
             lastrun = jumpseed = lastmillis;
             jumprand = lastmillis+5000;
             targnode = targlast = enemy = -1;
+            enemylist.setsize(0);
+            coverpoint = -1;
+            incombat = false;
+            combatstart = lastdamagetime = 0;
+            lastdamagepos = vec(0, 0, 0);
+            strafemode = 0;
+            burstcount = 0;
+            squadmates.setsize(0);
 		}
 
 		void clear(bool prev = true)
@@ -300,6 +387,18 @@ namespace ai
 	extern void damaged(fpsent *d, fpsent *e);
 	extern void killed(fpsent *d, fpsent *e);
 	extern void itemspawned(int ent);
+
+    // Enhanced AI functions
+    extern void updateenemytracking(fpsent *d);
+    extern fpsent *selectbesttarget(fpsent *d);
+    extern bool findcover(fpsent *d, aistate &b, const vec &threat);
+    extern vec predictposition(fpsent *e, float projspeed);
+    extern bool isreachable(fpsent *d, const vec &pos, int timeout = 5000);
+    extern void updatecombatmovement(fpsent *d, aistate &b);
+    extern bool shouldretreat(fpsent *d);
+    extern void initpersonality(fpsent *d);
+    extern float getweaponrange(int gun, bool optimal = false);
+    extern bool shouldburstfire(fpsent *d, int gun);
 
     extern void render();
 }
