@@ -41,26 +41,49 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 ; Main executable launcher
 Source: "SauerEnhanced.bat"; DestDir: "{app}"; Flags: ignoreversion
 
-; SauerEnhanced directory and all contents
-Source: "SauerEnhanced\*"; DestDir: "{app}\SauerEnhanced"; Flags: ignoreversion recursesubdirs createallsubdirs
+; ===== SauerEnhanced - RUNTIME FILES ONLY (NO SOURCE CODE) =====
+; Game executable and required DLLs
+Source: "SauerEnhanced\bin\*"; DestDir: "{app}\SauerEnhanced\bin"; Flags: ignoreversion recursesubdirs createallsubdirs
 
-; Data directory
+; Configuration files (root level)
+Source: "SauerEnhanced\*.cfg"; DestDir: "{app}\SauerEnhanced"; Flags: ignoreversion
+Source: "SauerEnhanced\*.txt"; DestDir: "{app}\SauerEnhanced"; Flags: ignoreversion
+Source: "SauerEnhanced\*.mtl"; DestDir: "{app}\SauerEnhanced"; Flags: ignoreversion
+Source: "SauerEnhanced\mapdata"; DestDir: "{app}\SauerEnhanced"; Flags: ignoreversion
+
+; Config subdirectories
+Source: "SauerEnhanced\cfg\*"; DestDir: "{app}\SauerEnhanced\cfg"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "SauerEnhanced\configs\*"; DestDir: "{app}\SauerEnhanced\configs"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "SauerEnhanced\SauerEnhanced\*"; DestDir: "{app}\SauerEnhanced\SauerEnhanced"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+; Game data and assets
+Source: "SauerEnhanced\data\*"; DestDir: "{app}\SauerEnhanced\data"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "SauerEnhanced\packages\*"; DestDir: "{app}\SauerEnhanced\packages"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+; User profiles (optional, but included for completeness)
+Source: "SauerEnhanced\profiles\*"; DestDir: "{app}\SauerEnhanced\profiles"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+; NOTE: Explicitly EXCLUDED from installer:
+; - SauerEnhanced\source\* (source code - not needed for playing)
+; - SauerEnhanced\bin_unix\* (Unix binaries - not needed on Windows)
+; - SauerEnhanced\*.pdb (debug symbols - not needed for release)
+; - SauerEnhanced\*.md (developer documentation)
+; - SauerEnhanced\compile_se (build script - not needed for playing)
+; - SauerEnhanced\sauer_master (Unix binary)
+; - SauerEnhanced\testmaps.zip (development test files)
+; - SauerEnhanced\master.log (log files)
+; ===== END SauerEnhanced FILES =====
+
+; Data directory (root level game assets)
 Source: "data\*"; DestDir: "{app}\data"; Flags: ignoreversion recursesubdirs createallsubdirs
 
-; Packages directory
+; Packages directory (root level game assets)
 Source: "packages\*"; DestDir: "{app}\packages"; Flags: ignoreversion recursesubdirs createallsubdirs
 
-; Docs directory
-Source: "docs\*"; DestDir: "{app}\docs"; Flags: ignoreversion recursesubdirs createallsubdirs
-
-; Root files
+; Root files (documentation)
 Source: "README.html"; DestDir: "{app}"; Flags: ignoreversion
 Source: "readme.txt"; DestDir: "{app}"; Flags: ignoreversion
 Source: "servers.cfg"; DestDir: "{app}"; Flags: ignoreversion; AfterInstall: CreateDesktopShortcut
-
-; Linux files (optional, for reference)
-Source: "SauerEnhanced_linux.sh"; DestDir: "{app}"; Flags: ignoreversion
-Source: "sauerbraten_unix"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 ; Start Menu shortcut
@@ -76,6 +99,72 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDi
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent shellexec
 
 [Code]
+// Function to remove previous installation before installing new version
+function InitializeSetup(): Boolean;
+var
+  ResultCode: Integer;
+  UninstallPath: String;
+  UninstallExe: String;
+begin
+  Result := True; // Allow installation to continue by default
+  
+  // Check if a previous version is installed by looking for the uninstaller
+  if RegQueryStringValue(HKLM, 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{AC2-CUBE2-GAME-2024}_is1', 
+                         'UninstallString', UninstallPath) or
+     RegQueryStringValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{AC2-CUBE2-GAME-2024}_is1', 
+                         'UninstallString', UninstallPath) then
+  begin
+    // Previous installation found
+    UninstallPath := RemoveQuotes(UninstallPath);
+    
+    if FileExists(UninstallPath) then
+    begin
+      // Ask user if they want to uninstall the previous version
+      if MsgBox('A previous installation of Adrenaline Cube 2 was detected.' + #13#10 + #13#10 + 
+                'It is recommended to uninstall the previous version before continuing.' + #13#10 + 
+                'Would you like to uninstall it now?' + #13#10 + #13#10 + 
+                '(This will preserve your configuration files)', 
+                mbConfirmation, MB_YESNO) = IDYES then
+      begin
+        // Run the uninstaller silently with /VERYSILENT /NORESTART /SUPPRESSMSGBOXES
+        // The /VERYSILENT flag makes it completely silent
+        if Exec(UninstallPath, '/VERYSILENT /NORESTART /SUPPRESSMSGBOXES', '', SW_SHOW, ewWaitUntilTerminated, ResultCode) then
+        begin
+          // Wait a moment for files to be released
+          Sleep(1000);
+          
+          // Uninstall successful
+          if ResultCode = 0 then
+          begin
+            MsgBox('Previous installation removed successfully.' + #13#10 + 
+                   'The new version will now be installed.', mbInformation, MB_OK);
+          end
+          else
+          begin
+            // Uninstall failed or was cancelled by user
+            if MsgBox('The uninstaller returned an error code.' + #13#10 + 
+                      'Do you want to continue with the installation anyway?', 
+                      mbConfirmation, MB_YESNO) = IDNO then
+            begin
+              Result := False; // Cancel installation
+            end;
+          end;
+        end
+        else
+        begin
+          // Could not execute uninstaller
+          if MsgBox('Could not run the uninstaller.' + #13#10 + 
+                    'Do you want to continue with the installation anyway?', 
+                    mbConfirmation, MB_YESNO) = IDNO then
+          begin
+            Result := False; // Cancel installation
+          end;
+        end;
+      end;
+    end;
+  end;
+end;
+
 procedure CreateDesktopShortcut();
 begin
   // This is called after the main files are installed
