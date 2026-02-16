@@ -268,7 +268,7 @@ namespace game
         updatemovables(curtime);
         updatemonsters(curtime);
 
-        if (lastmillis - lastupdatemoney > 5000) {
+        if (player1->clientnum>=0 && player1->state==CS_ALIVE && !intermission && lastmillis - lastupdatemoney > 5000) {
             player1->money += moneyrate;
             lastupdatemoney = lastmillis;
             conoutf("Earned %d money, current money %d", moneyrate, player1->money);
@@ -450,7 +450,7 @@ namespace game
         d->state = CS_DEAD;
         d->lastpain = lastmillis;
         if(!restore) gibeffect(max(-d->health, 0), d->vel, d);
-        if (d->quadmillis) { //helicopter explosion
+        if (d->mods & MOD_HELICOPTER) { //helicopter explosion
             regular_particle_flame(PART_FLAME, d->o, 1, 1, 0x903020, 3, 20.0f);
             regular_particle_flame(PART_SMOKE, d->o, 1, 1, 0x303020, 1, 40.0f, 100.0f, 2000.0f, -20);
             particle_splash(PART_SMOKE, 5, 1250, d->o, 0x222222, 120.0f, 200, 250, NULL, 1, false, 3);
@@ -801,6 +801,18 @@ namespace game
         maptime = maprealtime = 0;
         maplimit = -1;
 
+        // Reset money and mods at match start
+        player1->money = 0;
+        player1->mods = 0;
+        lastupdatemoney = 0;
+        // Reset mod script variables so GUI stays in sync (dofunc=false to skip callbacks)
+        setvar("mod_rifle", 0, false, false);
+        setvar("mod_sniper", 0, false, false);
+        setvar("mod_lightninggun", 0, false, false);
+        setvar("mod_heavysniper", 0, false, false);
+        setvar("mod_remotedetonate", 0, false, false);
+        setvar("mod_helicopter", 0, false, false);
+
         if(cmode)
         {
             cmode->preload();
@@ -1082,7 +1094,7 @@ namespace game
         if(hudplayer()->armour) draw_textf("%s%d", 300, h*1.2f-80, hudplayer()->armour>51?"":(hudplayer()->armour>26?"\f2":"\f3"), hudplayer()->armour);
         //defformatstring(ammo)("%d", hudplayer()->ammo[hudplayer()->gunselect]);
         int magleft[NUMGUNS];
-        loopi(NUMGUNS) magleft[i]=guns[i].magsize-hudplayer()->magprogress[i];
+        loopi(NUMGUNS) magleft[i]=getmagsize(i, hudplayer()->mods)-hudplayer()->magprogress[i];
         loopi(NUMGUNS)if(hudplayer()->ammo[i]<magleft[i])magleft[i]=hudplayer()->ammo[i];
         int wb = 0, hb = 0;
         //text_bounds(ammo, wb, hb);
@@ -1099,7 +1111,7 @@ namespace game
             draw_textf("|%d", w*1.2f-wb-145, h*1.2f-128, hudplayer()->ammo[GUN_SMG2]);
         }
         //else draw_textf("%d", w*1.2f-wb-180, h*1.2f-128, hudplayer()->ammo[hudplayer()->gunselect]);
-        else draw_textf("%d", w*1.2f-wb-180, h*1.2f-128, guns[hudplayer()->gunselect].magsize?magleft[hudplayer()->gunselect]:hudplayer()->ammo[hudplayer()->gunselect]);
+        else draw_textf("%d", w*1.2f-wb-180, h*1.2f-128, getmagsize(hudplayer()->gunselect, hudplayer()->mods)?magleft[hudplayer()->gunselect]:hudplayer()->ammo[hudplayer()->gunselect]);
 
         if(hudplayer()->quadmillis)
         {

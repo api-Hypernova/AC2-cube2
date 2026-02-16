@@ -246,10 +246,10 @@ void offsetray(const vec &from, const vec &to, int spread, float range, vec &des
     raycubepos(from, dir, dest, range, RAY_CLIPMAT|RAY_ALPHAPOLY);
 }
 
-VARP(rifle, 0, 1, 1);
+VARP(rifle, 0, 0, 1);
 void createrays(int gun, const vec &from, const vec &to, fpsent *d)             // create random spread of rays
 {
-    loopi(guns[gun].rays) offsetray(from, to, (rifle&&gun==GUN_SHOTGUN2)?0:guns[gun].spread * (d->crouching ? .9f : 1), guns[gun].range, rays[i], false);
+    loopi(guns[gun].rays) offsetray(from, to, ((d->mods & MOD_RIFLE)&&gun==GUN_SHOTGUN2)?0:guns[gun].spread * (d->crouching ? .9f : 1), guns[gun].range, rays[i], false);
 }
 
 enum { BNC_GRENADE, BNC_GIBS, BNC_DEBRIS, BNC_BARRELDEBRIS, BNC_MISSILE, BNC_XBOLT, BNC_SMGNADE, BNC_ELECTROBOLT, BNC_ORB, BNC_WEAPON, BNC_PROP, BNC_SHELL, BNC_BARREL };
@@ -1526,6 +1526,20 @@ void explode(bool local, fpsent *owner, const vec &v, dynent *safe, int damage, 
     }
 }
 
+void sendbarrelexplode(fpsent *owner, const vec &pos, dynent *safe)
+{
+    // Clear hits, run explosion (VFX + local damage), then send to server
+    hits.setsize(0);
+    explode(true, owner, pos, safe, guns[GUN_BARREL].damage, GUN_BARREL);
+    // Send barrel explosion to server so it can propagate damage to other clients
+    // Uses a dummy ID based on lastmillis since barrels aren't tracked as projectiles
+    addmsg(N_EXPLODE, "rci3iv", owner, lastmillis-maptime, GUN_BARREL, lastmillis-maptime,
+           hits.length(), hits.length()*sizeof(hitmsg)/sizeof(int), hits.getbuf());
+    // Send barrel position so other clients can render the explosion VFX
+    // This is relayed via the server's generic message handler
+    addmsg(N_BARRELEXPLODE, "ri3", (int)(pos.x*DMF), (int)(pos.y*DMF), (int)(pos.z*DMF));
+}
+
 void projsplash(projectile &p, vec &v, dynent *safe, int damage, bool impact = true)
 {
     if(guns[p.gun].part && (p.gun != GUN_ELECTRO2 || impact))
@@ -1630,7 +1644,7 @@ void explodeeffects(int gun, fpsent *d, bool local, int id)
 
 bool isheadshot(dynent *d, vec to)
 {
-    if ((to.z - (d->o.z - d->eyeheight)) / (d->eyeheight + d->aboveeye) > 0.8f) return true;
+    if ((to.z - (d->o.z - d->eyeheight)) / (d->eyeheight + d->aboveeye) > 0.9f) return true;
     return false;
 }
 
@@ -1838,7 +1852,7 @@ void updateprojectiles(int time)
             p.to.mul(barrier).add(p.owner->o);
             //player1->guiding=1;
         }
-        if(!raycube(p.o, p.o, guns[p.gun].range, RAY_CLIPMAT|RAY_ALPHAPOLY) || (p.local && p.owner->altattacking && p.owner->gunselect == GUN_RL))
+        if(!raycube(p.o, p.o, guns[p.gun].range, RAY_CLIPMAT|RAY_ALPHAPOLY) || (p.local && p.owner->altattacking && p.owner->gunselect == GUN_RL && (p.owner->mods & MOD_REMOTEDETONATE)))
         {
             int qdam = guns[p.gun].damage*(p.owner->quadmillis ? 2 : 1);
             projsplash(p, p.o, NULL, qdam);
@@ -1935,6 +1949,9 @@ void raydamage(vec &from, vec &to, fpsent *d)
     int qdam = guns[d->gunselect].damage;
     d->headshots=0;
     if(d->quadmillis) qdam *= 2;
+    // Super Telekinesis: override damage for TK weapons (applied after quad multiplier)
+    if(d->gunselect == GUN_TELEKENESIS && d->quadmillis) qdam = 500;  // devastating punt
+    else if(d->gunselect == GUN_TELEKENESIS2 && d->quadmillis) qdam = 80; // continuous beam damage
     if(d->type==ENT_AI) qdam /= MONSTERDAMAGEFACTOR;
     dynent *o, *cl;
     float dist;
@@ -1996,9 +2013,9 @@ void raydamage(vec &from, vec &to, fpsent *d)
     {
         vec blooddest=to;
         blooddest.z+=rnd(2)+2;
-        if(blood && d->gunselect!=GUN_TELEKENESIS2  && (o->type==ENT_PLAYER || o->type==ENT_AI))adddecal(DECAL_BLOOD, blooddest, vec(from).sub(blooddest).normalize(), rnd(8)+13.f, bvec(0x99, 0xFF, 0xFF));
+        if(blood && (d->gunselect!=GUN_TELEKENESIS2 || d->quadmillis)  && (o->type==ENT_PLAYER || o->type==ENT_AI))adddecal(DECAL_BLOOD, blooddest, vec(from).sub(blooddest).normalize(), rnd(8)+13.f, bvec(0x99, 0xFF, 0xFF));
         shorten(from, to, dist);
-        if(blood && qdam<500 && d->gunselect!=GUN_TELEKENESIS2 && (o->type==ENT_PLAYER || o->type==ENT_AI)){
+        if(blood && qdam<500 && (d->gunselect!=GUN_TELEKENESIS2 || d->quadmillis) && (o->type==ENT_PLAYER || o->type==ENT_AI)){
             particle_splash(PART_BLOOD, 1, 200, to, 0x99FFFF, 8.f, 50, 0, NULL, 2, false, 3); particle_splash(PART_WATER, 50, 300, to, 0xFF0000, 0.1f, 230);
             //particle_splash(PART_SMOKE, 5, 200, to, 0x0000FF, 2.0f, 50, 250, NULL, 1, false, 2);
         }
@@ -2011,10 +2028,20 @@ void raydamage(vec &from, vec &to, fpsent *d)
 VARP(serifletrail, 0, 0, 1);
 VARP(nadetimer, 500, 1000, 3000);
 
-void set_mod(int modset, int mod, int cost, char* name) {
+void set_mod(int modset, int mod, int cost, char* name, const char *varname, int prerequisite = 0) {
     if (modset) {
+        // Already own this mod - no double purchase
+        if (player1->mods & mod) return;
+        // Check prerequisite mod
+        if (prerequisite && !(player1->mods & prerequisite)) {
+            conoutf("You need the prerequisite upgrade first before buying %s", name);
+            if(varname) setvar(varname, 0, false, false);
+            return;
+        }
         if (player1->money - cost < 0) {
             conoutf("You don't have enough money to buy the %s mod", name);
+            // Reset the script variable back to 0 (VARFP already set it to 1)
+            if(varname) setvar(varname, 0, false, false);
             return;
         }
         player1->mods |= mod;
@@ -2028,25 +2055,34 @@ void set_mod(int modset, int mod, int cost, char* name) {
     }
 }
 
-/*VARFP(mod_lightninggun, 0, 0, 1,
-    if (mod_lightninggun) { 
-        int cost = 2000;
-        if (player1->money - cost < 0) {
-            conoutf("You don't have enough money to buy the lightning gun mod");
-            return;
-        }
-        player1->mods |= MOD_LIGHTNINGGUN; 
-        addmsg(N_MODS, "rci", player1, player1->mods);
-        player1->money -= cost;
-        conoutf("You bought the lightning gun mod!");
-    } else {
-        player1->mods &= ~MOD_LIGHTNINGGUN;
-        addmsg(N_MODS, "rci", player1, player1->mods);
+VARFP(mod_rifle, 0, 0, 1, set_mod(mod_rifle, MOD_RIFLE, 4000, "rifle sniper", "mod_rifle"));
+VARFP(mod_sniper, 0, 0, 1, set_mod(mod_sniper, MOD_SNIPER, 2000, "sniper", "mod_sniper"));
+VARFP(mod_lightninggun, 0, 0, 1, {
+    // Requires sniper upgrade, exclusive with heavy sniper
+    if(mod_lightninggun && (player1->mods & MOD_HEAVYSNIPER)) {
+        conoutf("You already own the Heavy Sniper - cannot also buy Lightning Gun");
+        setvar("mod_lightninggun", 0, false, false);
+        return;
     }
-);*/
-
-VARFP(mod_lightninggun, 0, 0, 1, set_mod(mod_lightninggun, MOD_LIGHTNINGGUN, 2000, "lightning gun"));
-VARP(lgsniper, 0, 0, 1);
+    set_mod(mod_lightninggun, MOD_LIGHTNINGGUN, 5000, "lightning gun", "mod_lightninggun", MOD_SNIPER);
+});
+VARFP(mod_heavysniper, 0, 0, 1, {
+    // Requires sniper upgrade, exclusive with lightning gun
+    if(mod_heavysniper && (player1->mods & MOD_LIGHTNINGGUN)) {
+        conoutf("You already own the Lightning Gun - cannot also buy Heavy Sniper");
+        setvar("mod_heavysniper", 0, false, false);
+        return;
+    }
+    set_mod(mod_heavysniper, MOD_HEAVYSNIPER, 5000, "heavy sniper", "mod_heavysniper", MOD_SNIPER);
+});
+VARFP(mod_remotedetonate, 0, 0, 1, set_mod(mod_remotedetonate, MOD_REMOTEDETONATE, 3000, "remote detonation", "mod_remotedetonate"));
+VARFP(mod_helicopter, 0, 0, 1, {
+    set_mod(mod_helicopter, MOD_HELICOPTER, 30000, "helicopter", "mod_helicopter");
+    if(mod_helicopter && (player1->mods & MOD_HELICOPTER)) {
+        player1->health = max(player1->health, 200);
+        player1->maxhealth = 200;
+    }
+});
 
 
 //void screenjump();
@@ -2133,7 +2169,7 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
         // }
         // Different screenjump for each shotgun - GUN_SG (double-shot) stronger than SHOTGUN2 (single-shot)
         if(d==hudplayer()) { 
-            d->screenjumpheight = (gun==GUN_SG) ? 40 : 30; // GUN_SG=40 (doubled from 20), SHOTGUN2=30 (weaker but still strong)
+            d->screenjumpheight = (gun==GUN_SG) ? 80 : 60; // GUN_SG=80, SHOTGUN2=60 (doubled for snappier feel)
             screenjump(); 
             screenjump();
         }
@@ -2198,7 +2234,25 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
     { //server should add grenade and orb bouncers
         //float dist;
         // dynent *o = intersectclosest(from, to, d, dist);
-        if((!d->isholdingnade && !d->isholdingorb && !d->isholdingprop && !d->isholdingbarrel && !d->isholdingshock)) break;
+        bool isholding = (d->isholdingnade || d->isholdingorb || d->isholdingprop || d->isholdingbarrel || d->isholdingshock);
+        // Super Telekinesis punt: fire at players within range for 500 damage
+        if(!isholding && d->quadmillis)
+        {
+            float puntdist;
+            dynent *target = intersectclosest(from, to, d, puntdist);
+            if(target && puntdist <= guns[GUN_TELEKENESIS].range && (target->type==ENT_PLAYER || target->type==ENT_AI))
+            {
+                particle_splash(PART_SPARK, 300, 300, to, 0xFF3300, 0.20f);
+                particle_flare(hudgunorigin(gun, from, to, d), to, 300, PART_LIGHTNING, 0xFF3300, 3.f);
+                particle_fireball(to, 15.f, PART_EXPLOSION, 200, 0xFF3300, 200);
+                if(muzzleflash && d->muzzle.x >= 0)
+                    particle_flare(d->muzzle, d->muzzle, 200, PART_MUZZLE_FLASH1, 0xFF3300, 3.5f, d);
+                playsound(S_PUNT, &to);
+                if(d==hudplayer()) { d->screenjumpheight = 80; screenjump(); screenjump(); }
+            }
+            break;
+        }
+        if(!isholding) break;
         particle_splash(PART_SPARK, 200, 250, to, 0xFF64FF, 0.10f);
         particle_flare(hudgunorigin(gun, from, to, d), to, 200, PART_LIGHTNING, 0xFF64FF, 2.f);
         if(muzzleflash && d->muzzle.x >= 0)
@@ -2244,7 +2298,7 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
         d->isholdingbarrel=0;
         if(d==player1 || d->ai)addmsg(N_CATCH, "rciiiiii", d, d->isholdingnade, d->isholdingorb, d->isholdingprop, d->isholdingbarrel, d->isholdingshock, d->propmodeldir);
         //d->gunwait+=500;
-        if(d==hudplayer()) { d->screenjumpheight=30; screenjump(); screenjump();}
+        if(d==hudplayer()) { d->screenjumpheight=60; screenjump(); screenjump();}
         //d->blewup=0;
         break;
     }
@@ -2260,7 +2314,15 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
         if(d->isholdingbarrel || d->isholdingnade || d->isholdingorb || d->isholdingprop || d->isholdingshock)return;
         // ALWAYS show muzzle flash for other players (no occlusion check)
         if(muzzleflash && d->muzzle.x >= 0 && d!=player1)
-            particle_flare(d->muzzle, d->muzzle, 25, PART_GLOW, 0xFF64FF, 2.5f);
+            particle_flare(d->muzzle, d->muzzle, 25, PART_GLOW, d->quadmillis ? 0xFF3300 : 0xFF64FF, 2.5f);
+        // Super Telekinesis: menacing beam + damage effect when quad is active
+        if(d->quadmillis)
+        {
+            particle_flare(hudgunorigin(gun, from, to, d), to, 50, PART_LIGHTNING, 0xFF3300, 2.5f);
+            particle_splash(PART_SPARK, 50, 150, to, 0xFF6600, 0.15f);
+            if(muzzleflash && d->muzzle.x >= 0)
+                particle_flare(d->muzzle, d->muzzle, 50, PART_MUZZLE_FLASH1, 0xFF3300, 3.0f, d);
+        }
 
         loopi(steps)
         {
@@ -2429,9 +2491,7 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
         //adddecal(DECAL_GLOW, to, vec(from).sub(to).normalize(), 3.0f, bvec(0x07, 0x89, 0xFC)); //  0x0789FC);
         if(muzzlelight) adddynlight(hudgunorigin(gun, d->o, to, d), 15, vec(0.5f, 0.5f, 1.f), 100, 100, DL_FLASH, 0, vec(0, 0, 1), d);
         if(muzzlelight) adddynlight(to, 30, vec(0.5f, 0.5f, 1.f), 100, 100, DL_FLASH, 0, vec(0, 0, 1), d);
-        //if (d == hudplayer()) { d->screenjumpheight = 10; screenjump(); screenjump(); }
-
-
+        if (d == hudplayer()) { d->screenjumpheight = 30; screenjump(); screenjump(); } // Shock rifle secondary recoil
 
         // Check if we hit a shock combo. If so, explode the projectile in the air
         vec v;
@@ -2476,18 +2536,22 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
     case GUN_SMG:
         //case GUN_ELECTRO:
     {
-        if (d->gunselect==GUN_MAGNUM && d->mods & MOD_LIGHTNINGGUN && !lgsniper) {
-            playsound(S_LG_IMPACT, &to);
-            particle_splash(PART_SPARK, 200, 250, to, 0x5050FF, 0.10f);
-            particle_splash(PART_SMOKE, 3, 500, d->muzzle, 0x5050FF, 1.5f, 50, 501, NULL, 2, NULL, 2);
-            particle_splash(PART_SMOKE, 3, 500, to, 0x5050FF, 2.f, 50, 501, NULL, 2, NULL, 2);
-            particle_trail(1, 1, from, to, 1, 1, 1, true);
-            particle_flare(hudgunorigin(gun, from, to, d), to, 300, PART_LIGHTNING, 0x5050FF, 0.7f);
+        if (d->gunselect==GUN_MAGNUM && (d->mods & MOD_LIGHTNINGGUN)) {
+            // Lightning beam only shows when hitting a player (local) or always for remote
+            bool showBeam = !local || hits.length() > 0;
+            if(showBeam) {
+                playsound(S_LG_IMPACT, &to);
+                particle_splash(PART_SPARK, 200, 250, to, 0x5050FF, 0.10f);
+                particle_splash(PART_SMOKE, 3, 500, d->muzzle, 0x5050FF, 1.5f, 50, 501, NULL, 2, NULL, 2);
+                particle_splash(PART_SMOKE, 3, 500, to, 0x5050FF, 2.f, 50, 501, NULL, 2, NULL, 2);
+                particle_trail(1, 1, from, to, 1, 1, 1, true);
+                particle_flare(hudgunorigin(gun, from, to, d), to, 300, PART_LIGHTNING, 0x5050FF, 0.7f);
+                adddecal(DECAL_BULLET, to, vec(from).sub(to).normalize(), 2.0f);
+                if (d == hudplayer()) { d->screenjumpheight = 50; screenjump(); screenjump(); }
+            }
+            // Muzzle flash always shows (player sees their weapon fire)
             particle_flare(d->muzzle.x >= 0 ? d->muzzle : hudgunorigin(gun, from, to, d), d->muzzle.x >= 0 ? d->muzzle : hudgunorigin(gun, from, to, d), 200, PART_MUZZLE_FLASH3, 0x5050FF, .5f, d);
-            adddecal(DECAL_BULLET, to, vec(from).sub(to).normalize(), 2.0f); //BULLET //4.0
-            //adddecal(DECAL_GLOW, to, vec(from).sub(to).normalize(), 3.0f, bvec(0x07, 0x89, 0xFC)); //  0x0789FC);
             if (muzzlelight) adddynlight(hudgunorigin(gun, d->o, to, d), 15, vec(0.3f, 0.3f, 1.5f), 100, 100, DL_FLASH, 0, vec(0, 1, 0), d);
-            if (d == hudplayer()) { d->screenjumpheight = 25; screenjump(); screenjump(); }
             break;
         }
 
@@ -2526,7 +2590,8 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
 
         adddecal(DECAL_BULLET, to, vec(from).sub(to).normalize(), 2.0f);
         if(muzzlelight) adddynlight(hudgunorigin(gun, d->o, to, d), gun==GUN_CG ? 30 : 15, vec(0.5f, 0.375f, 0.25f), gun==GUN_CG ? 50 : 100, gun==GUN_CG ? 50 : 100, DL_FLASH, 0, vec(0, 0, 0), d);
-        if ((gun == GUN_MAGNUM || gun == GUN_ELECTRO) && d == hudplayer()) { d->screenjumpheight = 20; screenjump(); screenjump(); } //d->attacking=0; d->altattacking=0;}
+        if (gun == GUN_MAGNUM && d == hudplayer()) { d->screenjumpheight = (d->mods & (MOD_SNIPER | MOD_LIGHTNINGGUN | MOD_HEAVYSNIPER)) ? 80 : 160; screenjump(); screenjump(); } // Revolver=160 (hard to control), upgraded=80
+        else if (gun == GUN_ELECTRO && d == hudplayer()) { d->screenjumpheight = 30; screenjump(); screenjump(); } // Shock rifle primary
         //else if(d==player1) {d->screendown=1; d->screenup=1; screenjump(); screenjump(); }
         if(gun==GUN_PISTOL)d->attacking=d->altattacking=0;
         // Eject shell casings for SMG and Pulse Rifle
@@ -2611,11 +2676,17 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
         }
         else d->roll += droll;
         
-        // Add screen kick and weapon jump for rocket launcher
+        // Add screen kick and weapon jump for rocket launcher and shock rifle secondary
         if(gun == GUN_RL && d == hudplayer()) 
         { 
-            d->screenjumpheight = 35; // Strong recoil kick
+            d->screenjumpheight = 70; // Strong recoil kick (doubled)
             screenjump(); 
+            screenjump();
+        }
+        else if(gun == GUN_ELECTRO2 && d == hudplayer())
+        {
+            d->screenjumpheight = 30; // Shock rifle secondary recoil (doubled)
+            screenjump();
             screenjump();
         }
         break;
@@ -2634,7 +2705,7 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
             d->roll -= droll;
         }
         else d->roll += droll;
-        if(d==hudplayer()) { d->screenjumpheight=10; screenjump(); screenjump();}
+        if(d==hudplayer()) { d->screenjumpheight=20; screenjump(); screenjump();}
         // Eject shell casing for double barrel shotgun
         {
             vec shellstart = hudgunorigin(gun, d->o, to, d);
@@ -2668,7 +2739,7 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
             d->roll -= droll;
         }
         else d->roll += droll;
-        if(d==hudplayer()) { d->screenjumpheight=5; screenjump(); screenjump();}
+        if(d==hudplayer()) { d->screenjumpheight=10; screenjump(); screenjump();}
         break;
     }
 
@@ -2689,7 +2760,7 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
         if(d->ai && d->gunselect==GUN_HANDGRENADE) { timer; speed=500; }
         newbouncer(from, up, local, id, d, gun==GUN_CROSSBOW ? BNC_XBOLT : BNC_GRENADE, timer, speed); //nadetimer
         //if(d->gunselect==GUN_CROSSBOW)playsound(S_CROSSBOWRELOAD, d==hudplayer()?NULL:&d->o);
-        if(d->gunselect==GUN_CROSSBOW&& d==hudplayer()){d->screenjumpheight=10; screenjump(); screenjump();}
+        if(d->gunselect==GUN_CROSSBOW&& d==hudplayer()){d->screenjumpheight=20; screenjump(); screenjump();}
         if(d->roll >= 0)
         {
             d->roll -= droll;
@@ -2758,8 +2829,8 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
     bool looped = false;
     if(d->attacksound >= 0 && d->attacksound != sound) d->stopattacksound();
     if(d->idlesound >= 0) d->stopidlesound();
-    if (d->gunselect==GUN_MAGNUM && d->mods & MOD_LIGHTNINGGUN && !lgsniper) sound = S_LG_FIRE;
-    if (d->gunselect == GUN_MAGNUM && d->mods & MOD_LIGHTNINGGUN && lgsniper) sound = S_MAGNUM;
+    if (d->gunselect==GUN_MAGNUM && (d->mods & MOD_LIGHTNINGGUN)) sound = S_LG_FIRE;
+    if (d->gunselect == GUN_MAGNUM && (d->mods & MOD_HEAVYSNIPER)) sound = S_MAGNUM;
     switch(sound)
     {
     case S_CHAINSAW_ATTACK:
@@ -2974,24 +3045,6 @@ void shoot(fpsent *d, const vec &targ)
     // Initialize recoil patterns on first use
     initRecoilPatterns();
     
-    // Check if there's a queued shot ready to fire
-    if(d->queuedShotTime > 0) {
-        int timeElapsed = lastmillis - d->queuedShotTime;
-        if(timeElapsed >= d->queuedShotDelay) {
-            // Queued shot is ready! Fire it automatically
-            conoutf("FIRING QUEUED SHOT after %dms (delay was %dms)", timeElapsed, d->queuedShotDelay);
-            bool wasAlt = d->queuedShotAlt;
-            d->queuedShotTime = 0; // Clear queue
-            d->queuedShotDelay = 0;
-            
-            // Force the attacking state for this frame
-            d->altattacking = wasAlt;
-            d->attacking = !wasAlt;
-            
-            // Continue with normal firing logic below
-        }
-    }
-    
     if (d->gunselect == GUN_MAGNUM && d->altattacking && !d->attacking) return;
     int prevaction = d->lastaction, attacktime = lastmillis-prevaction;
     
@@ -3012,32 +3065,11 @@ void shoot(fpsent *d, const vec &targ)
         if(!d->attacking && d->lastattackmillis>0) d->lastattackmillis-=1;
     }
 
-    if (attacktime < (d->quadmillis ? d->gunwait / 2 : d->gunwait) || lastmillis - d->lastreload < 1500 || (d->state == CS_DEAD && !d->dropitem)) return;
+    if (attacktime < ((d->mods & MOD_HELICOPTER) ? d->gunwait / 2 : d->gunwait) || lastmillis - d->lastreload < 1500 || (d->state == CS_DEAD && !d->dropitem)) return;
     d->gunwait = 0;
     if(!d->attacking && !d->altattacking) return;
     if(d->gunselect==GUN_HANDGRENADE && d->altattacking) return;
     if(d->gunselect==GUN_RL && d->altattacking) return;
-    
-    // Queue delayed shots for photon orb and double shotgun (only if not already queued)
-    if(d->queuedShotTime == 0) {
-        // Photon orb delay: 500ms - queue ANY click
-        if(d->gunselect==GUN_CG2 && d->altattacking) {
-            conoutf("QUEUING PHOTON ORB SHOT - will fire in 500ms");
-            d->queuedShotTime = lastmillis;
-            d->queuedShotDelay = 500;
-            d->queuedShotAlt = true;
-            return; // Don't fire yet, queued for later
-        }
-        
-        // Double shotgun delay: 100ms - queue ANY click
-        if(d->gunselect==GUN_SG && d->altattacking) {
-            conoutf("QUEUING DOUBLE SHOTGUN SHOT - will fire in 100ms");
-            d->queuedShotTime = lastmillis;
-            d->queuedShotDelay = 100;
-            d->queuedShotAlt = true;
-            return; // Don't fire yet, queued for later
-        }
-    }
     
     //if(d->gunselect==GUN_TELEKENESIS && d->altattacking) d->tkisbusy=1; //make sure to set this because multiple tk functions should not apply at once (pickup item, catch bnc, throw bnc)
     if(d->attacking && !d->ai)
@@ -3067,7 +3099,7 @@ void shoot(fpsent *d, const vec &targ)
 
 
     if((d->lastattackgun==GUN_SHOTGUN2 || d->lastattackgun==GUN_SG) && d->gunselect==GUN_SHOTGUN2 || d->gunselect==GUN_SG)d->lastattackgun=d->gunselect; //no hax switching from sg1 to sg2 :)
-    if(d->gunselect==GUN_TELEKENESIS && (!d->isholdingnade && !d->isholdingorb && !d->isholdingbarrel && !d->isholdingprop && !d->isholdingshock)) return;
+    if(d->gunselect==GUN_TELEKENESIS && !d->quadmillis && (!d->isholdingnade && !d->isholdingorb && !d->isholdingbarrel && !d->isholdingprop && !d->isholdingshock)) return;
     if(d->lastattackgun!=d->gunselect){
         d->magprogress[d->lastattackgun]=0;
         if(d->lastattackgun==GUN_SG || d->lastattackgun==GUN_SHOTGUN2)d->magprogress[GUN_SG]=d->magprogress[GUN_SHOTGUN2]=0;
@@ -3088,7 +3120,7 @@ void shoot(fpsent *d, const vec &targ)
         }
         return;
     }
-    if((guns[d->gunselect].magsize-d->magprogress[d->gunselect]-guns[d->gunselect].sub)<0 && guns[d->gunselect].magsize>1)
+    if((getmagsize(d->gunselect, d->mods)-d->magprogress[d->gunselect]-guns[d->gunselect].sub)<0 && getmagsize(d->gunselect, d->mods)>1)
     {
         if(d==player1)
         {
@@ -3106,7 +3138,7 @@ void shoot(fpsent *d, const vec &targ)
     if(d->gunselect==GUN_SG) d->ammo[GUN_SHOTGUN2]-=guns[GUN_SG].sub;
     if(d->gunselect==GUN_SHOTGUN2) d->ammo[GUN_SG]-=guns[GUN_SHOTGUN2].sub;
 
-    if(guns[d->gunselect].magsize>1 && !d->quadmillis)d->magprogress[d->gunselect]+=guns[d->gunselect].sub;
+    if(getmagsize(d->gunselect, d->mods)>1 && !d->quadmillis)d->magprogress[d->gunselect]+=guns[d->gunselect].sub;
     if(d->gunselect==GUN_SG) d->magprogress[GUN_SHOTGUN2]+=guns[GUN_SG].sub;
     if(d->gunselect==GUN_SHOTGUN2) d->magprogress[GUN_SG]+=guns[GUN_SHOTGUN2].sub;
 
@@ -3211,7 +3243,7 @@ void shoot(fpsent *d, const vec &targ)
     // Check: is this a hitscan weapon that hit a wall?
     bool canWallbang = (d->gunselect == GUN_SMG || d->gunselect == GUN_CG || 
                         d->gunselect == GUN_PISTOL || 
-                        (d->gunselect == GUN_MAGNUM && !(d->mods & MOD_LIGHTNINGGUN)));
+                        (d->gunselect == GUN_MAGNUM && !(d->mods & MOD_LIGHTNINGGUN)));  // LG beam can't wallbang, sniper/heavysniper can
     
     // CS 1.6-style wallbanging - shoot through walls with FULL damage
     if(canWallbang && hitWall && !guns[d->gunselect].projspeed) {
@@ -3234,8 +3266,12 @@ void shoot(fpsent *d, const vec &targ)
     shoteffects(d->gunselect, from, to, d, true, 0, prevaction);
     if(d==player1 || d->ai)
     {
-        int loopval = (d->gunselect == GUN_MAGNUM && d->mods & MOD_LIGHTNINGGUN) ? 3 : 1;
-        if (d->gunselect == GUN_MAGNUM && !(d->mods & MOD_LIGHTNINGGUN)) loopval = 2;
+        int loopval = 1;
+        if(d->gunselect == GUN_MAGNUM) {
+            if(d->mods & (MOD_LIGHTNINGGUN | MOD_HEAVYSNIPER)) loopval = 4;      // tier 3: 34*4
+            else if(d->mods & MOD_SNIPER) loopval = 3;                            // tier 2: 34*3
+            else loopval = 2;                                                      // default revolver: 34*2
+        }
         loopi(loopval)
             addmsg(N_SHOOT, "rici2i6iv", d->headshots, d, lastmillis-maptime, d->gunselect,
                (int)(from.x*DMF), (int)(from.y*DMF), (int)(from.z*DMF),
@@ -3282,7 +3318,7 @@ void shoot(fpsent *d, const vec &targ)
     //                d->magprogress[d->gunselect]=0;
     //        }
     if(d==player1 && d->gunselect==GUN_HANDGRENADE && d->ammo[GUN_HANDGRENADE]==0){ d->attacking=0; d->gunwait=300; weaponswitch(d);}
-    d->gunwait=(d->gunselect==GUN_MAGNUM && d->mods & MOD_LIGHTNINGGUN) ? 1200 : guns[d->gunselect].attackdelay;
+    d->gunwait=(d->gunselect==GUN_MAGNUM && (d->mods & (MOD_LIGHTNINGGUN | MOD_HEAVYSNIPER))) ? 1200 : guns[d->gunselect].attackdelay;
     if(d->gunselect == GUN_PISTOL && d->ai) d->gunwait += int(d->gunwait*(((101-d->skill)+rnd(111-d->skill))/100.f));
     d->totalshots += guns[d->gunselect].damage*(d->quadmillis ? 2 : 1)*(guns[d->gunselect].rays);
     //if(d->magprogress[d->gunselect]>=guns[d->gunselect].magsize && guns[d->gunselect].magsize && d->ammo[d->gunselect]) doreload(d);

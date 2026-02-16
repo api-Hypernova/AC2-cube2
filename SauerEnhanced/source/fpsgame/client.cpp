@@ -1124,6 +1124,19 @@ namespace game
                 play(getint(p), d->o);
                 break;
 
+            case N_BARRELEXPLODE:
+            {
+                // Another client's barrel exploded - render VFX at the position
+                int x = getint(p), y = getint(p), z = getint(p);
+                vec pos(x/DMF, y/DMF, z/DMF);
+                fpsent *owner = d ? d : player1;
+                explode(false, owner, pos, NULL, 0, GUN_BARREL);
+                adddecal(DECAL_SCORCH, pos, vec(0, 0, 1), RL_DAMRAD/2);
+                // Also kill the nearest local barrel movable at this position
+                killbarrelat(pos);
+                break;
+            }
+
             case N_TEXT:
             {
                 if(!d) return;
@@ -1344,6 +1357,9 @@ namespace game
                 target->health = health;
                 if(target->state == CS_ALIVE && actor != player1) target->lastpain = lastmillis;
                 damaged(damage, target, actor, false);
+                // Show authoritative server damage to local player in teamchat area
+                if(actor == player1 && target != player1 && damage > 0)
+                    conoutf(CON_TEAMCHAT, "\f2[server] \f3-%d", damage);
                 break;
             }
 

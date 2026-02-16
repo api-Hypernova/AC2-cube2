@@ -260,7 +260,7 @@ void update()
             think(d, needsFullUpdate);
             
             // Auto-reload
-            if(d->magprogress[d->gunselect] >= guns[d->gunselect].magsize && guns[d->gunselect].magsize > 1)
+            if(d->magprogress[d->gunselect] >= getmagsize(d->gunselect, d->mods) && getmagsize(d->gunselect, d->mods) > 1)
                 doreloadai(d);
         }
         if(++updateiteration > count) updateiteration = 0;
@@ -465,6 +465,12 @@ static void tryitem(fpsent *d, extentity &e, int id, aistate &b, vector<interest
     float score = 0;
     float basescore = 0;
     
+    // Check if bot just spawned (within last 5 seconds) and needs weapons
+    bool justSpawned = (lastmillis - d->lastpain) < 5000;
+    int weaponCount = 0;
+    loopi(NUMGUNS) if(d->hasgun[i]) weaponCount++;
+    bool needsWeapons = weaponCount <= 3; // Only has starting weapons (pistol, SMG, grenades)
+    
     switch(e.type)
     {
     case I_HEALTH: case I_SMALLHEALTH:
@@ -486,7 +492,7 @@ static void tryitem(fpsent *d, extentity &e, int id, aistate &b, vector<interest
     case I_GREENARMOUR: case I_YELLOWARMOUR: case I_SHIELDBATTERY:
         if(d->canpickup(e.type))
         {
-            basescore = 1e8f;
+            basescore = 1e11f; // Equal to weapons after initial spawn
             // Defensive personalities prioritize armor
             if(d->ai->personality == AI_PERSONALITY_DEFENSIVE) basescore *= 1.3f;
             score = basescore;
@@ -502,10 +508,36 @@ static void tryitem(fpsent *d, extentity &e, int id, aistate &b, vector<interest
     case I_CROSSBOW:
         if(d->canpickup(e.type))
         {
-            basescore = 1e11f;
-            // Prioritize weapon pickups matching personality
             itemstat &is = itemstats[e.type-I_ELECTRO];
-            if(is.info == d->ai->weappref) basescore *= 2.0f;
+            
+            // FIRST PRIORITY: Get ANY weapon if just spawned
+            if(justSpawned && needsWeapons)
+            {
+                basescore = 1e13f; // HIGHEST priority - get first weapon
+                // Still slightly prefer non-laser weapons
+                if(is.info != GUN_ELECTRO && is.info != GUN_ELECTRO2)
+                {
+                    basescore *= 2.0f;
+                }
+            }
+            // After initial weapons, equal priority to shield batteries
+            else
+            {
+                basescore = 1e11f; // Same as shield batteries
+                
+                // Still de-prioritize laser weapons (mobility tool)
+                if(is.info == GUN_ELECTRO || is.info == GUN_ELECTRO2)
+                {
+                    basescore *= 0.3f; // Lower but not completely avoid
+                }
+                // Slightly prefer good combat weapons
+                else if(is.info == GUN_SMG || is.info == GUN_SMG2 || is.info == GUN_CG || is.info == GUN_CG2 ||
+                        is.info == GUN_RL || is.info == GUN_MAGNUM || is.info == GUN_SG)
+                {
+                    basescore *= 1.2f; // Slight preference
+                }
+            }
+            
             score = basescore;
         }
         break;
@@ -516,10 +548,16 @@ static void tryitem(fpsent *d, extentity &e, int id, aistate &b, vector<interest
     
     if(score != 0)
     {
-        // Reduce priority if in combat
-        if(d->ai->incombat && d->ai->enemy >= 0)
+        // Reduce priority if in combat, but not for initial weapon collection
+        if(d->ai->incombat && d->ai->enemy >= 0 && !justSpawned)
         {
-            score *= 0.3f;
+            // Weapons and shield batteries: minor reduction
+            if(e.type >= I_ELECTRO && e.type <= I_CROSSBOW)
+                score *= 0.8f; // Only 20% reduction for weapons
+            else if(e.type == I_SHIELDBATTERY || e.type == I_GREENARMOUR || e.type == I_YELLOWARMOUR)
+                score *= 0.8f; // Equal to weapons
+            else
+                score *= 0.5f; // More reduction for health/powerups
         }
         
         interest &n = interests.add();
@@ -622,7 +660,7 @@ bool findassist(fpsent *d, aistate &b, bool override = false)
 
 void damaged(fpsent *d, fpsent *e)
 {
-    if(d->ai && canmove(d))
+    if(d->ai && canmove(d) && e)
     {
         // Track damage location and time
         d->ai->lastdamagepos = e->o;
@@ -640,9 +678,9 @@ void damaged(fpsent *d, fpsent *e)
         }
         
         if(targetable(d, e))
-    {
-        aistate &b = d->ai->getstate();
-        if(violence(d, b, e, d->gunselect == GUN_FIST)) return;
+        {
+            aistate &b = d->ai->getstate();
+            if(violence(d, b, e, d->gunselect == GUN_FIST)) return;
         }
     }
     if(checkothers(targets, d, AI_S_DEFEND, AI_T_PLAYER, d->clientnum, true))
@@ -681,20 +719,32 @@ void setup(fpsent *d, bool tryreset = false)
         else if(m_noammo) d->ai->weappref = -1;
         else
         {
-            // Personality affects weapon preference
+            // Personality affects weapon preference - prefer SMG/assault rifles
             switch(d->ai->personality)
             {
                 case AI_PERSONALITY_AGGRESSIVE:
-                    d->ai->weappref = rnd(2) ? GUN_SG : GUN_RL;
+                    // Aggressive bots prefer close-range power: SMG, Shotgun, Rockets
+                    { int choices[] = {GUN_SMG2, GUN_SG, GUN_RL, GUN_SMG};
+                      d->ai->weappref = choices[rnd(4)]; }
                     break;
                 case AI_PERSONALITY_DEFENSIVE:
-                    d->ai->weappref = rnd(2) ? GUN_CG2 : GUN_MAGNUM;
+                    // Defensive bots prefer ranged accuracy: Chaingun, Magnum, SMG
+                    { int choices[] = {GUN_CG2, GUN_MAGNUM, GUN_SMG, GUN_CG};
+                      d->ai->weappref = choices[rnd(4)]; }
                     break;
                 case AI_PERSONALITY_TACTICAL:
-                    d->ai->weappref = rnd(2) ? GUN_MAGNUM : GUN_RL;
+                    // Tactical bots are versatile: SMG, Magnum, Rockets
+                    { int choices[] = {GUN_SMG2, GUN_MAGNUM, GUN_RL, GUN_CG2};
+                      d->ai->weappref = choices[rnd(4)]; }
+                    break;
+                case AI_PERSONALITY_SUPPORT:
+                    // Support bots prefer reliable mid-range: SMG, Chaingun
+                    { int choices[] = {GUN_SMG, GUN_SMG2, GUN_CG, GUN_CG2};
+                      d->ai->weappref = choices[rnd(4)]; }
                     break;
                 default:
-                    d->ai->weappref = rnd(GUN_HANDGRENADE-GUN_SG+1)+GUN_SG;
+                    // Balanced - prefer SMG as default
+                    d->ai->weappref = rnd(2) ? GUN_SMG : GUN_CG;
                     break;
             }
         }
@@ -974,8 +1024,28 @@ bool hunt(fpsent *d, aistate &b, int retries = 0)
 void jumpto(fpsent *d, aistate &b, const vec &pos)
 {
     vec off = vec(pos).sub(d->feetpos()), dir(off.x, off.y, 0);
-    bool offground = d->timeinair && !d->inwater, jumper = off.z >= JUMPMIN,
-            jump = !offground && (jumper || lastmillis >= d->ai->jumprand) && lastmillis >= d->ai->jumpseed;
+    bool offground = d->timeinair && !d->inwater, jumper = off.z >= JUMPMIN;
+    
+    // More aggressive jumping - jump more frequently for speed
+    bool jump = false;
+    if(!offground)
+    {
+        // Jump if there's a height difference
+        if(jumper)
+        {
+            jump = true;
+        }
+        // Or jump periodically for speed (bunny hopping)
+        else if(lastmillis >= d->ai->jumprand && lastmillis >= d->ai->jumpseed)
+        {
+            // Higher skill bots jump more frequently
+            if(d->skill > 50 || rnd(100) < 60)
+            {
+                jump = true;
+            }
+        }
+    }
+    
     if(jump)
     {
         vec old = d->o;
@@ -995,10 +1065,17 @@ void jumpto(fpsent *d, aistate &b, const vec &pos)
     if(jump)
     {
         d->jumping = true;
-        int seed = (111-d->skill)*(d->inwater ? 2 : 10);
-        d->ai->jumpseed = lastmillis+seed+rnd(seed);
-        seed *= b.idle ? 50 : 25;
+        // Reduced cooldown for more frequent jumping
+        int seed = max((111-d->skill)*(d->inwater ? 2 : 5), 200);
+        d->ai->jumpseed = lastmillis+seed+rnd(seed/2);
+        seed *= b.idle ? 50 : 15; // Shorter random jump interval
         d->ai->jumprand = lastmillis+seed+rnd(seed);
+    }
+    
+    // Always sprint when moving
+    if(!b.idle && !d->ai->dontmove)
+    {
+        d->sprinting = true;
     }
 }
 
@@ -1197,9 +1274,9 @@ int process(fpsent *d, aistate &b)
                     
                     if(shouldfire)
                     {
-                        d->attacking = true;
-                        d->ai->lastaction = lastmillis;
-                        result = 3;
+                    d->attacking = true;
+                    d->ai->lastaction = lastmillis;
+                    result = 3;
                     }
                     else
                     {
@@ -1246,6 +1323,9 @@ int process(fpsent *d, aistate &b)
     }
     else d->ai->becareful = false;
 
+    // Always sprint when moving for maximum speed
+    d->sprinting = !d->ai->dontmove && !idle;
+    
     if(d->ai->dontmove) d->move = d->strafe = 0;
     else
     { // our guys move one way.. but turn another?! :)
@@ -1323,6 +1403,46 @@ bool request(fpsent *d, aistate &b)
     fpsent *e = getclient(d->ai->enemy);
     float dist = e ? d->o.dist(e->o) : 0;
     
+    // TELEKINESIS LOGIC - catch incoming projectiles and throw objects
+    bool shouldUseTelekinesis = false;
+    
+    // Check if we can catch incoming grenades/orbs
+    if(d->aicancatch && lastmillis - d->ailastcatch > 500 && d->hasammo(GUN_TELEKENESIS))
+    {
+        float catchdist = d->aicatch.dist(d->o);
+        if(catchdist < guns[GUN_TELEKENESIS2].range)
+        {
+            shouldUseTelekinesis = true;
+            gunselect(GUN_TELEKENESIS, d);
+            d->attacking = true;
+            return process(d, b) >= 2;
+        }
+    }
+    
+    // Check if we're holding an object - throw it at enemies!
+    if((d->isholdingbarrel || d->isholdingnade || d->isholdingorb || d->isholdingprop) && e)
+    {
+        // Throw at enemy if they're in range and visible
+        if(dist < guns[GUN_TELEKENESIS].range * 0.8f)
+        {
+            gunselect(GUN_TELEKENESIS, d);
+            d->attacking = true;
+            return process(d, b) >= 2;
+        }
+    }
+    
+    // Check if there are props/barrels nearby to pick up and throw
+    if(!shouldUseTelekinesis && e && d->hasammo(GUN_TELEKENESIS) && dist < 500.f)
+    {
+        // Use telekinesis to grab objects occasionally (tactical bots more often)
+        int chance = d->ai->personality == AI_PERSONALITY_TACTICAL ? 30 : 15;
+        if(rnd(100) < chance && !d->isholdingbarrel && !d->isholdingprop)
+        {
+            // TODO: Check for nearby movable objects
+            // For now, just allow occasional telekinesis usage
+        }
+    }
+    
     if(!d->hasammo(d->gunselect) || !hasrange(d, e, d->gunselect) || (d->gunselect != d->ai->weappref && (!isgoodammo(d->gunselect) || d->hasammo(d->ai->weappref))))
     {
         int gun = -1;
@@ -1342,7 +1462,8 @@ bool request(fpsent *d, aistate &b)
             available.setsize(0);
             
             // Score available weapons based on range and situation
-            static const int guns[] = { GUN_CG2, GUN_SMG2, GUN_RL, GUN_SG, GUN_MAGNUM, GUN_CROSSBOW, GUN_SHOTGUN2, GUN_ELECTRO, GUN_ELECTRO2, GUN_CG, GUN_SMG, GUN_HANDGRENADE, GUN_PISTOL, GUN_FIST };
+            // EXCLUDED: GUN_ELECTRO and GUN_ELECTRO2 (laser weapons are mobility tools, not combat weapons)
+            static const int guns[] = { GUN_SMG2, GUN_SMG, GUN_CG2, GUN_CG, GUN_RL, GUN_SG, GUN_MAGNUM, GUN_CROSSBOW, GUN_SHOTGUN2, GUN_HANDGRENADE, GUN_PISTOL, GUN_FIST };
             loopi(sizeof(guns)/sizeof(guns[0]))
             {
                 int testgun = guns[i];
@@ -1356,14 +1477,21 @@ bool request(fpsent *d, aistate &b)
                 // Score based on how close we are to optimal range
                 score = 100.f - clamp(rangediff / 10.f, 0.f, 90.f);
                 
+                // HIGH PRIORITY: SMG and assault rifles (starting weapons)
+                if(testgun == GUN_SMG || testgun == GUN_SMG2) score += 40.f;
+                if(testgun == GUN_CG || testgun == GUN_CG2) score += 35.f;
+                
                 // Bonus for high-damage weapons
                 if(testgun == GUN_RL || testgun == GUN_MAGNUM || testgun == GUN_SG) score += 20.f;
-                if(testgun == GUN_CG2 || testgun == GUN_SMG2) score += 15.f;
+                
+                // LOWER PRIORITY: Grenades (save them, use SMG instead)
+                if(testgun == GUN_HANDGRENADE) score -= 20.f;
                 
                 // Personality modifiers
                 if(d->ai->personality == AI_PERSONALITY_AGGRESSIVE)
                 {
                     if(testgun == GUN_SG || testgun == GUN_RL) score += 25.f;
+                    if(testgun == GUN_SMG2) score += 15.f; // Aggressive bots like SMG
                 }
                 else if(d->ai->personality == AI_PERSONALITY_DEFENSIVE)
                 {
@@ -1372,8 +1500,9 @@ bool request(fpsent *d, aistate &b)
                 else if(d->ai->personality == AI_PERSONALITY_TACTICAL)
                 {
                     // Prefer varied weapons based on situation
-                    if(dist < 200.f && (testgun == GUN_SG || testgun == GUN_SHOTGUN2)) score += 30.f;
+                    if(dist < 200.f && (testgun == GUN_SG || testgun == GUN_SHOTGUN2 || testgun == GUN_SMG2)) score += 30.f;
                     else if(dist > 400.f && (testgun == GUN_MAGNUM || testgun == GUN_CROSSBOW)) score += 30.f;
+                    else if(testgun == GUN_SMG || testgun == GUN_CG) score += 20.f; // Good all-rounders
                 }
                 
                 // Avoid fist unless desperate
@@ -1519,13 +1648,18 @@ void avoid()
 
 void think(fpsent *d, bool run)
 {
-    // Update enemy tracking and environmental awareness
+    // CRITICAL: Always update enemy tracking when alive, regardless of 'run'
+    // This ensures bots can detect and respond to enemies immediately
+    if(d->state == CS_ALIVE && d->ai)
+    {
+        updateenemytracking(d);
+    }
+    
+    // Other updates only on full update cycle
     if(run)
     {
-        if(d->state == CS_ALIVE)
+        if(d->state == CS_ALIVE && d->ai)
         {
-            updateenemytracking(d);
-            
             // Update squad coordination
             if(m_teammode)
             {
@@ -1542,7 +1676,7 @@ void think(fpsent *d, bool run)
         }
         
         // Environmental awareness works even when dead (learning)
-        updateenvironmentalawareness(d);
+        if(d->ai) updateenvironmentalawareness(d);
     }
     
     // the state stack works like a chain of commands, certain commands simply replace each other
@@ -1727,7 +1861,7 @@ void render()
 // Multiple enemy tracking system
 void updateenemytracking(fpsent *d)
 {
-    if(!d->ai) return;
+    if(!d || !d->ai) return;
     
     int now = lastmillis;
     vec dp = d->headpos();
@@ -1736,7 +1870,7 @@ void updateenemytracking(fpsent *d)
     loopv(players)
     {
         fpsent *e = players[i];
-        if(!targetable(d, e)) continue;
+        if(!e || e == d || !targetable(d, e)) continue;
         
         vec ep = e->headpos();
         
@@ -2264,6 +2398,7 @@ void updatesquad(fpsent *d)
         loopv(nearbymates)
         {
             fpsent *mate = nearbymates[i];
+            if(!mate) continue;
             if(mate->skill > d->skill + 10)
             {
                 shouldlead = false;
@@ -2286,7 +2421,8 @@ void updatesquad(fpsent *d)
             loopv(nearbymates)
             {
                 fpsent *mate = nearbymates[i];
-                if(mate->ai && d->ai->squadmates.length() < 3)
+                if(!mate || !mate->ai) continue;
+                if(d->ai->squadmates.length() < 3)
                 {
                     // Set them to follow us
                     mate->ai->squadleader = d->clientnum;

@@ -159,7 +159,7 @@ namespace entities
                 break;
 
             case I_QUAD:
-                conoutf(CON_TEAMCHAT, "Damage Amplifier");
+                conoutf(CON_TEAMCHAT, "\f3Super Telekinesis Activated!");
                 playsound(S_V_QUAD);
                 break;
             case I_ELECTRO:
@@ -386,7 +386,7 @@ namespace entities
         {
             d->quadmillis = 0;
             playsound(S_PUPOUT, d==player1 ? NULL : &d->o);
-            if(d==player1) conoutf(CON_TEAMCHAT, "\f2Damage Amplifier expired");
+            if(d==player1) conoutf(CON_TEAMCHAT, "\f2Super Telekinesis expired");
         }
     }
 

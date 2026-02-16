@@ -8,7 +8,7 @@ namespace game
     enum
     {
         BOXWEIGHT = 25,
-        BARRELHEALTH = 9999999,
+        BARRELHEALTH = 50,
         BARRELWEIGHT = 25,
         PLATFORMWEIGHT = 1000,
         PLATFORMSPEED = 8,
@@ -61,7 +61,27 @@ namespace game
         {
             state = CS_DEAD;
             exploding = 0;
-            game::explode(true, (fpsent *)at, o, this, guns[GUN_BARREL].damage, GUN_BARREL);
+            if(at->type == ENT_PLAYER || at->type == ENT_AI)
+            {
+                fpsent *owner = (fpsent *)at;
+                if(owner == player1 || owner->ai)
+                {
+                    // Local player caused this: do explosion + VFX + send to server
+                    sendbarrelexplode(owner, o, this);
+                }
+                else
+                {
+                    // Remote player: just VFX (damage handled by their client)
+                    game::explode(false, owner, o, this, 0, GUN_BARREL);
+                }
+            }
+            else
+            {
+                // Chain reaction from another barrel (at is a movable, not a player)
+                // sendbarrelexplode handles VFX + damage + network message
+                sendbarrelexplode(player1, o, this);
+            }
+            adddecal(DECAL_SCORCH, o, vec(0, 0, 1), RL_DAMRAD/2);
         }
  
         void damaged(int damage, fpsent *at, int gun = -1)
@@ -175,7 +195,6 @@ namespace game
             else if(m->exploding && lastmillis >= m->exploding)
             {
                 m->explode(m);
-                adddecal(DECAL_SCORCH, m->o, vec(0, 0, 1), RL_DAMRAD/2);
             }
             else if(m->maymove() || (m->stacked && (m->stacked->state!=CS_ALIVE || m->stackpos != m->stacked->o)))
             {
@@ -226,6 +245,25 @@ namespace game
         m->state=CS_DEAD;
         //conoutf(CON_GAMEINFO, "%d", m);
         //addmsg(N_DELMOVABLE, "rci", m);
+    }
+
+    void killbarrelat(const vec &pos)
+    {
+        // Find and destroy the nearest alive barrel movable at the given position
+        // Used when receiving a barrel explosion from another client
+        float bestdist = 1e16f;
+        movable *best = NULL;
+        loopv(movables)
+        {
+            movable *m = movables[i];
+            if(m->state != CS_ALIVE || m->etype != BARREL) continue;
+            float dist = m->o.dist(pos);
+            if(dist < bestdist) { bestdist = dist; best = m; }
+        }
+        if(best && bestdist < 16.0f) // within 16 units = same barrel
+        {
+            best->state = CS_DEAD;
+        }
     }
 
     void hitmovable(int damage, movable *m, fpsent *at, const vec &vel, int gun)

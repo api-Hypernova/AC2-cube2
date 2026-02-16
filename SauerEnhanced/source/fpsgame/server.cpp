@@ -1658,7 +1658,9 @@ void explodeevent::process(clientinfo *ci)
         if(!gs.orbs.remove(id)) return;
         break;
     case GUN_BARREL:
-        if(!gs.barrels.remove(id)) return;
+        // Barrels are movable map entities, not tracked projectiles.
+        // Skip projectile ID check - just allow the explosion to proceed.
+        gs.barrels.remove(id); // try to remove if it exists (thrown barrel), but don't fail if not found
         break;
     case GUN_BITE:
         if(!gs.props.remove(id)) return;
@@ -1702,7 +1704,7 @@ void explodeevent::process(clientinfo *ci)
 
 bool isheadshot(dynent *d, vec to)
 {
-    if ((to.z - (d->o.z - d->eyeheight)) / (d->eyeheight + d->aboveeye) > 0.8f) return true;
+    if ((to.z - (d->o.z - d->eyeheight)) / (d->eyeheight + d->aboveeye) > 0.9f) return true;
     return false;
 }
 
@@ -1735,7 +1737,20 @@ void shotevent::process(clientinfo *ci)
         //case GUN_ELECTRO: gs.electro.add(id); break;
     case GUN_ELECTRO2: gs.electro.add(id); break;
     case GUN_HANDGRENADE: gs.grenades.add(id); break;
-    case GUN_TELEKENESIS: gs.grenades.add(id); gs.orbs.add(id); gs.props.add(id); gs.barrels.add(id); gs.electro.add(id); break;
+    case GUN_TELEKENESIS:
+        gs.grenades.add(id); gs.orbs.add(id); gs.props.add(id); gs.barrels.add(id); gs.electro.add(id);
+        // Super TK (quad active): also process hitscan damage for punt attack
+        if(gs.quadmillis && hits.length())
+        {
+            loopv(hits)
+            {
+                hitinfo &h = hits[i];
+                clientinfo *target = getinfo(h.target);
+                if(!target || target->state.state!=CS_ALIVE || h.lifesequence!=target->state.lifesequence || h.rays<1) continue;
+                dodamage(target, ci, 500, gun, h.dir);
+            }
+        }
+        break;
     default:
     {
         int totalrays = 0, maxrays = guns[gun].rays;
@@ -1748,16 +1763,14 @@ void shotevent::process(clientinfo *ci)
             totalrays += h.rays;
             if(totalrays>maxrays) continue;
             int damage = h.rays*guns[gun].damage;
-            //if(((fpsent*)target)->type==ENT_INANIMATE)conoutf(CON_GAMEINFO, "hit barrel");
-            //if(hits.length()==0)conoutf(CON_GAMEINFO, "hit barrel");
+            // Super TK beam: override 0 damage when quad is active
+            if(gun == GUN_TELEKENESIS2 && gs.quadmillis) damage = 80;
             //if(headshot(((dynent *)ci), from, to)) damage *= 3;
-            if(gs.quadmillis) damage *= 1.5f;
-            //if(h.headshots) { damage*=3;}
+            if(gs.quadmillis && gun != GUN_TELEKENESIS2) damage *= 1.5f;
             loopi(h.rays)
             {
-                if(i<h.headshots)damage+=(guns[gun].damage*2);//add 2x more damage for that shot for a total of 3x headshot damage
+                if(i<h.headshots)damage+=(guns[gun].damage*2);
             }
-            //if(h.dir.dist(target->o)> 10)
             dodamage(target, ci, damage, gun, h.dir);
         }
         break;

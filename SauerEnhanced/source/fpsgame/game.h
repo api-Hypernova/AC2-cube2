@@ -373,6 +373,7 @@ enum
     N_ADDBOT, N_DELBOT, N_INITAI, N_FROMAI, N_BOTLIMIT, N_BOTBALANCE,
     N_MAPCRC, N_CHECKMAPS,
     N_SWITCHNAME, N_SWITCHMODEL, N_SWITCHTEAM, N_CROUCH, N_CATCH, N_DELMOVABLE, N_MODS,
+    N_BARRELEXPLODE,
     NUMSV
 };
 
@@ -400,6 +401,7 @@ static const int msgsizes[] =               // size inclusive message token, 0 f
         N_ADDBOT, 2, N_DELBOT, 1, N_INITAI, 0, N_FROMAI, 2, N_BOTLIMIT, 2, N_BOTBALANCE, 2,
         N_MAPCRC, 0, N_CHECKMAPS, 1,
         N_SWITCHNAME, 0, N_SWITCHMODEL, 2, N_SWITCHTEAM, 0, N_CROUCH, 2, N_CATCH, 7, N_DELMOVABLE, 2, N_MODS, 2,
+        N_BARRELEXPLODE, 4,
         -1
         };
 
@@ -489,18 +491,14 @@ static struct itemstat { int add, max, sound; const char *name; int icon, info, 
 #define RL_DISTSCALE 1.5f
 
 
-enum // Here are our weapon mods. They can be used to manage dynamic settings 
-    // Maybe we can make the following struct not "static const" to allow permuting for the client's perspective?
-    // If we make it so the client can send damage over in the shot message that would make the client almost completely autonomous
-        // and greatly simplify the whole modding process
+enum // Weapon mods that can be purchased from the mod shop during a match
 {
-    MOD_PROXYMISSILE = 1 << 0, // missile will automatically explode when close to target. Also increases blast radius substantially
-    MOD_LIGHTNINGGUN = 1 << 1, // similar to LG from UT2k4. Not sure if/which weapon it will replace/mod. Perhaps duplicate of singlesniper
-    MOD_PISTOL = 1 << 2, // switch between pistol and blaster
-    MOD_MISSILELOCK = 1 << 3, // allow locking missile onto target, fire & forget
-    MOD_SINGLESNIPER = 1 << 4, // slower but more powerful sniper. Requires anim update
-    MOD_NUKE = 1 << 5, // nuke mod for RPG
-    MOD_GRAPPLE = 1 << 6 // grappling hook secondary for katana
+    MOD_RIFLE = 1 << 0,          // turns shotgun primary into a sniper (0 spread)
+    MOD_LIGHTNINGGUN = 1 << 1,   // lightning gun beam mod for magnum (tier 3, 34*4 damage)
+    MOD_REMOTEDETONATE = 1 << 2, // RPG remote detonation via altattack while rocket is in flight
+    MOD_HELICOPTER = 1 << 3,     // helicopter mode: model change, 200hp, damage boost, faster firing
+    MOD_SNIPER = 1 << 4,         // sniper upgrade for magnum (tier 2, 34*3 damage, svd model)
+    MOD_HEAVYSNIPER = 1 << 5     // heavy sniper mod for magnum (tier 3, 34*4 damage, same sniper effects)
 };
 
 //enum { GUN_FIST = 0, GUN_SG, GUN_CG, GUN_RL, GUN_MAGNUM, GUN_HANDGRENADE, GUN_ELECTRO, GUN_ELECTRO2, GUN_CG2, GUN_SHOTGUN2, GUN_SMG, GUN_SMG2, GUN_TELEKENESIS, GUN_TELEKENESIS2, GUN_PISTOL, GUN_FIREBALL, GUN_ICEBALL, GUN_SLIMEBALL, GUN_BITE, GUN_BARREL, NUMGUNS };
@@ -514,7 +512,7 @@ guns[NUMGUNS] =
     { S_PULSERIFLE, -1, 30, 100,  26, 0,  0,   0, 7,  1, 1024, 150, 0, 0,    0, 0, 1,  "}",        "chaingDEF" }, //pulse_rifle
     { S_RPG,    -1, 0, 1500, 120, 0,   133,  0, 10, 1, 1024, 200, 40,0,    0, 1, 1,  "Z",  "rocket"},  //rocket_solaris, rocketold (speed reduced by 3x: 400->133)
     //{ S_MAGNUM,   -1, 6, 1200, 100, 0,   0,   0, 30, 1, 2048, 200, 0, 0,    0, 0, 1, "#",           "pyccna_svd" },
-    { S_RIFLE,   -1, 10, 500, 34, 0,   0,   0, 30, 1, 2048, 200, 0, 0,    0, 0, 1, "#",           "pyccna_svd"},
+    { S_MAGNUM,   -1, 6, 500, 25, 0,   0,   0, 10, 1, 2048, 200, 0, 0,    0, 0, 1, "#",           "revolver"}, // magsize 6 for revolver, upgraded to 10 via mods
     { S_HANDNADE,  -1, 0, 1000, 150, 0,  300,  0,  5, 1, 1024, 200, 55, 1500, 0, 0, 1,  "@", "gl"},
     { S_MINSTANEX,  -1, 0, 500,  60, 0,   0,   0, 10, 1, 1024, 300, 25, 0,  0,  0,  1,  "<", "pyccna_railgun"},
     { S_LIGHTNING,  -1, 0, 400, 60,  0,  250,  PART_FIREBALL2,  5,  1,  1024,  300,  65,  0,  0,  0,  1, "<",  "pyccna_railgun"},
@@ -533,6 +531,12 @@ guns[NUMGUNS] =
     { S_PIGR1,     -1, 0, 250,  150, 0,    0,  0,  1,  1, 1024, 300, 40, 0, 0, 0, 0, "bite",            NULL}, //prop
     { -1,          -1, 0,  0, 150, 0,    0,  0,  0,  1, 1024, 300, 50, 0, 0, 0, 0, "barrel",          NULL} //barrel
 };
+
+// Effective magsize: magnum upgrades from 6 to 10 with any sniper mod
+static inline int getmagsize(int gun, int mods) {
+    if(gun == GUN_MAGNUM && (mods & (MOD_SNIPER | MOD_LIGHTNINGGUN | MOD_HEAVYSNIPER))) return 10;
+    return guns[gun].magsize;
+}
 
 #include "ai.h"
 
@@ -607,7 +611,7 @@ struct fpsstate
 
 
 
-    fpsstate() : maxhealth(100), aitype(AI_NONE), skill(0), recoilPatternIndex(0), lastShotTime(0), recoilPitchAccum(0.0f), recoilYawAccum(0.0f), holdposhistoryindex(0), queuedShotTime(0), queuedShotDelay(0), queuedShotAlt(false) {}
+    fpsstate() : maxhealth(100), aitype(AI_NONE), skill(0), recoilPatternIndex(0), lastShotTime(0), recoilPitchAccum(0.0f), recoilYawAccum(0.0f), holdposhistoryindex(0), queuedShotTime(0), queuedShotDelay(0), queuedShotAlt(false), mods(0) {}
 
     void baseammo(int gun, int k = 2, int scale = 1)
     {
@@ -726,16 +730,9 @@ struct fpsstate
             health = min(health+2, maxhealth);
             break;
         case I_QUAD:
-            loopi(NUMGUNS) ammo[i] = 0;
-            loopi(NUMGUNS) hasgun[i] = 0;
+            // Quad now grants Super Telekinesis (HL2 gravity gun mode)
+            // No longer strips weapons or gives helicopter mode
             quadmillis = min(quadmillis+is.add, is.max);
-            health = 200;
-            hasgun[GUN_RL] = 1;
-            hasgun[GUN_CG] = 1;
-            ammo[GUN_RL] = 1;
-            ammo[GUN_CG] = 1;
-            gunselect = GUN_RL;
-            //ammo[GUN_RL2]=min(ammo[GUN_RL2]+3, 3);
             break;
         case I_MAGNUM:
             ammo[GUN_MAGNUM]=min(ammo[GUN_MAGNUM]+12, 24); //check maxammo when changing full ammo cap
@@ -843,7 +840,7 @@ struct fpsstate
         diedbyheadshot = false;
         holdingweapon = 1;
         flareleft = 5;
-        //mods |= MOD_LIGHTNINGGUN;
+        // mods NOT reset here - they persist across deaths (reset at match start in startgame())
         lastswitch=0;
         helicopter = 0;
         sprintleft = 1000;
@@ -1052,7 +1049,8 @@ struct fpsent : dynent, fpsstate
         vec push(dir);
         push.mul(guns[gun].hitpush*damage/weight);
         //if(gun==GUN_RL || gun==GUN_HANDGRENADE) push.mul(actor==this ? 5 : (type==ENT_AI ? 3 : 2));
-        //if(gun==GUN_TELEKENESIS2)push.mul(-500);
+        // Super TK: pull enemy toward you (negative push since hitpush stat is 0)
+        if(gun==GUN_TELEKENESIS2 && actor && actor->quadmillis) { push = dir; push.mul(-500); }
         vel.add(push);
     }
 
@@ -1240,12 +1238,14 @@ extern void stackmovable(movable *d, physent *o);
 extern void updatemovables(int curtime);
 extern void rendermovables();
 extern void suicidemovable(movable *m);
+extern void killbarrelat(const vec &pos);
 extern void hitmovable(int damage, movable *m, fpsent *at, const vec &vel, int gun);
 
 // weapon
 extern void shoot(fpsent *d, const vec &targ);
 extern void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local, int id, int prevaction);
 extern void explode(bool local, fpsent *owner, const vec &v, dynent *safe, int dam, int gun);
+extern void sendbarrelexplode(fpsent *owner, const vec &pos, dynent *safe);
 extern void explodeeffects(int gun, fpsent *d, bool local, int id = 0);
 extern void damageeffect(int damage, fpsent *d, bool thirdperson = true);
 extern void gibeffect(int damage, const vec &vel, fpsent *d);

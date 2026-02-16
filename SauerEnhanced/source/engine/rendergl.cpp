@@ -2156,7 +2156,7 @@ VARP(jump, 0, 1, 1);
 int oldsize;
 int cmillis;
 bool dofx = false;
-int oldpitch;
+float oldpitch;
 int jmillis;
 int inittime = 0;
 bool dojump = false;
@@ -2208,17 +2208,33 @@ void screenjump()
 
 void screenjumpcheck()
 {
-    if(dojump && oldpitch == game::hudplayer()->pitch)
+    if(!dojump) return;
+    // First frame: instant kick up
+    if(oldpitch == game::hudplayer()->pitch)
     {
-        game::hudplayer()->pitch += game::hudplayer()->screenjumpheight; //20
+        game::hudplayer()->pitch += game::hudplayer()->screenjumpheight;
+        jmillis = lastmillis;
+        return;
+    }
+    // Brief hold at peak before recovery starts (40ms) - makes the kick feel punchier
+    if((lastmillis - inittime) < 40) return;
+    // Non-linear time-based recovery: aggressive initial drop, slow ease-out settle
+    int elapsed = lastmillis - jmillis;
+    if(elapsed > 0)
+    {
+        float remaining = game::hudplayer()->pitch - oldpitch;
+        if(remaining > 0.0f)
+        {
+            // Steep proportional: 0.015/ms * remaining gives very fast initial snap
+            // then gentle min rate (0.03/ms) for slow settle at the end
+            float rate = max(0.03f, remaining * 0.015f);
+            float decrement = rate * elapsed;
+            game::hudplayer()->pitch -= decrement;
+        }
         jmillis = lastmillis;
     }
-    if(lastmillis >= (jmillis+10) && dojump && ((lastmillis-inittime) < (game::hudplayer()->screenjumpheight*10))) //milliseconds that screen will attempt to return to oldpitch
-    {
-        game::hudplayer()->pitch -= 2; //2 //shotgun jump takes 80 millis, magnum 180
-        jmillis = lastmillis;
-    }
-    if(dojump && game::hudplayer()->pitch <= oldpitch)
+    // Clamp back to original pitch when done (or close enough)
+    if(game::hudplayer()->pitch <= oldpitch + 0.1f)
     {
         game::hudplayer()->pitch = oldpitch;
         dojump = false;
