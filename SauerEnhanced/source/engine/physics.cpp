@@ -1749,7 +1749,7 @@ void modifyvelocity(physent *pl, bool local, bool water, bool floating, int curt
 
     if(!game::player1->sprinting)game::player1->sprintleft=1000; //full sprint whenever not using it
 
-    if(floating || ((fpsent *)pl)->quadmillis)
+    if(floating || (((fpsent *)pl)->mods & MOD_HELICOPTER))
     {
         if(pl->jumping)
         {
@@ -1910,8 +1910,8 @@ bool moveplayer(physent *pl, int moveres, bool local, int curtime)
     bool floating = pl->type==ENT_PLAYER && (pl->state==CS_EDITING || pl->state==CS_SPECTATOR);
     float secs = curtime/1000.f;
 
-    // apply gravity
-    if(!floating && !((fpsent*)pl)->quadmillis) modifygravity(pl, water, curtime);
+    // apply gravity (only helicopter mod bypasses gravity, not quad/super TK)
+    if(!floating && !(((fpsent*)pl)->mods & MOD_HELICOPTER)) modifygravity(pl, water, curtime);
     // apply any player generated changes in velocity
     modifyvelocity(pl, local, water, floating, curtime);
 

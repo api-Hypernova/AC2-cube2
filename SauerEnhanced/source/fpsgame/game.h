@@ -498,7 +498,8 @@ enum // Weapon mods that can be purchased from the mod shop during a match
     MOD_REMOTEDETONATE = 1 << 2, // RPG remote detonation via altattack while rocket is in flight
     MOD_HELICOPTER = 1 << 3,     // helicopter mode: model change, 200hp, damage boost, faster firing
     MOD_SNIPER = 1 << 4,         // sniper upgrade for magnum (tier 2, 34*3 damage, svd model)
-    MOD_HEAVYSNIPER = 1 << 5     // heavy sniper mod for magnum (tier 3, 34*4 damage, same sniper effects)
+    MOD_HEAVYSNIPER = 1 << 5,    // heavy sniper mod for magnum (tier 3, 34*4 damage, same sniper effects)
+    MOD_LASER = 1 << 6           // upgrades pistol to laser blaster (strong kickback movement tool)
 };
 
 //enum { GUN_FIST = 0, GUN_SG, GUN_CG, GUN_RL, GUN_MAGNUM, GUN_HANDGRENADE, GUN_ELECTRO, GUN_ELECTRO2, GUN_CG2, GUN_SHOTGUN2, GUN_SMG, GUN_SMG2, GUN_TELEKENESIS, GUN_TELEKENESIS2, GUN_PISTOL, GUN_FIREBALL, GUN_ICEBALL, GUN_SLIMEBALL, GUN_BITE, GUN_BARREL, NUMGUNS };
@@ -508,7 +509,7 @@ static const struct guninfo { short sound, reloadsound, magsize, attackdelay, da
 guns[NUMGUNS] =
 {
     { S_SLASH,   -1, 0,  500,  150, 0,   0,   0, 0,  1, 65,  200, 0, 0,    0, 0, 0, "katana", "katana" },
-    { S_SHOTGUN2,  -1, 6, 800,  9, 200, 0,   0, 20, 12,1024, 200, 0, 0,    0, 0, 2, "*",         "shotgdefault" }, // solaris_shotgun
+    { S_SHOTGUN2,  -1, 6, 800,  9, 180, 0,   0, 20, 12,1024, 200, 0, 0,    0, 0, 2, "*",         "shotgdefault" }, // solaris_shotgun
     { S_PULSERIFLE, -1, 30, 100,  26, 0,  0,   0, 7,  1, 1024, 150, 0, 0,    0, 0, 1,  "}",        "chaingDEF" }, //pulse_rifle
     { S_RPG,    -1, 0, 1500, 120, 0,   133,  0, 10, 1, 1024, 200, 40,0,    0, 1, 1,  "Z",  "rocket"},  //rocket_solaris, rocketold (speed reduced by 3x: 400->133)
     //{ S_MAGNUM,   -1, 6, 1200, 100, 0,   0,   0, 30, 1, 2048, 200, 0, 0,    0, 0, 1, "#",           "pyccna_svd" },
@@ -518,13 +519,13 @@ guns[NUMGUNS] =
     { S_LIGHTNING,  -1, 0, 400, 60,  0,  250,  PART_FIREBALL2,  5,  1,  1024,  300,  65,  0,  0,  0,  1, "<",  "pyccna_railgun"},
     { S_ORB,      -1, 0, 1000, 8000, 0,  350,  0, 30, 1, 1024, 10, 40, 5000, 0, 0, 1, ";", "chaingDEF"}, // pulse_rifle
     { S_SHOTGUNBURST,  -1, 6, 500,  9, 150, 0,   0, 10, 6, 1024, 200, 0, 0,    3, 0, 1, "*", "shotgdefault"}, // solaris_shotgun
-    { S_UZI,       -1, 30, 100,   16,  0,  0,   0, 3,  1, 1024, 150, 0, 0,    0, 0, 1, "&",  "ak74"},
-    { S_SMGNADE,   -1, 0, 800,  120, 0,  300,  0, 10, 1, 1024, 200, 40,5000, 0, 0, 1, "@",  "ak74"}, //"pistol"
+    { S_UZI,       -1, 30, 100,   16,  0,  0,   0, 3,  1, 1024, 150, 0, 0,    0, 0, 1, "&",  "ak74"}, //pyccna_m4a1
+    { S_SMGNADE,   -1, 0, 800,  120, 0,  300,  0, 10, 1, 1024, 200, 40,5000, 0, 0, 1, "@",  "ak74"}, 
     { S_CROSSBOWFIRE, -1, 0, 1000,300,0, 800,  0, 30, 1, 1024, 50, 20,10000, 0, 1, 1, "{",       "crossbow"},
     { S_PUNT,     -1, 0, 200,   0, 0,   0,   0, 0,  1,  50, 0,  0,  0,  0,  0,  0, "$",     "electrodriver"},
     { S_TRYGRAB,   -1, 0, 50,   0, 0,   0,   0, 0,  1, 75, 0,  0,  0,  0,  0,  0, "$",     "electrodriver2"},
-    //{ S_PISTOL,    -1, 18, 100, 20, 0,  0,   0, 8,  1, 1024, 150, 0, 0,    0, 0, 1, "%",          "pyccna_fn57" },
-    { S_LASER,    -1, 0, 500, 20, 0,  0,   0, 100,  1, 1024, 150, 0, 0,    0, 0, 1, "%",          "laser"},
+    // Default: pistol. With MOD_LASER: overrides to laser beam (sound, kickback, attackdelay, model in code)
+    { S_PISTOL,    -1, 18, 100, 20, 0,  0,   0, 8,  1, 1024, 150, 0, 0,    0, 0, 1, "%",          "pyccna_fn57" },
     { S_FLAUNCH,   -1, 0, 200,  20, 0,   50,PART_FIREBALL1,1, 1, 1024, 0, 0, 0, 0, 0, 0, "fireball",  NULL},
     { S_ICEBALL,   -1, 0, 200,  40, 0,   30,PART_FIREBALL2,1, 1, 1024, 0, 0, 0, 0, 0, 0,  "iceball",   NULL},
     { S_SLIMEBALL, -1, 0, 200,  30, 0, 160, PART_FIREBALL3,1, 1, 1024, 0, 0, 0, 0, 0, 0, "slimeball", NULL},
@@ -1049,7 +1050,9 @@ struct fpsent : dynent, fpsstate
         vec push(dir);
         push.mul(guns[gun].hitpush*damage/weight);
         //if(gun==GUN_RL || gun==GUN_HANDGRENADE) push.mul(actor==this ? 5 : (type==ENT_AI ? 3 : 2));
-        // Super TK: pull enemy toward you (negative push since hitpush stat is 0)
+        // Super TK punt: massive knockback
+        if(gun==GUN_TELEKENESIS && actor && actor->quadmillis) { push = dir; push.mul(800); }
+        // Super TK beam: pull enemy toward you (negative push since hitpush stat is 0)
         if(gun==GUN_TELEKENESIS2 && actor && actor->quadmillis) { push = dir; push.mul(-500); }
         vel.add(push);
     }

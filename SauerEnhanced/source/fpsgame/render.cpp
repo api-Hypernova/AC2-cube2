@@ -634,7 +634,7 @@ namespace game
         }
         
         // Apply backward recoil offset for weapons with model kickback
-        if(d->gunselect == GUN_SMG || d->gunselect == GUN_SMG2 || d->gunselect == GUN_RL || d->gunselect == GUN_ELECTRO || d->gunselect == GUN_ELECTRO2 || d->gunselect == GUN_MAGNUM) {
+        if(d->gunselect == GUN_SMG || d->gunselect == GUN_SMG2 || d->gunselect == GUN_RL || d->gunselect == GUN_ELECTRO || d->gunselect == GUN_ELECTRO2 || d->gunselect == GUN_MAGNUM || d->gunselect == GUN_PISTOL) {
             vec recoilOffset;
             vecfromyawpitch(d->yaw, d->pitch, 1, 0, recoilOffset);
             recoilOffset.mul(hudgunoffset);
@@ -663,6 +663,7 @@ namespace game
             else if(d->mods & (MOD_SNIPER | MOD_HEAVYSNIPER)) gunfile = "pyccna_svd";
             // else: default "revolver" from guns table
         }
+        if(d->gunselect == GUN_PISTOL && (d->mods & MOD_LASER)) gunfile = "laser";
         defformatstring(gunname)("%s/%s", hudgunsdir[0] ? hudgunsdir : mdl.hudguns, gunfile);
         if((m_teammode || teamskins) && teamhudguns)
             concatstring(gunname, d==player1 || isteam(d->team, player1->team) ? "/blue" : "/red");
@@ -685,7 +686,7 @@ namespace game
             float kickAmount = 0.0f;
             float maxOffset = 0.0f;
             switch(d->gunselect) {
-                case GUN_SMG: case GUN_SMG2:
+                case GUN_SMG: case GUN_SMG2: case GUN_CG:
                     kickAmount = -1.5f; maxOffset = -6.0f; break;
                 case GUN_ELECTRO: case GUN_ELECTRO2:
                     kickAmount = -1.5f; maxOffset = -6.0f; break; // SMG-like kickback
@@ -693,6 +694,10 @@ namespace game
                     kickAmount = -4.0f; maxOffset = -10.0f; break; // Heavy sniper kick
                 case GUN_RL:
                     kickAmount = -3.5f; maxOffset = -10.0f; break;
+                case GUN_PISTOL:
+                    kickAmount = (d->mods & MOD_LASER) ? -3.0f : -1.5f;
+                    maxOffset = (d->mods & MOD_LASER) ? -8.0f : -6.0f;
+                    break;
                 default: break;
             }
             if(kickAmount != 0.0f) {
@@ -702,47 +707,51 @@ namespace game
         }
         // Smooth forward recovery
         if(hudgunoffset < 0.0f) {
-            float recovery = (d->gunselect == GUN_MAGNUM) ? 0.20f : 0.1f; // Magnum snaps back fast
+            float recovery = (d->gunselect == GUN_MAGNUM || (d->gunselect == GUN_PISTOL && (d->mods & MOD_LASER))) ? 0.20f : 0.1f;
             hudgunoffset += recovery;
             if(hudgunoffset > 0.0f) hudgunoffset = 0.0f;
         }
         // Reset to normal position after not firing
-        if(lastmillis-d->lastaction>200 && lastmillis-d->lastswitch>200 && (d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2 || d->gunselect==GUN_RL || d->gunselect==GUN_ELECTRO || d->gunselect==GUN_ELECTRO2 || d->gunselect==GUN_MAGNUM)) {
+        if(lastmillis-d->lastaction>200 && lastmillis-d->lastswitch>200 && (d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2 || d->gunselect==GUN_CG || d->gunselect==GUN_RL || d->gunselect==GUN_ELECTRO || d->gunselect==GUN_ELECTRO2 || d->gunselect==GUN_MAGNUM || d->gunselect==GUN_PISTOL)) {
             hudgunoffset = 0.0f;
         }
         
-        if(lastmillis-d->lastaction<3 && (d->gunselect==GUN_MAGNUM || d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2 || d->gunselect==GUN_CG || d->gunselect==GUN_SG || d->gunselect==GUN_SHOTGUN2 || d->gunselect==GUN_ELECTRO || d->gunselect==GUN_ELECTRO2 || d->gunselect==GUN_RL) && (lastmillis-d->lastaction)<10)jump=1;
+        if(lastmillis-d->lastaction<3 && (d->gunselect==GUN_MAGNUM || d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2 || d->gunselect==GUN_CG || d->gunselect==GUN_SG || d->gunselect==GUN_SHOTGUN2 || d->gunselect==GUN_ELECTRO || d->gunselect==GUN_ELECTRO2 || d->gunselect==GUN_RL || d->gunselect==GUN_PISTOL) && (lastmillis-d->lastaction)<10)jump=1;
         // Per-weapon pitch jump rate and max cap
-        // SMG=0.5/2.5, CG=1.0/5.0, RL=1.2/8.0, SG2=10/36, SG=12/32, Electro=0.5/2.5, Magnum=2.5/40
-        if(jump && (d->gunselect==GUN_MAGNUM || d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2 || d->gunselect==GUN_CG || d->gunselect==GUN_SG || d->gunselect==GUN_SHOTGUN2 || d->gunselect==GUN_ELECTRO || d->gunselect==GUN_ELECTRO2 || d->gunselect==GUN_RL)) {
+        // SMG=0.5/2.5, CG=0.5/2.5 (matches SMG), RL=1.2/8.0, SG2=10/36, SG=12/32, Electro=0.5/2.5, Magnum=24/64
+        if(jump && (d->gunselect==GUN_MAGNUM || d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2 || d->gunselect==GUN_CG || d->gunselect==GUN_SG || d->gunselect==GUN_SHOTGUN2 || d->gunselect==GUN_ELECTRO || d->gunselect==GUN_ELECTRO2 || d->gunselect==GUN_RL || d->gunselect==GUN_PISTOL)) {
             float pitchRate = 1.0f, pitchCap = 20.0f;
             switch(d->gunselect) {
                 case GUN_SMG: case GUN_SMG2: pitchRate = 0.5f; pitchCap = 2.5f; break;
-                case GUN_CG: pitchRate = 1.0f; pitchCap = 5.0f; break;
+                case GUN_CG: pitchRate = 0.5f; pitchCap = 2.5f; break; // Match SMG exactly
                 case GUN_RL: pitchRate = 1.2f; pitchCap = 8.0f; break;
-                case GUN_SHOTGUN2: pitchRate = 10.0f; pitchCap = 36.0f; break;
-                case GUN_SG: pitchRate = 12.0f; pitchCap = 32.0f; break;
+                case GUN_SHOTGUN2: pitchRate = 40.0f; pitchCap = 144.0f; break;  // 4x for stronger feel
+                case GUN_SG: pitchRate = 48.0f; pitchCap = 128.0f; break;      // 4x for stronger feel
                 case GUN_ELECTRO: case GUN_ELECTRO2: pitchRate = 0.5f; pitchCap = 2.5f; break; // SMG-like
-                case GUN_MAGNUM: pitchRate = 24.0f; pitchCap = 64.0f; break; // 2x height of shotgun
+                case GUN_MAGNUM: pitchRate = 48.0f; pitchCap = 128.0f; break;  // 2x for stronger feel
+                case GUN_PISTOL:
+                    if(d->mods & MOD_LASER) { pitchRate = 16.0f; pitchCap = 40.0f; } // Laser: heavy kick
+                    else { pitchRate = 4.0f; pitchCap = 12.0f; } // Pistol: moderate kick
+                    break;
                 default: break;
             }
             hudgunpitch += pitchRate;
             if(hudgunpitch > d->pitch + pitchCap) jump = 0;
         }
         // During backward recoil animation, always snap pitch instantly to camera
-        if(hudgunoffset < 0.0f && (d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2 || d->gunselect==GUN_RL || d->gunselect==GUN_ELECTRO || d->gunselect==GUN_ELECTRO2)) {
+        if(hudgunoffset < 0.0f && (d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2 || d->gunselect==GUN_CG || d->gunselect==GUN_RL || d->gunselect==GUN_ELECTRO || d->gunselect==GUN_ELECTRO2)) {
             // Backward recoil is active - weapon pitch should ALWAYS track camera instantly
             hudgunpitch = d->pitch;
         }
         else if(hudgunpitch<d->pitch-2 && !jump)hudgunpitch+=2; //raise hudgun to normal pos in case player looked up during firing
-        else if(hudgunpitch>d->pitch+2 && !jump)hudgunpitch-=(d->gunselect==GUN_SMG||d->gunselect==GUN_SMG2||d->gunselect==GUN_ELECTRO||d->gunselect==GUN_ELECTRO2)?1.5:(d->gunselect==GUN_CG?3.0:(d->gunselect==GUN_RL?0.5:(d->gunselect==GUN_SG||d->gunselect==GUN_SHOTGUN2||d->gunselect==GUN_MAGNUM?0.09375:2)));
+        else if(hudgunpitch>d->pitch+2 && !jump)hudgunpitch-=(d->gunselect==GUN_SMG||d->gunselect==GUN_SMG2||d->gunselect==GUN_CG||d->gunselect==GUN_ELECTRO||d->gunselect==GUN_ELECTRO2)?1.5:(d->gunselect==GUN_RL?0.5:(d->gunselect==GUN_SG||d->gunselect==GUN_SHOTGUN2||d->gunselect==GUN_MAGNUM||d->gunselect==GUN_PISTOL?0.09375:2));
         // Constantly track towards current pitch during sustained fire to fix model position bug
-        if(lastmillis-d->lastaction<100&&lastmillis-d->lastswitch>200&&(d->gunselect==GUN_MAGNUM || d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2 || d->gunselect==GUN_CG || d->gunselect==GUN_SG || d->gunselect==GUN_SHOTGUN2 || d->gunselect==GUN_ELECTRO || d->gunselect==GUN_ELECTRO2 || d->gunselect==GUN_RL)) {
+        if(lastmillis-d->lastaction<100&&lastmillis-d->lastswitch>200&&(d->gunselect==GUN_MAGNUM || d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2 || d->gunselect==GUN_CG || d->gunselect==GUN_SG || d->gunselect==GUN_SHOTGUN2 || d->gunselect==GUN_ELECTRO || d->gunselect==GUN_ELECTRO2 || d->gunselect==GUN_RL || d->gunselect==GUN_PISTOL)) {
             if(hudgunpitch < d->pitch - 2) hudgunpitch += 1;
             else if(hudgunpitch > d->pitch + 2) hudgunpitch -= 1;
         }
-        if(lastmillis-d->lastaction>350&&lastmillis-d->lastswitch>200&&(d->gunselect==GUN_MAGNUM || d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2 || d->gunselect==GUN_CG || d->gunselect==GUN_SG || d->gunselect==GUN_SHOTGUN2 || d->gunselect==GUN_ELECTRO || d->gunselect==GUN_ELECTRO2 || d->gunselect==GUN_RL))hudgunpitch=d->pitch;
-        if(lastmillis-d->lastswitch>200&&(d->gunselect!=GUN_MAGNUM && d->gunselect!=GUN_SMG && d->gunselect!=GUN_SMG2 && d->gunselect!=GUN_CG && d->gunselect!=GUN_SG && d->gunselect!=GUN_SHOTGUN2 && d->gunselect!=GUN_ELECTRO && d->gunselect!=GUN_ELECTRO2 && d->gunselect!=GUN_RL))hudgunpitch=d->pitch;
+        if(lastmillis-d->lastaction>350&&lastmillis-d->lastswitch>200&&(d->gunselect==GUN_MAGNUM || d->gunselect==GUN_SMG || d->gunselect==GUN_SMG2 || d->gunselect==GUN_CG || d->gunselect==GUN_SG || d->gunselect==GUN_SHOTGUN2 || d->gunselect==GUN_ELECTRO || d->gunselect==GUN_ELECTRO2 || d->gunselect==GUN_RL || d->gunselect==GUN_PISTOL))hudgunpitch=d->pitch;
+        if(lastmillis-d->lastswitch>200&&(d->gunselect!=GUN_MAGNUM && d->gunselect!=GUN_SMG && d->gunselect!=GUN_SMG2 && d->gunselect!=GUN_CG && d->gunselect!=GUN_SG && d->gunselect!=GUN_SHOTGUN2 && d->gunselect!=GUN_ELECTRO && d->gunselect!=GUN_ELECTRO2 && d->gunselect!=GUN_RL && d->gunselect!=GUN_PISTOL))hudgunpitch=d->pitch;
         if(lastmillis-d->lastreload<1300)dir=30;
         else dir=90;
         

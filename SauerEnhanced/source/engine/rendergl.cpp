@@ -2160,6 +2160,9 @@ float oldpitch;
 int jmillis;
 int inittime = 0;
 bool dojump = false;
+float kickApplied = 0.0f;   // how much pitch kick has been applied so far during rise
+float kickTarget = 0.0f;    // total kick to apply (screenjumpheight at fire time)
+float recoilToRecover = 0.0f; // bounded: recovery will never pull more than this total
 
 void crosshairbump()
 {
@@ -2194,7 +2197,6 @@ void crosshairbumpcheck()
 void screenjump()
 {
     if(!jump)return;
-    //if(oldpitch == game::hudplayer()->pitch || !oldpitch) oldpitch = game::hudplayer()->pitch;
     oldpitch = game::hudplayer()->pitch;
     if(game::hudplayer()->pitch==90)return;
     if(dojump)
@@ -2203,40 +2205,53 @@ void screenjump()
         game::hudplayer()->pitch = oldpitch;
     }
     dojump = true;
-    inittime=lastmillis;
+    kickTarget = (float)game::hudplayer()->screenjumpheight;
+    kickApplied = 0.0f;
+    recoilToRecover = 0.0f;
+    inittime = lastmillis;
+    jmillis = lastmillis;
 }
 
 void screenjumpcheck()
 {
     if(!dojump) return;
-    // First frame: instant kick up
-    if(oldpitch == game::hudplayer()->pitch)
+    int elapsed = lastmillis - jmillis;
+    if(elapsed <= 0) return;
+    jmillis = lastmillis;
+
+    const float MAXPITCH = 90.0f;
+
+    // Phase 1: Kick-up - apply pitch increase gradually over ~60ms
+    if(kickApplied < kickTarget)
     {
-        game::hudplayer()->pitch += game::hudplayer()->screenjumpheight;
-        jmillis = lastmillis;
+        float kickRate = kickTarget * 0.04f;
+        float increment = kickRate * elapsed;
+        if(kickApplied + increment > kickTarget) increment = kickTarget - kickApplied;
+        float pitchBefore = game::hudplayer()->pitch;
+        game::hudplayer()->pitch += increment;
+        // Clamp to engine max so we track what was ACTUALLY applied
+        if(game::hudplayer()->pitch > MAXPITCH) game::hudplayer()->pitch = MAXPITCH;
+        float actualDelta = game::hudplayer()->pitch - pitchBefore;
+        recoilToRecover += actualDelta;
+        kickApplied += increment;
         return;
     }
-    // Brief hold at peak before recovery starts (40ms) - makes the kick feel punchier
-    if((lastmillis - inittime) < 40) return;
-    // Non-linear time-based recovery: aggressive initial drop, slow ease-out settle
-    int elapsed = lastmillis - jmillis;
-    if(elapsed > 0)
+
+    // Brief hold at peak before recovery starts
+    if((lastmillis - inittime) < 80) return;
+
+    // Phase 2: Recovery - bounded by actual pitch change, not theoretical target
+    if(recoilToRecover > 0.1f)
     {
-        float remaining = game::hudplayer()->pitch - oldpitch;
-        if(remaining > 0.0f)
-        {
-            // Steep proportional: 0.015/ms * remaining gives very fast initial snap
-            // then gentle min rate (0.03/ms) for slow settle at the end
-            float rate = max(0.03f, remaining * 0.015f);
-            float decrement = rate * elapsed;
-            game::hudplayer()->pitch -= decrement;
-        }
-        jmillis = lastmillis;
+        float rate = max(0.03f, recoilToRecover * 0.015f);
+        float decrement = rate * elapsed;
+        if(decrement > recoilToRecover) decrement = recoilToRecover;
+        game::hudplayer()->pitch -= decrement;
+        recoilToRecover -= decrement;
     }
-    // Clamp back to original pitch when done (or close enough)
-    if(game::hudplayer()->pitch <= oldpitch + 0.1f)
+    else
     {
-        game::hudplayer()->pitch = oldpitch;
+        recoilToRecover = 0.0f;
         dojump = false;
         oldpitch = 0;
     }

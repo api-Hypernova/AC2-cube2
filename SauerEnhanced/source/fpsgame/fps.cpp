@@ -811,6 +811,7 @@ namespace game
         setvar("mod_lightninggun", 0, false, false);
         setvar("mod_heavysniper", 0, false, false);
         setvar("mod_remotedetonate", 0, false, false);
+        setvar("mod_laser", 0, false, false);
         setvar("mod_helicopter", 0, false, false);
 
         if(cmode)

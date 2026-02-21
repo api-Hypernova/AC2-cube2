@@ -1758,7 +1758,10 @@ void shotevent::process(clientinfo *ci)
         {
             hitinfo &h = hits[i];
             clientinfo *target = getinfo(h.target);
-            if(!target || target->state.state!=CS_ALIVE || h.lifesequence!=target->state.lifesequence || h.rays<1 || h.dist > guns[gun].range + 1) continue;
+            float maxRange = guns[gun].range + 1;
+            // Super TK beam: extend server-side range tolerance when quad active
+            if((gun == GUN_TELEKENESIS || gun == GUN_TELEKENESIS2) && gs.quadmillis) maxRange = 201;
+            if(!target || target->state.state!=CS_ALIVE || h.lifesequence!=target->state.lifesequence || h.rays<1 || h.dist > maxRange) continue;
 
             totalrays += h.rays;
             if(totalrays>maxrays) continue;
