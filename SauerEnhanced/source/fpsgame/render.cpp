@@ -726,7 +726,7 @@ namespace game
                 case GUN_CG: pitchRate = 0.5f; pitchCap = 2.5f; break; // Match SMG exactly
                 case GUN_RL: pitchRate = 1.2f; pitchCap = 8.0f; break;
                 case GUN_SHOTGUN2: pitchRate = 40.0f; pitchCap = 144.0f; break;  // 4x for stronger feel
-                case GUN_SG: pitchRate = 48.0f; pitchCap = 128.0f; break;      // 4x for stronger feel
+                case GUN_SG: pitchRate = 40.0f; pitchCap = 144.0f; break;      // Match SHOTGUN2 for consistent feel
                 case GUN_ELECTRO: case GUN_ELECTRO2: pitchRate = 0.5f; pitchCap = 2.5f; break; // SMG-like
                 case GUN_MAGNUM: pitchRate = 48.0f; pitchCap = 128.0f; break;  // 2x for stronger feel
                 case GUN_PISTOL:
