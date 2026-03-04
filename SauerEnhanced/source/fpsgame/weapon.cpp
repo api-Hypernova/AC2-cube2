@@ -2232,7 +2232,7 @@ void shoteffects(int gun, const vec &from, const vec &to, fpsent *d, bool local,
             if(muzzleflash && d->muzzle.x >= 0)
                 particle_flare(d->muzzle, d->muzzle, 200, PART_MUZZLE_FLASH3, 0xFFFFFF, 1.0f, d);
             if(muzzlelight) adddynlight(hudgunorigin(gun, d->o, to, d), 15, vec(0.5f, 0.375f, 0.25f), 100, 100, DL_FLASH, 0, vec(0, 0, 0), d);
-            if(d == hudplayer()) { d->screenjumpheight = 30; screenjump(); screenjump(); }
+            if(d == hudplayer()) { d->screenjumpheight = 8; screenjump(); screenjump(); }
             d->attacking=d->altattacking=0;
         }
         break;
@@ -3050,10 +3050,10 @@ void initRecoilPatterns() {
     // Pulse Rifle (CG) - more aggressive recoil
     weaponRecoils[GUN_CG].pattern = defaultSprayPattern;
     weaponRecoils[GUN_CG].patternLength = DEFAULT_PATTERN_LEN;
-    weaponRecoils[GUN_CG].multiplier = 1.2f;  // more aggressive
+    weaponRecoils[GUN_CG].multiplier = 0.4f;
     weaponRecoils[GUN_CG].recoveryRate = 0.0216f;
     weaponRecoils[GUN_CG].resetTime = 350;
-    weaponRecoils[GUN_CG].viewPunchScale = 1.5f;
+    weaponRecoils[GUN_CG].viewPunchScale = 0.5f;
 }
 
 #define RECOIL_COOLDOWN 200 //200ms until our recoil is reset and next shot will have 0 spread
