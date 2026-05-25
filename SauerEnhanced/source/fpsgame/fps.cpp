@@ -15,6 +15,14 @@ namespace game
 
     bool clientoption(const char *arg) { return false; }
 
+    // M18: state declared early so all functions can reference them
+    int deathcam_killer = -1;
+    int deathcam_switchtime = 0;
+    int lastkillgun = -1;
+    bool lastkill_ismate = false;
+    bool lasthit_headshot = false;
+    VARP(deathcam, 0, 1, 1);
+
     void taunt()
     {
         if(player1->state!=CS_ALIVE || player1->physstate<PHYS_SLOPE) return;
@@ -140,6 +148,14 @@ namespace game
 
     void setupcamera()
     {
+        // M18.10: auto-follow killer 900ms after death
+        if(deathcam && player1->state == CS_DEAD && lastmillis >= deathcam_switchtime
+           && deathcam_killer >= 0 && following < 0)
+        {
+            fpsent *killer = getclient(deathcam_killer);
+            if(killer && killer->state == CS_ALIVE) following = deathcam_killer;
+        }
+
         fpsent *target = followingplayer();
         if(target)
         {
@@ -316,6 +332,8 @@ namespace game
         {
             if(editmode) d->state = CS_EDITING;
             else if(d->state != CS_SPECTATOR) d->state = CS_ALIVE;
+            deathcam_killer = -1;
+            following = -1;
         }
         else d->state = CS_ALIVE;
     }
@@ -402,6 +420,7 @@ namespace game
         {
             if(hitsound && lasthit != lastmillis) playsound(S_HIT);
             lasthit = lastmillis;
+            lasthit_headshot = actor->headshots > 0;
         }
         if(d==h && damage)
         {
@@ -665,6 +684,15 @@ namespace game
         copystring(who5, who4);
         defformatstring(who2)("You killed %s %s%s", who, ismate2?"\f3your TEAMMATE ":"", actor->quadmillis?"with a \\ damage boost":"");
         copystring(who6, who2);
+        if(d == player1)
+        {
+            lastkillgun = actor->lastattackgun;
+            lastkill_ismate = ismate != 0;
+            if(actor != player1 && actor->type != ENT_AI)
+            { deathcam_killer = actor->clientnum; deathcam_switchtime = lastmillis + 900; }
+            else
+            { deathcam_killer = -1; }
+        }
         deathstate(d);
         ai::killed(d, actor);
     }
@@ -1058,6 +1086,180 @@ namespace game
         glPopMatrix();
     }
 
+    // M18: HUD CVars
+    VARP(colorblindmode, 0, 0, 3);
+    VARP(hudshowkills,   0, 1, 1);
+    VARP(hudshowminimap, 0, 1, 1);
+    VARP(hudshowbars,    0, 1, 1);
+
+    // M18.3: gun name lookup
+    static const char *gunname(int gun)
+    {
+        static const char *names[] = {
+            "Katana","Shotgun","Pulse Rifle","Rocket","Magnum",
+            "Sniper","SMG","Grenade","CG","CG alt",
+            "SMG alt","RL alt","Crossbow","Electro","Electro alt",
+            "Orb","SG alt","Pistol"
+        };
+        if(gun >= 0 && gun < int(sizeof(names)/sizeof(names[0]))) return names[gun];
+        return "Unknown";
+    }
+
+    // M18.2: low-HP vignette (edge glow + full-screen tint at HP <= 15)
+    void drawlowhpglow(int w, int h)
+    {
+        fpsent *d = hudplayer();
+        if(d->state != CS_ALIVE || d->health > 40) return;
+        float t = 1.0f - d->health / 40.0f;          // 0..1 as HP drops 40->0
+        float edge = 0.24f;                           // fraction of screen height to cover
+        int ea = int(t * 160);                        // edge alpha
+        // four edge quads (top, bottom, left, right)
+        float sw = (float)w, sh = (float)h;
+        float ew = sw * edge, eh = sh * edge;
+        // bottom edge
+        settexture("packages/hud/hud_health.png");
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glColor4ub(190, 25, 12, (uchar)ea);
+        glBegin(GL_QUADS);
+        glTexCoord2f(0,1); glVertex2f(0,    sh-eh);
+        glTexCoord2f(1,1); glVertex2f(sw,   sh-eh);
+        glTexCoord2f(1,0); glVertex2f(sw,   sh);
+        glTexCoord2f(0,0); glVertex2f(0,    sh);
+        glEnd();
+        // top edge
+        glBegin(GL_QUADS);
+        glTexCoord2f(0,0); glVertex2f(0,  0);
+        glTexCoord2f(1,0); glVertex2f(sw, 0);
+        glTexCoord2f(1,1); glVertex2f(sw, eh);
+        glTexCoord2f(0,1); glVertex2f(0,  eh);
+        glEnd();
+        // left edge
+        glBegin(GL_QUADS);
+        glTexCoord2f(0,0); glVertex2f(0,  0);
+        glTexCoord2f(1,0); glVertex2f(ew, 0);
+        glTexCoord2f(1,1); glVertex2f(ew, sh);
+        glTexCoord2f(0,1); glVertex2f(0,  sh);
+        glEnd();
+        // right edge
+        glBegin(GL_QUADS);
+        glTexCoord2f(1,0); glVertex2f(sw-ew, 0);
+        glTexCoord2f(0,0); glVertex2f(sw,    0);
+        glTexCoord2f(0,1); glVertex2f(sw,    sh);
+        glTexCoord2f(1,1); glVertex2f(sw-ew, sh);
+        glEnd();
+        if(d->health <= 15)
+        {
+            hudcolorquad(0, 0, sw, sh, 0, 0, 0, (uchar)int(t*33));
+        }
+    }
+
+    // M18.1: geometry hitmarker (4 arm quads, cubic ease-in over 80ms)
+    void drawhitmarker(int w, int h)
+    {
+        if(!lasthit || lastmillis - lasthit > 350) return;
+        float age = (lastmillis - lasthit) / 350.0f;
+        float t = 1.0f - age*age*age;           // cubic ease-out
+        float alpha = t * 255.0f;
+        float cx = w * 0.5f, cy = h * 0.5f;
+        float arm = 12.0f * t, gap = 5.0f, thick = 2.5f;
+
+        uchar r = lasthit_headshot ? 255 : 255;
+        uchar g = lasthit_headshot ?  80 : 255;
+        uchar b = lasthit_headshot ?  20 : 255;
+
+        hudcolorquad(cx - gap - arm, cy - thick*0.5f, arm, thick, r, g, b, (uchar)alpha);
+        hudcolorquad(cx + gap,       cy - thick*0.5f, arm, thick, r, g, b, (uchar)alpha);
+        hudcolorquad(cx - thick*0.5f, cy - gap - arm, thick, arm, r, g, b, (uchar)alpha);
+        hudcolorquad(cx - thick*0.5f, cy + gap,       thick, arm, r, g, b, (uchar)alpha);
+    }
+
+    // M18.3: death / ELIMINATED overlay
+    void drawdeathoverlay(int w, int h)
+    {
+        if(player1->state != CS_DEAD) return;
+        int dt = lastmillis - player1->lastpain;
+        if(dt > 8000) return;
+
+        float alf = dt < 600 ? (dt / 600.0f) * 230.0f : 230.0f - ((dt - 600) / 7400.0f) * 100.0f;
+        if(alf <= 0) return;
+        uchar a = (uchar)clamp((int)alf, 0, 255);
+
+        float hw = (float)w, hh = (float)h;
+        float px = hw*0.5f - 220, py = hh*0.5f - 60;
+
+        // dark pill background
+        hudcolorquad(px, py, 440, 120, 10, 10, 10, (uchar)(a*3/4));
+
+        // "ELIMINATED" text
+        glPushMatrix();
+        glScalef(1/1.0f, 1/1.0f, 1);
+        int tw, th;
+        text_bounds("ELIMINATED", tw, th);
+        if(lastkill_ismate)
+            draw_text("ELIMINATED", int(hw*0.5f - tw*0.5f), int(hh*0.5f - th - 8), 255, 80, 80, a);
+        else
+            draw_text("ELIMINATED", int(hw*0.5f - tw*0.5f), int(hh*0.5f - th - 8), 220, 220, 220, a);
+
+        // "by [actor] · [weapon]"
+        if(lastkillgun >= 0 && who3[0])
+        {
+            defformatstring(detail)("by %s  \xc2\xb7  %s", who3, gunname(lastkillgun));
+            int dw, dh; text_bounds(detail, dw, dh);
+            draw_text(detail, int(hw*0.5f - dw*0.5f), int(hh*0.5f + 8), 180, 180, 180, a);
+        }
+        glPopMatrix();
+
+        // "WATCHING [name]" if deathcam active
+        fpsent *fw = followingplayer();
+        if(deathcam && fw && player1->state == CS_DEAD)
+        {
+            defformatstring(wtxt)("WATCHING  %s", colorname(fw));
+            int ww, wh; text_bounds(wtxt, ww, wh);
+            draw_text(wtxt, int(hw*0.5f - ww*0.5f), int(hh*0.5f + 60), 100, 220, 255, (uchar)(a/2));
+        }
+    }
+
+    // M18.7: always-on CTF score HUD (top-center)
+    void drawctfscore(int w, int h)
+    {
+        if(!cmode || (!m_ctf && !m_hold)) return;
+        fpsent *d = player1;
+
+        // fetch scores via cmode virtual interface
+        int gs = cmode->getteamscore(player1->team);
+        int es = cmode->getteamscore(isteam(player1->team, "good") ? "evil" : "good");
+
+        bool mp = (gs >= 9 || es >= 9);  // match point at 9 (flaglimit usually 10)
+        float pulse = mp ? 0.6f + 0.4f*sinf(totalmillis*0.006f) : 1.0f;
+
+        float cx = w * 0.5f;
+        float py = 18.0f;
+
+        // own-team score pill
+        hudcolorquad(cx - 140, py, 120, 40, 30, 80, 180, (uchar)(160*pulse));
+        // enemy-team score pill
+        hudcolorquad(cx + 20,  py, 120, 40, 180, 40, 40, (uchar)(160*pulse));
+
+        glPushMatrix();
+        glScalef(1.5f, 1.5f, 1);
+        defformatstring(gs_s)("%d", gs);
+        defformatstring(es_s)("%d", es);
+        int gw, gh, ew, eh;
+        text_bounds(gs_s, gw, gh); text_bounds(es_s, ew, eh);
+        draw_text(gs_s, int((cx - 80)/1.5f - gw/2), int((py + 8)/1.5f), 255, 255, 255, 220);
+        draw_text(es_s, int((cx + 80)/1.5f - ew/2), int((py + 8)/1.5f), 255, 255, 255, 220);
+        glPopMatrix();
+
+        if(mp)
+        {
+            const char *mptxt = "MATCH POINT";
+            int mw, mh; text_bounds(mptxt, mw, mh);
+            draw_text(mptxt, int(cx - mw*0.5f), int(py + 44),
+                      255, (uchar)(180*pulse), 0, (uchar)(200*pulse));
+        }
+    }
+
     void drawhudicons(fpsent *d)
     {
         if(senewhud) return;
@@ -1294,6 +1496,13 @@ namespace game
     void gameplayhud(int w, int h)
     {
         if(senewhud && player1->state!=CS_SPECTATOR) newhud(w, h);
+
+        // M18 AAA HUD overlays (screen-space, not scaled to 1800)
+        drawlowhpglow(w, h);
+        drawhitmarker(w, h);
+        drawdeathoverlay(w, h);
+        drawctfscore(w, h);
+
         glPushMatrix();
         glScalef(h/1800.0f, h/1800.0f, 1);
 
@@ -1307,15 +1516,13 @@ namespace game
             text_bounds(f ? colorname(f) : " ", fw, fh);
             fh = max(fh, ph);
             draw_text("SPECTATOR", w*1800/h - tw - pw, 1650 - th - fh);
-            if(f) draw_textf("%s(%d/%d)", w*900/h - fw - pw, 1650 - fh, colorname(f), f->health, f->armour); //1800
+            if(f) draw_textf("%s(%d/%d)", w*900/h - fw - pw, 1650 - fh, colorname(f), f->health, f->armour);
         }
 
         fpsent *d = hudplayer();
         if(d->state!=CS_EDITING)
         {
             if(d->state!=CS_SPECTATOR) drawhudicons(d);
-            //if(cmode) cmode->drawhud(d, w, h);
-            //newhud(w, h);
         }
 
         glPopMatrix();

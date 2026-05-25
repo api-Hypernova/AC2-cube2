@@ -130,12 +130,13 @@ struct font
     int offsetx, offsety, offsetw, offseth;
 };
 
-#define FONTH (curfont->defaulth)
+#define FONTH (getfonth())
 #define FONTW (curfont->defaultw)
 #define MINRESW 640
 #define MINRESH 480
 
 extern font *curfont;
+extern int getfonth();
 
 // texture
 extern int hwtexsize, hwcubetexsize, hwmaxaniso, maxtexsize;

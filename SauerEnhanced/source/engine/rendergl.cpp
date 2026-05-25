@@ -1214,6 +1214,23 @@ static void blendfogoverlay(int fogmat, float blend, float *overlay)
     }
 }
 
+// Draw a flat colored rectangle in HUD-space (uses notextureshader).
+// Caller must already be in HUD matrix (glScalef applied by gameplayhud).
+void hudcolorquad(float x, float y, float w, float h, uchar r, uchar g, uchar b, uchar a)
+{
+    notextureshader->set();
+    glDisable(GL_TEXTURE_2D);
+    glColor4ub(r, g, b, a);
+    glBegin(GL_QUADS);
+    glVertex2f(x,   y);
+    glVertex2f(x+w, y);
+    glVertex2f(x+w, y+h);
+    glVertex2f(x,   y+h);
+    glEnd();
+    defaultshader->set();
+    glEnable(GL_TEXTURE_2D);
+}
+
 void drawfogoverlay(int fogmat, float fogblend, int abovemat)
 {
     notextureshader->set();
